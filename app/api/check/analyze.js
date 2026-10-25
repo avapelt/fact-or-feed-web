@@ -351,6 +351,8 @@ export async function analyze(input) {
   const image = input.image || null;
   const audience = input.audience || 'everyone';
   const fast = !!input.fast;
+  // In "Is this true?" mode the photo is only read for its claims; the AI photo check is its own mode
+  const photoChecks = !!image && input.mode !== 'fact';
   const quickModel = fast ? FAST_MODEL : MODEL;
   const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';
 
@@ -434,7 +436,7 @@ export async function analyze(input) {
 
   // Three independent image checks run at the same time; we keep the middle (median) answer,
   // so one odd answer can't flip the result.
-  const imagePromise = image
+  const imagePromise = photoChecks
     ? Promise.allSettled(
         [0, 1, 2].map(() =>
           generateText({
@@ -461,7 +463,7 @@ export async function analyze(input) {
     : Promise.resolve(null);
 
   const comparePromise =
-    image && plan.photo_comparison && reader.photo_search_query
+    photoChecks && plan.photo_comparison && reader.photo_search_query
       ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'))
           .then((r) => {
             mark(`Compared the photo with ${r.compared.length} real photos found online`);
@@ -536,7 +538,7 @@ ${persuasion}
 Vera's notebook (use only as hints; today's sources always win):
 ${notebookText}
 
-Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : 'No image was sent'}
+Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : image ? 'Not run here (the AI photo check is a separate mode). Judge the claims, not whether the photo is AI-made.' : 'No image was sent'}
 
 Sources found (${sources.length}):
 ${sourceList || 'No sources were found.'}`,
@@ -595,5 +597,165 @@ ${sourceList || 'No sources were found.'}`,
       queries: { news: newsQ, official: officialQ, research: researchQ },
       timings,
     },
+  };
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// 🤖 "Is this photo AI?" mode: only the photo agents run.
+// Three Image agents score warning signs at the same time (we keep the median),
+// a Photo Finder describes the scene and searches for real photos of it,
+// the Comparison agent compares them, and the Photo Writer explains it simply.
+// ─────────────────────────────────────────────────────────────
+const DescribeSchema = z.object({
+  description: z.string(),
+  photo_search_query: z.string().nullable(),
+  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
+});
+
+const PhotoSummarySchema = z.object({
+  headline: z.string(),
+  explanation: z.string(),
+  tip: z.string(),
+  signs: z.array(z.string()),
+  plausibility_reason: z.string(),
+  comparison: z.string().nullable(),
+});
+
+export async function checkPhoto(input) {
+  const start = Date.now();
+  const timings = [];
+  const mark = (label) => timings.push({ label, seconds: Math.round((Date.now() - start) / 100) / 10 });
+
+  const image = input.image || null;
+  const context = (input.text || '').slice(0, 1000);
+  const audience = input.audience || 'everyone';
+  if (!image) {
+    const e = new Error('Add a photo with the 📎 button and I\'ll check if it looks AI-made.');
+    e.status = 400;
+    throw e;
+  }
+
+  const notebook = await loadNotebook();
+
+  const imagePromise = Promise.allSettled(
+    [0, 1, 2].map(() =>
+      generateText({
+        model: MODEL,
+        system: IMAGE_PROMPT + lessonsFor(notebook, 'image'),
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${context}` : ''}` },
+              { type: 'image', image },
+            ],
+          },
+        ],
+        output: Output.object({ schema: ImageSchema }),
+      }).then((r) => r.output)
+    )
+  ).then((results) => {
+    const runs = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
+    mark(`Checked the photo for AI warning signs (${runs.length} independent checks)`);
+    return combineImageChecks(runs);
+  });
+
+  // The Photo Finder describes the scene and plans a search for real photos of it
+  const comparePromise = generateText({
+    model: FAST_MODEL,
+    system:
+      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'image', image },
+          { type: 'text', text: context ? `The user said: ${context}` : 'No note from the user.' },
+        ],
+      },
+    ],
+    output: Output.object({ schema: DescribeSchema }),
+  })
+    .then(async ({ output: d }) => {
+      mark('Described the photo and planned a search for real ones');
+      if (!d?.photo_search_query) return { describe: d, comparison: null };
+      try {
+        const comparison = await compareWithRealPhotos(image, d.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'));
+        mark(`Compared the photo with ${comparison.compared.length} real photos found online`);
+        return { describe: d, comparison };
+      } catch (err) {
+        console.error('Photo comparison failed', err);
+        return { describe: d, comparison: null };
+      }
+    })
+    .catch((err) => {
+      console.error('Photo finder failed', err);
+      return { describe: null, comparison: null };
+    });
+
+  const [rawCheck, { describe, comparison }] = await Promise.all([imagePromise, comparePromise]);
+  if (!rawCheck) throw new Error("I couldn't check that photo. Try again in a moment?");
+
+  let check = rawCheck;
+  if (comparison) {
+    let score = check.score ?? 0;
+    if (comparison.effect === 'More likely fake') score = Math.min(10, score + 2);
+    if (comparison.effect === 'More likely real') score = Math.max(0, score - 2);
+    check = { ...check, score, level: levelFor(score), comparison };
+  }
+
+  // The Photo Writer explains the result in plain words, in the user's language
+  const langCode = LANGUAGE_NAMES[input.language] ? input.language : describe?.language || 'en';
+  let summary = null;
+  try {
+    const { output } = await generateText({
+      model: FAST_MODEL,
+      system: `${lessonsFor(notebook, 'writer')}
+You are Vera from "Fact or Feed?", a friendly fact-checking friend. Explain an AI-photo check to a regular person.
+- headline: one short sentence that matches the level exactly (do not make it stronger or weaker).
+- explanation: 2 or 3 plain sentences on why, using the warning signs, how believable the scene is, and the comparison with real photos if there is one.
+- tip: one practical thing they can do to check further (for example a reverse image search, or looking for the same photo from a trusted news outlet).
+- signs, plausibility_reason, comparison: rewrite the given text in the requested language, plain words (comparison null if none).
+Never say a photo is definitely AI or definitely real; warning signs are not proof.
+Tone: ${audience === 'simple' ? 'very short and simple words' : audience === 'complex' ? 'more detail and nuance, still clear' : 'friendly and clear for any age'}.
+Write in ${LANGUAGE_NAMES[langCode] || 'English'}.`,
+      prompt: JSON.stringify({
+        level: check.level,
+        plausibility: check.plausibility,
+        plausibility_reason: check.plausibility_reason,
+        signs: check.signs,
+        note: check.note,
+        comparison: comparison ? { match: comparison.match, effect: comparison.effect, text: comparison.comparison } : null,
+        what_the_photo_shows: describe?.description || null,
+        user_note: context || null,
+      }),
+      output: Output.object({ schema: PhotoSummarySchema }),
+    });
+    summary = output;
+    mark('Wrote up the photo check');
+  } catch (err) {
+    console.error('Photo writer failed', err);
+  }
+
+  if (summary) {
+    check = {
+      ...check,
+      signs: summary.signs?.length ? summary.signs : check.signs,
+      plausibility_reason: summary.plausibility_reason || check.plausibility_reason,
+      comparison: check.comparison && summary.comparison ? { ...check.comparison, comparison: summary.comparison } : check.comparison,
+    };
+  }
+
+  return {
+    photo: {
+      ...check,
+      headline: summary?.headline || check.level,
+      explanation: summary?.explanation || check.note,
+      tip: summary?.tip || 'Try a reverse image search to see where else this photo appears.',
+      description: describe?.description || null,
+    },
+    trace: { timings },
   };
 }

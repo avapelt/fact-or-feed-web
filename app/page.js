@@ -7,7 +7,6 @@ const STEPS = [
   'Searching 30+ news sources across the spectrum…',
   'Checking official sources and published research…',
   'Spotting persuasion tactics…',
-  'Comparing photos with real ones online…',
   'Weighing the evidence…',
   'Writing you the real story…',
   'Having a second AI double-check it…',
@@ -29,6 +28,26 @@ const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
 
 const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
 const VERDICT_COLORS = ['#2F8F5B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
+const PHOTO_STEPS = [
+  'Three photo agents are looking for AI warning signs…',
+  'Figuring out what the photo shows…',
+  'Searching for real photos of the same thing…',
+  'Comparing your photo with the real ones…',
+  'Writing up what I found…',
+];
+
+// The two modes, in each language: [fact check, photo check]
+const MODES = {
+  en: ['Is this true?', 'Is this photo AI?'],
+  es: ['¿Es verdad?', '¿Esta foto es IA?'],
+  ht: ['Èske se vre?', 'Èske foto sa a se IA?'],
+  zh: ['这是真的吗？', '这张照片是AI做的吗？'],
+  hi: ['क्या यह सच है?', 'क्या यह फ़ोटो AI है?'],
+  ar: ['هل هذا صحيح؟', 'هل هذه الصورة ذكاء اصطناعي؟'],
+  fr: ['Est-ce vrai ?', 'Cette photo est-elle IA ?'],
+  bn: ['এটা কি সত্যি?', 'এই ছবি কি AI?'],
+};
+
 const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
 const AI_COLORS = ['#2F8F5B', '#D99A2B', '#C2413B'];
 
@@ -37,14 +56,14 @@ const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c961
 
 
 const WELCOME = {
-  en: "Hey! 👋 I'm Vera, your fact-checking friend. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
-  es: '¡Hola! 👋 Soy Vera, tu amiga que verifica los hechos. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real de verdad.',
-  ht: 'Bonjou! 👋 Mwen se Vera, zanmi w ki verifye enfòmasyon. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre.',
-  zh: '你好！👋 我是 Vera，你的事实核查好朋友。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。',
-  hi: 'नमस्ते! 👋 मैं वेरा हूँ, आपकी फ़ैक्ट-चेक करने वाली दोस्त। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगी कि असल में क्या सच है।',
-  ar: 'مرحبًا! 👋 أنا فيرا، صديقتك في التحقق من الحقائق. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا.',
-  fr: "Salut ! 👋 Je suis Vera, ton amie qui vérifie les infos. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai.",
-  bn: 'হ্যালো! 👋 আমি ভেরা, তোমার ফ্যাক্ট-চেক করার বন্ধু। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি।',
+  en: "Hey! 👋 I'm Vera, your fact-checking friend. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real. Pick ✅ Is this true? to fact-check it, or 🤖 Is this photo AI? to check a photo.",
+  es: '¡Hola! 👋 Soy Vera, tu amiga que verifica los hechos. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real de verdad. Elige ✅ ¿Es verdad? para verificarlo, o 🤖 ¿Esta foto es IA? para revisar una foto.',
+  ht: 'Bonjou! 👋 Mwen se Vera, zanmi w ki verifye enfòmasyon. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre. Chwazi ✅ Èske se vre? pou verifye l, oswa 🤖 Èske foto sa a se IA? pou tcheke yon foto.',
+  zh: '你好！👋 我是 Vera，你的事实核查好朋友。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。 选择 ✅ 这是真的吗？来核查事实，或选择 🤖 这张照片是AI做的吗？来检查照片。',
+  hi: 'नमस्ते! 👋 मैं वेरा हूँ, आपकी फ़ैक्ट-चेक करने वाली दोस्त। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगी कि असल में क्या सच है। तथ्य जाँचने के लिए ✅ क्या यह सच है? चुनें, या फ़ोटो जाँचने के लिए 🤖 क्या यह फ़ोटो AI है? चुनें।',
+  ar: 'مرحبًا! 👋 أنا فيرا، صديقتك في التحقق من الحقائق. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا. اختر ✅ هل هذا صحيح؟ للتحقق من المعلومة، أو 🤖 هل هذه الصورة ذكاء اصطناعي؟ لفحص صورة.',
+  fr: "Salut ! 👋 Je suis Vera, ton amie qui vérifie les infos. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai. Choisis ✅ Est-ce vrai ? pour vérifier une info, ou 🤖 Cette photo est-elle IA ? pour vérifier une photo.",
+  bn: 'হ্যালো! 👋 আমি ভেরা, তোমার ফ্যাক্ট-চেক করার বন্ধু। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি। তথ্য যাচাই করতে ✅ এটা কি সত্যি? বেছে নাও, অথবা ছবি যাচাই করতে 🤖 এই ছবি কি AI? বেছে নাও।',
 };
 
 // Shown in the language menu
@@ -136,6 +155,11 @@ const CSS = `
 .compare{margin-top:12px;padding-top:10px;border-top:1px solid #E2DCF2}
 .thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
 .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--line)}
+.modes{display:flex;gap:6px;margin-bottom:8px}
+.modes button{flex:1;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+.modes button.on{background:#5B3FA6;border-color:#5B3FA6;color:#fff}
+.choose{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn:disabled{opacity:.5;cursor:default}
 .newrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .newsearch{border:1px solid var(--moss);background:var(--paper);color:var(--moss);border-radius:999px;height:32px;padding:0 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;white-space:nowrap;-webkit-appearance:none;appearance:none}
 .newsearch:hover{background:var(--moss);color:#fff}
@@ -221,7 +245,7 @@ const CSS = `
 .prefs .getapp{border:1px solid var(--moss)}
 .prefs .howlink,.prefs select{border:1px solid var(--line);background-color:var(--paper);color:var(--ink)}
 .prefs select{display:block;text-align:left;padding:0 30px 0 14px;text-overflow:ellipsis;overflow:hidden;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
-.prefs select.age{width:88px}
+.prefs select.age{width:96px}
 .prefs select.lang{width:132px}
 
 /* Phones: the four buttons share one row that always fits the screen width */
@@ -229,7 +253,7 @@ const CSS = `
   .prefs{display:grid !important;grid-template-columns:max-content max-content max-content minmax(0,1fr);gap:6px;width:100%}
   .prefs .getapp,.prefs .howlink,.prefs select{height:36px;font-size:12.5px;padding:0 12px}
   .prefs select{padding:0 26px 0 12px;background-position:right 10px center}
-  .prefs select.age{width:70px}
+  .prefs select.age{width:92px}
   .prefs select.lang{width:100%}
   .prefs .emo{display:none}
 }
@@ -237,18 +261,18 @@ const CSS = `
   .prefs{gap:5px}
   .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
   .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
-  .prefs select.age{width:62px}
+  .prefs select.age{width:78px}
 }
 @media (max-width:370px){
   .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 8px}
   .prefs select{padding:0 20px 0 8px;background-position:right 7px center}
-  .prefs select.age{width:56px}
+  .prefs select.age{width:64px}
 }
 @media (max-width:330px){
   .prefs{gap:5px}
   .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
   .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
-  .prefs select.age{width:62px}
+  .prefs select.age{width:74px}
 }
 `;
 
@@ -391,7 +415,87 @@ function Feedback({ claims, verdict, realStory, areas = [] }) {
   );
 }
 
-function ResultBubble({ data }) {
+function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
+  return (
+    <div className="mini">
+          {title && <b>{title}</b>}
+          <Meter labels={AI_LEVELS} colors={AI_COLORS} active={AI_LEVELS.indexOf(check.level)} />
+          {check.plausibility && (
+            <div style={{ marginTop: 10, fontSize: 14 }}>
+              🎯 <b>How believable is this scene?</b> {check.plausibility}
+              {check.plausibility_reason ? `: ${check.plausibility_reason}` : ''}
+            </div>
+          )}
+          {check.signs.length > 0 && (
+            <ul style={{ marginTop: 8, fontSize: 14 }}>
+              {check.signs.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
+          )}
+          {check.comparison && (
+            <div className="compare">
+              <div>
+                <b>🔍 Compared with real photos online</b>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                <span className="pill">{check.comparison.match}</span>
+                <span className="pill">{check.comparison.effect}</span>
+              </div>
+              {check.comparison.reused_old_photo && (
+                <div className="warn" style={{ marginTop: 6 }}>⚠️ This photo may be an older or unrelated photo being reposted.</div>
+              )}
+              <div style={{ marginTop: 6, fontSize: 14 }}>{check.comparison.comparison}</div>
+              {check.comparison.compared?.length > 0 && (
+                <div className="thumbs">
+                  {check.comparison.compared.map((c, i) => (
+                    <a key={i} href={c.url} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
+                      <img src={c.url} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="muted" style={{ marginTop: 6 }}>
+            {check.checks > 1 && (
+              <>
+                {check.agree} of {check.checks} independent checks agreed.{' '}
+              </>
+            )}
+            Warning signs aren't proof. No tool can say for sure if an image is AI-made.
+          </div>
+        </div>
+  );
+}
+
+function PhotoResultBubble({ data, image, onFactCheck }) {
+  const p = data.photo;
+  const color = AI_COLORS[AI_LEVELS.indexOf(p.level)] || '#6f6858';
+  return (
+    <div className="bub wide">
+      <span className="vchip" style={{ background: color }}>{p.level}</span>
+      <p dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600 }}>{p.headline}</p>
+      <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
+      {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>📷 What I see: {p.description}</p>}
+      <PhotoCheck check={p} title="🔎 The details" />
+      <div className="notebook">💡 <b>Check it yourself:</b> {p.tip}</div>
+      {image && onFactCheck && (
+        <div style={{ marginTop: 10 }}>
+          <button className="btn" onClick={onFactCheck}>✅ Now check if the story is true</button>
+        </div>
+      )}
+      <Feedback
+        claims={[`Photo check: ${p.description || 'a photo'}`]}
+        verdict={p.level}
+        realStory={p.explanation}
+        areas={['The photo check', 'The photo comparison', 'Something else']}
+      />
+    </div>
+  );
+}
+
+function ResultBubble({ data, image, onPhotoCheck }) {
   const r = data.result;
   const total = data.sources?.length || 0;
   const vIndex = VERDICTS.indexOf(r.verdict);
@@ -444,57 +548,7 @@ function ResultBubble({ data }) {
         </div>
       )}
 
-      {data.imageCheck && (
-        <div className="mini">
-          <b>🤖 Could this image be AI-made?</b>
-          <Meter labels={AI_LEVELS} colors={AI_COLORS} active={AI_LEVELS.indexOf(data.imageCheck.level)} />
-          {data.imageCheck.plausibility && (
-            <div style={{ marginTop: 10, fontSize: 14 }}>
-              🎯 <b>How believable is this scene?</b> {data.imageCheck.plausibility}
-              {data.imageCheck.plausibility_reason ? `: ${data.imageCheck.plausibility_reason}` : ''}
-            </div>
-          )}
-          {data.imageCheck.signs.length > 0 && (
-            <ul style={{ marginTop: 8, fontSize: 14 }}>
-              {data.imageCheck.signs.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
-          )}
-          {data.imageCheck.comparison && (
-            <div className="compare">
-              <div>
-                <b>🔍 Compared with real photos online</b>
-              </div>
-              <div style={{ marginTop: 4 }}>
-                <span className="pill">{data.imageCheck.comparison.match}</span>
-                <span className="pill">{data.imageCheck.comparison.effect}</span>
-              </div>
-              {data.imageCheck.comparison.reused_old_photo && (
-                <div className="warn" style={{ marginTop: 6 }}>⚠️ This photo may be an older or unrelated photo being reposted.</div>
-              )}
-              <div style={{ marginTop: 6, fontSize: 14 }}>{data.imageCheck.comparison.comparison}</div>
-              {data.imageCheck.comparison.compared?.length > 0 && (
-                <div className="thumbs">
-                  {data.imageCheck.comparison.compared.map((c, i) => (
-                    <a key={i} href={c.url} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
-                      <img src={c.url} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <div className="muted" style={{ marginTop: 6 }}>
-            {data.imageCheck.checks > 1 && (
-              <>
-                {data.imageCheck.agree} of {data.imageCheck.checks} independent checks agreed.{' '}
-              </>
-            )}
-            Warning signs aren't proof. No tool can say for sure if an image is AI-made.
-          </div>
-        </div>
-      )}
+      {data.imageCheck && <PhotoCheck check={data.imageCheck} />}
 
       {total > 0 && (
         <div className="mini">
@@ -666,6 +720,11 @@ function ResultBubble({ data }) {
         realStory={r.real_story}
         areas={['The verdict', ...(data.imageCheck ? ['The photo check'] : []), 'The sources', 'Persuasion tactics', 'Who posted it', 'Something else']}
       />
+      {image && onPhotoCheck && !data.imageCheck && (
+        <div style={{ marginTop: 10 }}>
+          <button className="btn" onClick={onPhotoCheck}>🤖 Also check if this photo is AI</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -755,7 +814,8 @@ export default function Home() {
   const [report, setReport] = useState(null); // the last report, so Vera can answer follow-up questions
   const [askHistory, setAskHistory] = useState([]);
   const [loadingKind, setLoadingKind] = useState('check');
-  const steps = checkingPhoto ? STEPS : STEPS.filter((x) => !x.startsWith('Comparing photos'));
+  const [mode, setMode] = useState('fact'); // fact = "Is this true?", photo = "Is this photo AI?"
+  const steps = loadingKind === 'photo' ? PHOTO_STEPS : STEPS;
   const [showInstall, setShowInstall] = useState(false);
   const [platform, setPlatform] = useState('desktop');
   const [installEvent, setInstallEvent] = useState(null);
@@ -808,13 +868,19 @@ export default function Home() {
     const sharedPhoto = params.get('img');
     if (!q && !sharedPhoto) return;
     window.history.replaceState(null, '', window.location.pathname);
-    send(q, null, sharedPhoto);
+    if (sharedPhoto) {
+      // A photo from the phone: ask which check they want (the photo is deleted after one check)
+      add({ from: 'me', text: (q || '').trim(), image: sharedPhoto });
+      add({ from: 'bot', kind: 'choose', text: q, imageUrl: sharedPhoto });
+    } else {
+      send(q, null, null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Shows a finished report, then either invites questions or asks a clarifying question
-  function presentReport(data) {
-    add({ from: 'bot', kind: 'result', data });
+  function presentReport(data, image = null) {
+    add({ from: 'bot', kind: 'result', data, image });
     add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
     const q = data.result.clarifying_question;
     if (q) add({ from: 'bot', kind: 'text', text: `🤔 Help me dig deeper: ${q} Just type your answer below.` });
@@ -827,12 +893,13 @@ export default function Home() {
     setMessages((m) => [...m, { id: nextId++, ...msg }]);
   }
 
-  async function send(rawText, img, imageUrl = null) {
+  async function send(rawText, img, imageUrl = null, echo = true) {
     const { text, url } = splitInput(rawText);
     if (!text && !url && !img && !imageUrl) return;
     if (loading) return;
 
-    add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
+    setMode('fact');
+    if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
     setDraft('');
     setImage(null);
     setCheckingPhoto(!!(img || imageUrl));
@@ -843,13 +910,43 @@ export default function Home() {
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, url, image: img, imageUrl, audience, language }),
+        body: JSON.stringify({ text, url, image: img, imageUrl, audience, language, mode: 'fact' }),
       });
       const data = await res.json();
       if (data.error || !data.result) {
         add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
       } else {
-        presentReport(data);
+        presentReport(data, img);
+      }
+    } catch {
+      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
+    }
+    setLoading(false);
+  }
+
+  // "Is this photo AI?" mode: only the photo agents run
+  async function sendPhoto(rawText, img, imageUrl = null, echo = true) {
+    if (loading || (!img && !imageUrl)) return;
+    setMode('photo');
+    if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
+    setDraft('');
+    setImage(null);
+    setLoadingKind('photo');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: (rawText || '').trim(), image: img, imageUrl, audience, language }),
+      });
+      const data = await res.json();
+      if (data.error || !data.photo) {
+        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
+      } else {
+        add({ from: 'bot', kind: 'photo', data, image: img, note: (rawText || '').trim() });
+        // Questions after a photo check start fresh, since there is no fact report to ask about
+        setReport(null);
+        setAskHistory([]);
       }
     } catch {
       add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
@@ -895,6 +992,11 @@ export default function Home() {
 
   // A photo always starts a new check; otherwise, after a report, messages are follow-up questions
   function submit() {
+    if (mode === 'photo') {
+      if (image) sendPhoto(draft, image);
+      else fileRef.current?.click();
+      return;
+    }
     if (image || !report) send(draft, image);
     else ask(draft);
   }
@@ -920,7 +1022,8 @@ export default function Home() {
   }
 
   const welcome = WELCOME[language] || WELCOME.en;
-  const canSend = !loading && (draft.trim() || image);
+  const canSend = !loading && (mode === 'photo' ? !!image : draft.trim() || image);
+  const modeNames = MODES[language] || MODES.en;
 
   return (
     <div className="ff">
@@ -987,7 +1090,29 @@ export default function Home() {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <ResultBubble data={m.data} />
+                  <ResultBubble data={m.data} image={m.image} onPhotoCheck={loading ? null : () => sendPhoto('', m.image, null, false)} />
+                </div>
+              );
+            }
+            if (m.kind === 'photo') {
+              return (
+                <div key={m.id} className="msg bot">
+                  <div className="av sm" aria-label="Vera">V</div>
+                  <PhotoResultBubble data={m.data} image={m.image} onFactCheck={loading ? null : () => send(m.note, m.image, null, false)} />
+                </div>
+              );
+            }
+            if (m.kind === 'choose') {
+              return (
+                <div key={m.id} className="msg bot">
+                  <div className="av sm" aria-label="Vera">V</div>
+                  <div className="bub">
+                    Got your photo! What do you want to know?
+                    <div className="choose">
+                      <button className="btn" disabled={loading || m.used} onClick={() => { m.used = true; send(m.text, null, m.imageUrl, false); }}>✅ {modeNames[0]}</button>
+                      <button className="btn" disabled={loading || m.used} onClick={() => { m.used = true; sendPhoto(m.text, null, m.imageUrl, false); }}>🤖 {modeNames[1]}</button>
+                    </div>
+                  </div>
                 </div>
               );
             }
@@ -1045,7 +1170,7 @@ export default function Home() {
               <div className="av sm" aria-label="Vera">V</div>
               <div className="bub">
                 <span className="dots"><i /><i /><i /></span>
-                <span className="typing-step">{loadingKind === 'ask' ? 'Looking into that…' : steps[step]}</span>
+                <span className="typing-step">{loadingKind === 'ask' ? 'Looking into that…' : steps[Math.min(step, steps.length - 1)]}</span>
               </div>
             </div>
           )}
@@ -1062,7 +1187,23 @@ export default function Home() {
               <button onClick={() => setImage(null)} aria-label="Remove photo">×</button>
             </div>
           )}
-          {report && !loading && (
+          <div className="modes" role="tablist" aria-label="What do you want to check?">
+            <button role="tab" aria-selected={mode === 'fact'} className={mode === 'fact' ? 'on' : ''} onClick={() => setMode('fact')}>
+              ✅ {modeNames[0]}
+            </button>
+            <button
+              role="tab"
+              aria-selected={mode === 'photo'}
+              className={mode === 'photo' ? 'on' : ''}
+              onClick={() => {
+                setMode('photo');
+                if (!image) fileRef.current?.click();
+              }}
+            >
+              🤖 {modeNames[1]}
+            </button>
+          </div>
+          {report && !loading && mode === 'fact' && (
             <div className="newrow">
               <span className="muted">Ask about this report, or</span>
               <button className="newsearch" onClick={newSearch}>＋ New search</button>
@@ -1076,7 +1217,7 @@ export default function Home() {
             <textarea
               className="input"
               rows={1}
-              placeholder={report ? 'Ask Vera about this…' : 'Paste a post or link…'}
+              placeholder={mode === 'photo' ? (image ? 'Add a note (optional)…' : 'Tap 📎 to add a photo…') : report ? 'Ask Vera about this…' : 'Paste a post or link…'}
               dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

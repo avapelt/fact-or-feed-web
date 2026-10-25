@@ -19,7 +19,7 @@ const LEANS = [
 const STEPS = [
   {
     title: 'Make a game plan',
-    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. A hurricane rumor switches on emergency mode and puts official sources first; a health claim adds published research; a photo of a real scene gets compared with real photos online.',
+    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. A hurricane rumor switches on emergency mode and puts official sources first; and a health claim adds published research.',
   },
   {
     title: 'Find the claims',
@@ -34,8 +34,8 @@ const STEPS = [
     body: 'At the same time, the Persuasion Analyst looks at how the post tries to convince you: fear, urgency, outrage, vague "experts say" claims, fake authority, or scam signals.',
   },
   {
-    title: 'Check photos',
-    body: 'If you sent a picture, the Image agent checks it for signs of AI three separate times, and the Comparison agent compares it with real photos of the same scene found online.',
+    title: 'Check photos (its own mode)',
+    body: 'Tap “Is this photo AI?” to run only the photo agents. Three Image agents check it for signs of AI at the same time, a Photo Finder figures out what the photo shows and searches for real photos of it, the Comparison agent compares them, and Vera explains the result in plain words. In “Is this true?” mode, a screenshot is only read for its claims.',
   },
   {
     title: 'Label every source',
@@ -329,7 +329,8 @@ export default function HowItWorks() {
         <section>
           <h2>Images & AI</h2>
           <p className="sub">
-            When you send a picture, two agents look at it:
+            Checking a photo is its own mode, separate from fact-checking. Tap <b>Is this photo AI?</b>, add a
+            picture, and only the photo agents run. After either check, one tap runs the other on the same photo.
           </p>
           <div className="callout" style={{ marginTop: 14 }}>
             <b>Warning signs.</b> The Image agent looks for signs of AI or editing (warped hands or text, odd lighting,
@@ -338,7 +339,7 @@ export default function HowItWorks() {
             can't flip it.
           </div>
           <div className="callout">
-            <b>Comparing with real photos.</b> The Comparison agent searches for real photos of the same scene and
+            <b>Comparing with real photos.</b> The Photo Finder figures out what the picture shows, and the Comparison agent searches for real photos of the same scene and
             compares them side by side. This can catch AI images and also <b>old photos being reposted as new</b>, which
             is common during hurricanes.
           </div>
