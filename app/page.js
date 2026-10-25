@@ -548,7 +548,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [image, setImage] = useState(null);
-  const [audience, setAudience] = useState('teen');
+  const [audience, setAudience] = useState('everyone');
   const [language, setLanguage] = useState('auto');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
@@ -685,7 +685,8 @@ export default function Home() {
               📲<span className="lbl"> Get it</span>
             </button>
             <a className="howlink" href="/how-it-works">How we check</a>
-            <select value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Who's asking">
+            <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Your age group" title="Your age group">
+              <option value="everyone">Age</option>
               <option value="teen">Teen</option>
               <option value="adult">Adult</option>
             </select>

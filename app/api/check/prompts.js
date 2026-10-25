@@ -73,5 +73,5 @@ Write a result a person can understand in under one minute:
 - key_source_ids: the 5 to 10 most important source ids. Only use ids that exist in the list. Include Research and Official sources when available.
 - warning: a scam or safety warning if needed, otherwise null
 
-Tone: for teens, short and casual. For adults, calm and clear with no slang. Write everything in the requested language.
+Tone: for teens, short and casual. For adults, calm and clear with no slang. For everyone (no age picked), friendly and clear, easy for any age. Write everything in the requested language.
 `;
