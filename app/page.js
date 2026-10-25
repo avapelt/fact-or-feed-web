@@ -32,8 +32,6 @@ const AI_COLORS = ['#2F8F5B', '#D99A2B', '#C2413B'];
 // iCloud link of the Fact or Feed? Shortcut (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
 const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c96143b1500';
 
-// iCloud link of the "Fact or Feed? (photo)" Shortcut, for sharing screenshots and photos
-const PHOTO_SHORTCUT_URL = '';
 
 const WELCOME = {
   en: "Hey! 👋 I'm Vera, your fact-checking friend. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
@@ -535,85 +533,35 @@ function decodeResult(packed) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function InstallSheet({ platform, installEvent, onClose }) {
-  const [tab, setTab] = useState(platform === 'android' ? 'android' : 'ios');
-
-  async function installAndroid() {
-    if (!installEvent) return;
-    installEvent.prompt();
-    await installEvent.userChoice;
-    onClose();
-  }
-
+function InstallSheet({ onClose }) {
   return (
     <div className="sheet-bg" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>Put it on your phone</h2>
+        <h2>Put it on your iPhone</h2>
         <p className="muted" style={{ marginTop: 0 }}>
           See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
         </p>
 
-        <div className="stabs">
-          <button className={`stab ${tab === 'ios' ? 'on' : ''}`} onClick={() => setTab('ios')}>📱 iPhone</button>
-          <button className={`stab ${tab === 'android' ? 'on' : ''}`} onClick={() => setTab('android')}>🤖 Android</button>
+        <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
+          Add the Fact or Feed? shortcut
+        </a>
+        <div className="step-box">
+          <b>How it works</b>
+          <ol>
+            <li>Tap the button above, then <b>Add Shortcut</b>.</li>
+            <li>On any post, link, article, or screenshot, tap <b>Share</b>.</li>
+            <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
+            <li>You can also open Fact or Feed? and tap <b>📎</b> to add a photo.</li>
+          </ol>
         </div>
-
-        {tab === 'ios' && (
-          <>
-            <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
-              Add the Fact or Feed? shortcut
-            </a>
-            {PHOTO_SHORTCUT_URL && (
-              <a className="bigbtn ghost" href={PHOTO_SHORTCUT_URL} target="_blank" rel="noreferrer" style={{ marginTop: -4 }}>
-                Add the photo &amp; screenshot shortcut
-              </a>
-            )}
-            <div className="step-box">
-              <b>How it works</b>
-              <ol>
-                <li>Tap the button above, then <b>Add Shortcut</b>.</li>
-                <li>On any post, link, or article, tap <b>Share</b>.</li>
-                <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
-                <li>
-                  For a screenshot or photo, share it to <b>Fact or Feed? (photo)</b>, or open Fact or Feed? and tap <b>📎</b>.
-                </li>
-              </ol>
-            </div>
-            <div className="step-box">
-              <b>Add the app to your Home Screen</b>
-              <ol>
-                <li>Open this site in <b>Safari</b>.</li>
-                <li>Tap <b>Share</b> (the square with the arrow).</li>
-                <li>Tap <b>Add to Home Screen</b>.</li>
-              </ol>
-            </div>
-          </>
-        )}
-
-        {tab === 'android' && (
-          <>
-            {installEvent ? (
-              <button className="bigbtn" onClick={installAndroid}>Install Fact or Feed?</button>
-            ) : (
-              <div className="step-box">
-                <b>Install the app</b>
-                <ol>
-                  <li>Open this site in <b>Chrome</b>.</li>
-                  <li>Tap the <b>⋮</b> menu at the top right.</li>
-                  <li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li>
-                </ol>
-              </div>
-            )}
-            <div className="step-box">
-              <b>Then use it from any app</b>
-              <ol>
-                <li>On a post or article, tap <b>Share</b>.</li>
-                <li>Pick <b>Fact or Feed?</b> from the list.</li>
-                <li>It opens and starts checking right away.</li>
-              </ol>
-            </div>
-          </>
-        )}
+        <div className="step-box">
+          <b>Add the app to your Home Screen</b>
+          <ol>
+            <li>Open this site in <b>Safari</b>.</li>
+            <li>Tap <b>Share</b> (the square with the arrow).</li>
+            <li>Tap <b>Add to Home Screen</b>.</li>
+          </ol>
+        </div>
 
         <button className="bigbtn ghost" onClick={onClose}>Close</button>
       </div>
@@ -882,7 +830,7 @@ export default function Home() {
       </footer>
 
       {showInstall && (
-        <InstallSheet platform={platform} installEvent={installEvent} onClose={() => setShowInstall(false)} />
+        <InstallSheet onClose={() => setShowInstall(false)} />
       )}
     </div>
   );
