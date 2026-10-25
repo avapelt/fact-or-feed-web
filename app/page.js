@@ -202,18 +202,20 @@ const CSS = `
 @media (max-width:380px){.top .wordmark{font-size:30px}}
 
 /* Header buttons: all the same height, font, and shape */
-.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap}
+.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap;-webkit-appearance:none;appearance:none;vertical-align:middle;gap:5px}
+.prefs .emo{font-size:14px;line-height:1}
 .prefs .getapp{border:1px solid var(--moss)}
 .prefs .howlink,.prefs select{border:1px solid var(--line);background-color:var(--paper);color:var(--ink)}
 .prefs select{-webkit-appearance:none;appearance:none;padding:0 30px 0 14px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
 .prefs select.age{width:84px}
-.prefs select.lang{width:118px}
+.prefs select.lang{width:128px}
 @media (max-width:540px){
   .prefs{gap:5px}
   .prefs .getapp,.prefs .howlink,.prefs select{height:34px;font-size:12px;padding:0 10px}
   .prefs select{padding:0 24px 0 10px;background-position:right 9px center}
+  .prefs .emo{display:none}
   .prefs select.age{width:64px}
-  .prefs select.lang{width:98px}
+  .prefs select.lang{width:108px}
 }
 @media (max-width:380px){
   .prefs{gap:4px}
@@ -221,7 +223,7 @@ const CSS = `
   .prefs select{padding:0 22px 0 9px;background-position:right 8px center}
   .prefs .howlink,.prefs .getapp{padding:0 8px}
   .prefs select.age{width:58px}
-  .prefs select.lang{width:92px}
+  .prefs select.lang{width:100px}
 }
 `;
 
@@ -748,7 +750,8 @@ export default function Home() {
           </div>
           <div className="prefs">
             <button className="getapp" onClick={() => setShowInstall(true)} aria-label="Get it on your phone">
-              📲<span className="lbl"> Get it</span>
+              <span className="emo">📲</span>
+              <span>Get it</span>
             </button>
             <a className="howlink" href="/how-it-works">How we check</a>
             <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Your age group" title="Your age group">
