@@ -18,24 +18,32 @@ const LEANS = [
 
 const STEPS = [
   {
-    title: 'Read it',
-    body: 'The AI reads what you sent (text, a link, or a screenshot) and pulls out the 1 to 3 most important claims that can actually be checked. Opinions are skipped.',
+    title: 'Read it and plan',
+    body: 'The Planner agent reads what you sent (text, a link, or a screenshot), pulls out the 1 to 3 most important claims that can actually be checked, notes who posted it, and writes its own search plan. Opinions are skipped.',
   },
   {
     title: 'Search widely',
-    body: 'It runs several different searches at once: news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
+    body: 'The Researcher runs 10+ searches at the same time: news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
+  },
+  {
+    title: 'Look for persuasion',
+    body: 'At the same time, the Persuasion Analyst looks at how the post tries to convince you: fear, urgency, outrage, vague "experts say" claims, fake authority, or scam signals.',
+  },
+  {
+    title: 'Check photos',
+    body: 'If you sent a picture, the Image agent checks it for signs of AI three separate times, and the Comparison agent compares it with real photos of the same scene found online.',
   },
   {
     title: 'Label every source',
     body: 'Duplicates are removed, then every source gets a label: Research, Official, Fact-check, a political lean, or Not rated. You can see every label in your result.',
   },
   {
-    title: 'Look for persuasion',
-    body: 'Separately, it looks at how the post tries to convince you: fear, urgency, outrage, vague "experts say" claims, fake authority, or scam signals.',
+    title: 'Weigh the evidence',
+    body: 'The Writer agent compares what the sources say, using the credibility tiers below, and writes a verdict, the real story, who posted it, and what is still unknown. Every key source is linked so you can check it yourself.',
   },
   {
-    title: 'Weigh the evidence',
-    body: 'The AI compares what the sources say, using the credibility tiers below, and writes a verdict, the real story, and what is still unknown. Every key source is linked so you can check it yourself.',
+    title: 'Double-check it',
+    body: 'Before you see anything, a separate Reviewer agent checks the Writer’s answer against the sources, like an editor. If the evidence is weak or a sentence isn’t backed up, it corrects the answer and tells you what it changed.',
   },
 ];
 
@@ -280,6 +288,11 @@ export default function HowItWorks() {
             <b>Dates matter.</b> Old stories are often reposted as if they were new, so dates are checked.
           </div>
           <div className="callout">
+            <b>Who posted it matters.</b> We tell you whether a post comes from a news outlet, an official source, a satire
+            site, a creator, or an anonymous account. We only use names shown in the post, and we never look up a
+            private person.
+          </div>
+          <div className="callout">
             <b>Nothing is made up.</b> The AI may only cite sources from the list it actually found. Every source in
             your result links to the real page.
           </div>
@@ -304,8 +317,21 @@ export default function HowItWorks() {
         <section>
           <h2>Images & AI</h2>
           <p className="sub">
-            When you send a picture, we look for warning signs of AI or editing: warped hands or text, odd lighting,
-            strange reflections, plastic-looking skin. We rate it Low, Medium, or High chance of AI, but{' '}
+            When you send a picture, two agents look at it:
+          </p>
+          <div className="callout" style={{ marginTop: 14 }}>
+            <b>Warning signs.</b> The Image agent looks for signs of AI or editing (warped hands or text, odd lighting,
+            strange reflections, plastic-looking skin) and asks whether the scene is even believable. A cat skydiving is
+            very unlikely. It does this <b>three separate times</b> and goes with the middle answer, so one odd result
+            can't flip it.
+          </div>
+          <div className="callout">
+            <b>Comparing with real photos.</b> The Comparison agent searches for real photos of the same scene and
+            compares them side by side. This can catch AI images and also <b>old photos being reposted as new</b>, which
+            is common during hurricanes.
+          </div>
+          <p className="sub" style={{ marginTop: 14 }}>
+            We rate the result Low, Medium, or High chance of AI, but{' '}
             <b>we never say an image is definitely fake or definitely real</b>. No tool can know that for sure.
           </p>
         </section>
