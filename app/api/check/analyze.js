@@ -141,7 +141,7 @@ export async function analyze(input) {
   });
   mark('Read the content and planned the searches');
 
-  const newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, fast ? 4 : 6);
+  const newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, fast ? 3 : 6);
   const officialQ = reader.official_queries.slice(0, fast ? 1 : 2);
   const researchQ = reader.academic_queries.slice(0, fast ? 1 : 3);
 
@@ -215,7 +215,7 @@ export async function analyze(input) {
 
   // Step 4: Weigh the evidence and write the real story
   const { output: story } = await generateText({
-    model: MODEL,
+    model: quickModel,
     system: `${STORY_PROMPT}\n\nRules you must follow:\n${RULES}`,
     prompt: `Audience: ${audience}
 Language: ${language !== 'auto' ? language : reader.language}
