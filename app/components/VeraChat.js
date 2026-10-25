@@ -87,14 +87,14 @@ const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c961
 
 const WELCOME = {
   facts: {
-    en: "Hey! 👋 I'm Vera. Ask me anything you want the facts on, like \"When is the next Miami election?\" I'll go straight to the original source when that's best, or check 30+ sources, and show you where every piece came from.",
-    es: '¡Hola! 👋 Soy Vera. Pregúntame lo que quieras saber, como "¿Cuándo es la próxima elección en Miami?". Iré directo a la fuente original cuando sea lo mejor, o revisaré más de 30 fuentes, y te mostraré de dónde salió cada dato.',
-    ht: 'Bonjou! 👋 Mwen se Vera. Mande m nenpòt bagay ou vle konnen verite a, tankou "Kilè pwochen eleksyon Miami a ye?". M ap ale dirèkteman nan sous orijinal la lè sa pi bon, oswa tcheke plis pase 30 sous, epi m ap montre w kote chak enfòmasyon soti.',
-    zh: '你好！👋 我是 Vera。问我任何你想了解事实的问题，比如"迈阿密下一次选举是什么时候？"。在最合适的时候我会直接去找原始来源，或者查阅 30 多个来源，并告诉你每条信息出自哪里。',
-    hi: 'नमस्ते! 👋 मैं वेरा हूँ। मुझसे कुछ भी पूछें जिसके तथ्य आप जानना चाहते हैं, जैसे "मियामी का अगला चुनाव कब है?" जब सबसे अच्छा हो, मैं सीधे मूल स्रोत पर जाऊँगी, या 30 से ज़्यादा स्रोत देखूँगी, और बताऊँगी कि हर जानकारी कहाँ से आई।',
-    ar: 'مرحبًا! 👋 أنا فيرا. اسألني عن أي شيء تريد معرفة حقيقته، مثل "متى الانتخابات القادمة في ميامي؟". سأذهب مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو أتحقق من أكثر من 30 مصدرًا، وأريك من أين جاءت كل معلومة.',
-    fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai plus de 30 sources, et je te montrerai d\'où vient chaque info.',
-    bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো ৩০টিরও বেশি সূত্র দেখব, আর দেখাব প্রতিটি তথ্য কোথা থেকে এসেছে।',
+    en: "Hey! 👋 I'm Vera. Ask me anything you want the facts on, like \"When is the next Miami election?\" I'll go straight to the original source when that's best, or check 30+ sources, and show you the sources I used.",
+    es: '¡Hola! 👋 Soy Vera. Pregúntame lo que quieras saber, como "¿Cuándo es la próxima elección en Miami?". Iré directo a la fuente original cuando sea lo mejor, o revisaré más de 30 fuentes, y te mostraré las fuentes que usé.',
+    ht: 'Bonjou! 👋 Mwen se Vera. Mande m nenpòt bagay ou vle konnen verite a, tankou "Kilè pwochen eleksyon Miami a ye?". M ap ale dirèkteman nan sous orijinal la lè sa pi bon, oswa tcheke plis pase 30 sous, epi m ap montre w sous mwen itilize yo.',
+    zh: '你好！👋 我是 Vera。问我任何你想了解事实的问题，比如"迈阿密下一次选举是什么时候？"。在最合适的时候我会直接去找原始来源，或者查阅 30 多个来源，并告诉你我用了哪些来源。',
+    hi: 'नमस्ते! 👋 मैं वेरा हूँ। मुझसे कुछ भी पूछें जिसके तथ्य आप जानना चाहते हैं, जैसे "मियामी का अगला चुनाव कब है?" जब सबसे अच्छा हो, मैं सीधे मूल स्रोत पर जाऊँगी, या 30 से ज़्यादा स्रोत देखूँगी, और आपको वे स्रोत दिखाऊँगी जिनका मैंने इस्तेमाल किया।',
+    ar: 'مرحبًا! 👋 أنا فيرا. اسألني عن أي شيء تريد معرفة حقيقته، مثل "متى الانتخابات القادمة في ميامي؟". سأذهب مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو أتحقق من أكثر من 30 مصدرًا، وأريك المصادر التي استخدمتها.',
+    fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai plus de 30 sources, et je te montrerai les sources que j\'ai utilisées.',
+    bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো ৩০টিরও বেশি সূত্র দেখব, আর দেখাব আমি কোন কোন সূত্র ব্যবহার করেছি।',
   },
   credible: {
     en: "Hey! 👋 I'm Vera. Paste a news link or a post, or add a screenshot with 📎, and I'll show you how credible it is: who published it and how they lean, the persuasion tactics it uses, and whether the facts hold up. Remember: leaning left or right doesn't make something false.",
@@ -387,7 +387,7 @@ function SourceItem({ s }) {
       <Badge category={s.category} />{' '}
       <a href={safeHref(s.url)} target="_blank" rel="noreferrer">{s.title}</a>{' '}
       <span className="muted">
-        ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ''})
+        ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ', date unknown'})
       </span>
     </li>
   );
@@ -570,7 +570,6 @@ function PhotoResultBubble({ data, image, onFactCheck }) {
 }
 
 const LEANS = ['Left', 'Lean Left', 'Center', 'Lean Right', 'Right'];
-const AGREE_COLORS = { 'Sources agree': ['#DDF0E4', '#1F6B43'], 'Sources disagree': ['#FBE3DF', '#9A3328'], 'Only one source': ['#FFF1D6', '#8A5A12'] };
 
 // Where the outlet sits on the left-right spectrum, with a reminder that lean is not accuracy
 function OutletLean({ outlet, note }) {
@@ -719,7 +718,7 @@ function TraceBlock({ data }) {
   );
 }
 
-// 🔎 Find the facts: the answer, the consensus, and where each piece came from
+// 🔎 Find the facts: the answer, the consensus, and the sources it used
 function FactsBubble({ data }) {
   const r = data.result;
   const total = data.sources?.length || 0;
@@ -728,8 +727,10 @@ function FactsBubble({ data }) {
   const originalSrc = original?.source_id != null ? byId(original.source_id) : null;
   return (
     <div className="bub wide">
+      {r.reframed && <div className="muted" dir="auto" style={{ marginBottom: 6 }}>ℹ️ {r.reframed}</div>}
       <div className="answer" dir="auto">{r.answer}</div>
-      <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>
+      {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>}
+      {total === 0 && <div className="warn">⚠️ No sources found. I couldn't find any sources for this, so don't rely on this answer.</div>}
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
         <span className="pill">Consensus: {r.consensus.level}</span>
         {r.consensus.explanation}
@@ -742,6 +743,7 @@ function FactsBubble({ data }) {
           {originalSrc && (
             <div style={{ marginTop: 4 }}>
               <a href={safeHref(originalSrc.url)} target="_blank" rel="noreferrer">{originalSrc.title}</a>
+              {originalSrc.date && <span className="muted"> ({String(originalSrc.date).slice(0, 10)})</span>}
             </div>
           )}
         </div>
@@ -749,33 +751,6 @@ function FactsBubble({ data }) {
 
       <ReviewBox review={data.review} />
       {r.notebook_note && <div className="notebook">📒 <b>From my notebook:</b> {r.notebook_note}</div>}
-
-      {r.breakdown?.length > 0 && (
-        <div className="mini">
-          <b>🧩 Where each piece came from</b>
-          <ul style={{ marginTop: 8, fontSize: 14, listStyle: 'none', padding: 0 }}>
-            {r.breakdown.map((b, i) => {
-              const [bg, fg] = AGREE_COLORS[b.agreement] || ['#eee', '#333'];
-              const srcs = b.source_ids.map(byId).filter(Boolean);
-              return (
-                <li key={i} style={{ marginBottom: 10 }}>
-                  {b.point}
-                  <span className="agree" style={{ background: bg, color: fg }}>{b.agreement}</span>
-                  {srcs.length > 0 && (
-                    <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {srcs.map((s) => (
-                        <a key={s.id} href={safeHref(s.url)} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                          <Badge category={s.original ? 'Official' : s.category} /> {s.domain}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
 
       {total > 0 && (
         <div className="mini">
@@ -1099,15 +1074,21 @@ export default function VeraChat({ tool = 'credible' }) {
       const sig = dot > 0 ? packed.slice(dot + 1) : '';
       add({ from: 'me', text: '📲 Shared from my phone' });
       (async () => {
-        let valid = false;
+        let valid = null; // null = we couldn't check right now
         try {
           const res = await fetch('/api/verify-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ payload, sig }),
           });
-          valid = res.ok && (await res.json()).valid === true;
+          const out = await res.json().catch(() => null);
+          // The server answers valid: false (sometimes with a 400) when a link is fake or broken
+          if (out && typeof out.valid === 'boolean' && (res.ok || res.status === 400 || res.status === 413)) valid = out.valid;
         } catch {}
+        if (valid === null) {
+          add({ from: 'bot', kind: 'error', text: "I couldn't check this link right now. Please try again in a moment." });
+          return;
+        }
         if (!valid) {
           add({ from: 'bot', kind: 'error', text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
           return;

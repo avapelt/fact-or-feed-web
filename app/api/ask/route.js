@@ -6,7 +6,7 @@ import { RULES, FOLLOWUP_PROMPT } from '../check/prompts';
 import { searchWeb } from '../check/analyze';
 import { categorize } from '../check/bias';
 import { loadNotebook, lessonsFor } from '../check/notebook';
-import { dateRule } from '../check/safety';
+import { dateRule, isBlockedSource } from '../check/safety';
 
 export const maxDuration = 120;
 
@@ -48,7 +48,7 @@ export async function POST(req) {
     if (!q) return Response.json({ error: 'Ask a question about the report.' }, { status: 400 });
 
     const notebook = await loadNotebook();
-    const known = (Array.isArray(report?.sources) ? report.sources : []).filter((s) => s && typeof s === 'object').slice(0, 30);
+    const known = (Array.isArray(report?.sources) ? report.sources : []).filter((s) => s && typeof s === 'object' && !isBlockedSource(s.url)).slice(0, 30);
     const extra = [];
     let nextId = known.reduce((m, s) => Math.max(m, Number(s?.id) || 0), 0) + 1;
 
@@ -85,8 +85,8 @@ Answer: ${r.answer}
 Details: ${r.details}
 Consensus: ${r.consensus?.level} - ${r.consensus?.explanation}
 Original source: ${r.original_source ? `${r.original_source.name}: ${r.original_source.what_it_says}` : 'none'}
-Key points: ${(r.breakdown || []).map((b) => `${b.point} (${b.agreement}; sources ${b.source_ids.join(', ')})`).join('; ') || 'none'}
-Still unknown: ${(r.unknown || []).join('; ') || 'none'}
+${r.reframed ? `Note on the question: ${r.reframed}
+` : ''}Still unknown: ${(r.unknown || []).join('; ') || 'none'}
 Double-check: ${report?.review ? `${report.review.approved ? 'approved' : 'corrected'}, confidence ${report.review.confidence}` : 'none'}`;
     } else {
       summary = `The credibility report you sent:

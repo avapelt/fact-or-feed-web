@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, hasEnoughEvidence, forceCantConfirm } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS } from './safety';
 
 
 // Paste your Opus model ID inside the quotes
@@ -38,6 +38,8 @@ const ManagerSchema = z.object({
 });
 
 const ReaderSchema = z.object({
+  user_question: z.string().nullable(),
+  question_type: z.enum(['fact', 'future_outcome', 'opinion']),
   language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
   content_summary: z.string(),
   posted_by: z.string().nullable(),
@@ -122,13 +124,7 @@ const FactsSchema = z.object({
   original_source: z
     .object({ name: z.string(), what_it_says: z.string(), source_id: z.number().nullable() })
     .nullable(),
-  breakdown: z.array(
-    z.object({
-      point: z.string(),
-      source_ids: z.array(z.number()),
-      agreement: z.enum(['Sources agree', 'Sources disagree', 'Only one source']),
-    })
-  ),
+  reframed: z.string().nullable(),
   disputed: z.array(z.string()),
   unknown: z.array(z.string()),
   how_we_figured_it_out: z.array(z.string()),
@@ -155,13 +151,14 @@ export async function searchWeb(query, extra = {}, track = null) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
-      body: JSON.stringify({ query, max_results: 10, ...extra }),
+      // Wikipedia and other wikis are never used as sources
+      body: JSON.stringify({ query, max_results: 10, ...extra, exclude_domains: EXCLUDED_DOMAINS }),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return failed(`status ${res.status}`);
     const data = await res.json();
     if (!data || !Array.isArray(data.results)) return failed('no results list');
-    return data.results.map((r) => ({
+    return data.results.filter((r) => r && r.url && !isBlockedSource(r.url)).map((r) => ({
       title: r.title || r.url,
       url: r.url,
       snippet: (r.content || '').slice(0, 500),
@@ -181,13 +178,13 @@ async function searchPhotos(query) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
-      body: JSON.stringify({ query, max_results: 5, include_images: true, include_image_descriptions: true }),
+      body: JSON.stringify({ query, max_results: 5, include_images: true, include_image_descriptions: true, exclude_domains: EXCLUDED_DOMAINS }),
       signal: AbortSignal.timeout(15000),
     });
     const data = await res.json();
     return (data.images || [])
       .map((img) => (typeof img === 'string' ? { url: img, description: '' } : img))
-      .filter((img) => img && img.url);
+      .filter((img) => img && img.url && !isBlockedSource(img.url));
   } catch {
     return [];
   }
@@ -435,7 +432,7 @@ export async function analyze(input) {
               type: 'text',
               text: `${image ? 'A photo was sent.' : 'No photo was sent.'}\nTool: ${
                 toolName === 'facts'
-                  ? '"Find the facts": the user asked a question and wants the answer with where it came from.'
+                  ? '"Find the facts": the user asked a question and wants the answer to that exact question, with the sources it came from.'
                   : '"Is this news credible?": the user wants to know if this post or article is credible: its bias, its persuasion tactics, and whether the facts are accurate.'
               }`,
             },
@@ -474,29 +471,54 @@ export async function analyze(input) {
   const { output: reader } = await generateText({
     model: quickModel,
     system: READER_PROMPT + lessonsFor(notebook, 'planner') + today,
-    messages: [{ role: 'user', content: [...content, { type: 'text', text: `Manager's game plan: ${JSON.stringify(plan)}` }] }],
+    messages: [
+      {
+        role: 'user',
+        content: [
+          ...content,
+          { type: 'text', text: `Tool: ${toolName === 'facts' ? '"Find the facts" (the user asked a question)' : '"Is this news credible?" (the user sent a post or article)'}\nManager's game plan: ${JSON.stringify(plan)}` },
+        ],
+      },
+    ],
     output: Output.object({ schema: ReaderSchema }),
   });
+  // The user's exact question always comes from what they typed, not the AI's rewrite
+  const userQuestion = toolName === 'facts' ? (text || reader.user_question || reader.content_summary || '').slice(0, 1000) : null;
+  const questionType = toolName === 'facts' ? reader.question_type || 'fact' : 'fact';
+  const futureOutcome = questionType === 'future_outcome';
   mark('Planner found the claims and planned the searches');
 
   // The Manager's plan decides how much each kind of search runs
-  const newsCount = plan.news_search === 'none' ? 0 : plan.news_search === 'light' ? 3 : fast ? 3 : 6;
-  let newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, newsCount);
+  // A question about the future always gets a real news search
+  const newsSearch = futureOutcome && plan.news_search === 'none' ? 'light' : plan.news_search;
+  const newsCount = newsSearch === 'none' ? 0 : newsSearch === 'light' ? 3 : fast ? 3 : 6;
+  let newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, newsCount);
+  // ...and at least one search for the latest dated polls and reporting, with the year in it
+  const year = todayEastern().slice(0, 4);
+  if (futureOutcome && newsQ.length && !newsQ.some((q) => q.includes(year))) {
+    newsQ[newsQ.length - 1] = `${userQuestion.slice(0, 200)} latest polls forecasts ${year}`;
+  }
   const officialQ = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
   const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
   // Going straight to the original source when the Manager decided that's the best move
   const originalQ = plan.go_to_original ? (reader.original_queries || []).slice(0, 2) : [];
-  // Never search nothing at all if there is a checkable claim
-  if (!newsQ.length && !officialQ.length && !researchQ.length && !originalQ.length && reader.claims.length) newsQ = reader.claims.slice(0, 1);
+  // Never search nothing at all if there is a checkable claim or a question
+  // (with no claims, search with the user's own question instead of skipping)
+  const needsCheck = reader.claims.length > 0 || (!!userQuestion && questionType !== 'opinion');
+  if (!newsQ.length && !officialQ.length && !researchQ.length && !originalQ.length && needsCheck) {
+    newsQ = reader.claims.length ? reader.claims.slice(0, 1) : [userQuestion];
+  }
 
   // Recent or breaking news: the first news search only looks at the past week
-  const recent = !!plan.is_recent || reader.topic_type === 'breaking_news';
+  // (the past month for questions about what will happen, like the latest polls)
+  const recent = !!plan.is_recent || reader.topic_type === 'breaking_news' || futureOutcome;
+  const timeRange = futureOutcome && !plan.is_recent && reader.topic_type !== 'breaking_news' ? 'month' : 'week';
 
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
   const searchTrack = { tried: 0, failed: 0 };
   const searchesPromise = Promise.all([
     ...originalQ.map((q) => searchWeb(q, { max_results: 5 }, searchTrack).then((list) => list.map((x) => ({ ...x, original: true })))),
-    ...newsQ.map((q, i) => searchWeb(q, recent && i === 0 ? { topic: 'news', time_range: 'week' } : { topic: 'news' }, searchTrack)),
+    ...newsQ.map((q, i) => searchWeb(q, recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }, searchTrack)),
     ...officialQ.map((q) => searchWeb(q, {}, searchTrack)),
     ...researchQ.map((q) => searchResearch(q)),
   ]).then((results) => {
@@ -578,7 +600,7 @@ export async function analyze(input) {
   for (const list of searchResults) {
     for (const s of list) {
       const key = (s.url || '').split('?')[0].replace(/\/$/, '');
-      if (!key || seen.has(key)) continue;
+      if (!key || seen.has(key) || isBlockedSource(s.url)) continue;
       seen.add(key);
       all.push({ ...s, ...categorize(s), original: !!s.original });
     }
@@ -610,10 +632,11 @@ export async function analyze(input) {
       prompt: `Audience: ${audience}
 Language: ${writerLanguage}
 
-The question: ${text || reader.content_summary}
+The user's exact question (answer THIS, not an easier one): ${userQuestion}
+Question type: ${questionType}${futureOutcome ? ' (about the future: never answer yes or no, never predict or endorse an outcome; report only the latest dated polls, forecasts, and reporting from the sources)' : ''}
 What it's about: ${reader.content_summary}
 
-Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to Miami-Dade Emergency Management and the National Weather Service for safety information.' : ''}
+Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to the National Weather Service, FEMA, and the local emergency management office for the place involved for safety information.' : ''}
 
 Vera's notebook (unverified hints from past checks; re-verify against today's sources, which always win):
 ${notebookForPrompt(notebook)}
@@ -638,7 +661,7 @@ Outlet bias rating: ${outlet ? `${outlet.domain} is rated ${outlet.category}` : 
 Claims:
 ${reader.claims.join('\n')}
 
-Manager's game plan: ${plan.analysis}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to Miami-Dade Emergency Management and the National Weather Service for safety information.' : ''}
+Manager's game plan: ${plan.analysis}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to the National Weather Service, FEMA, and the local emergency management office for the place involved for safety information.' : ''}
 
 Persuasion analysis:
 ${persuasion}
@@ -663,13 +686,13 @@ ${sourceList || 'No sources were found.'}`,
     const { output } = await generateText({
       model: quickModel,
       system: `${REVIEWER_PROMPT}${lessonsFor(notebook, 'reviewer')}${today}\n\nRules the result must follow:\n${RULES}`,
-      prompt: `Claims being checked:
-${reader.claims.join('\n')}
+      prompt: `${toolName === 'facts' ? `The user's exact question: ${userQuestion}\nQuestion type: ${questionType}\n\n` : ''}Claims being checked:
+${reader.claims.join('\n') || 'none'}
 
 Vera's draft result:
 ${JSON.stringify(
   toolName === 'facts'
-    ? { answer: story.answer, details: story.details, consensus: story.consensus, original_source: story.original_source, breakdown: story.breakdown, key_source_ids: story.key_source_ids, note: 'This is an answer to a question, not a verdict on a post. Use corrected_real_story to fix the answer if needed; leave corrected_verdict null.' }
+    ? { answer: story.answer, details: story.details, reframed: story.reframed, consensus: story.consensus, original_source: story.original_source, key_source_ids: story.key_source_ids, note: `This is an answer to a question, not a verdict on a post. Use corrected_real_story to fix the answer if needed; leave corrected_verdict null.${futureOutcome ? ' The question is about the future: the answer must not say yes or no or predict an outcome.' : ''}` }
     : { verdict: story.verdict, real_story: story.real_story, consensus: story.consensus, right_and_wrong: story.right_and_wrong, key_source_ids: story.key_source_ids }
 )}
 
@@ -692,15 +715,20 @@ ${sourceList || 'No sources were found.'}`,
     console.error('Reviewer failed', err);
   }
 
-  // Step 6: Never guess. If search was down or there are too few sources (fewer than 3,
-  // or all from one website), the code itself says "Can't confirm yet", whatever the AI wrote.
-  const enough = hasEnoughEvidence(sources, {
-    claims: reader.claims.length,
-    searchesTried: searchTrack.tried,
+  // Step 6: Never guess. If there are too few sources (fewer than 3, or all from one website),
+  // the code itself says "Can't confirm yet", whatever the AI wrote. A failed search only
+  // matters when it left us short of sources.
+  const problem = evidenceProblem(sources, {
+    claims: needsCheck ? Math.max(1, reader.claims.length) : 0,
     searchesFailed: searchTrack.failed,
   });
-  if (!enough) {
-    story = forceCantConfirm(story, toolName);
+  if (toolName === 'facts') {
+    // Also: questions about the future always open with a fixed sentence and never get a yes or no
+    story = finalizeFacts(story, { questionType, problem });
+  } else if (problem) {
+    story = forceCantConfirm(story, toolName, problem);
+  }
+  if (problem) {
     review = null; // the double-check was about the replaced draft, so don't show it
     mark(`Not enough sources to check this (${sources.length} found, ${searchTrack.failed} of ${searchTrack.tried} searches failed), so I'm not guessing`);
   }
@@ -721,10 +749,12 @@ ${sourceList || 'No sources were found.'}`,
     trace: {
       plan,
       topic: reader.topic_type,
+      question: userQuestion,
+      question_type: questionType,
       claims: reader.claims,
       queries: { original: originalQ, news: newsQ, official: officialQ, research: researchQ },
       recent,
-      search: { ...searchTrack, enough },
+      search: { ...searchTrack, enough: !problem, forced: problem || null },
       timings,
     },
   };

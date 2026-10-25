@@ -181,7 +181,7 @@ export default function HowItWorks() {
           <div className="callout" style={{ marginTop: 14 }}>
             <b>🔎 Find the facts.</b> Ask a question or name a topic. The Manager decides whether the best move is to go
             straight to the original source (like the elections office for an election date) or to search widely
-            across the spectrum. Vera gives the answer, the consensus, and where each piece came from.
+            across the spectrum. Vera gives the answer, the consensus, and shows you the sources it used.
           </div>
           <div className="callout">
             <b>📰 Is this news credible?</b> Paste a link, a post, or a screenshot. You get who published it and how
@@ -373,7 +373,7 @@ export default function HowItWorks() {
           <ul className="rules" style={{ marginTop: 14 }}>
             <li>We stay neutral on politics and never tell you which side to take.</li>
             <li>If something can't be confirmed, we say so.</li>
-            <li>In emergencies we point you to official sources like Miami-Dade Emergency Management and the National Weather Service.</li>
+            <li>In emergencies we point you to official sources like the National Weather Service, FEMA, and your local emergency management office.</li>
             <li>We warn you when a post asks for money or personal information.</li>
             <li>No personal medical, legal, or money advice.</li>
             <li>We never post or send anything for you. The reply we write is just a suggestion.</li>
