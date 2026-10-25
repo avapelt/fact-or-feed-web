@@ -95,17 +95,86 @@ async function searchResearch(query) {
   }
 }
 
-async function readArticle(url) {
+function decodeEntities(text) {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+// Pulls the preview text (title, caption, description) that most sites put in their page tags.
+function readMetaTags(html) {
+  const found = [];
+  const re = /<meta[^>]+(?:property|name)=["'](og:title|og:description|twitter:title|twitter:description|description)["'][^>]*>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const content = m[0].match(/content=["']([^"']*)["']/i);
+    if (content && content[1] && !found.includes(content[1])) found.push(content[1]);
+  }
+  return decodeEntities(found.join('\n'));
+}
+
+async function fetchWithTimeout(url, options = {}, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
   try {
-    const html = await (await fetch(url)).text();
-    return html
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  'Accept-Language': 'en-US,en;q=0.9,es;q=0.8',
+};
+
+async function readArticle(url) {
+  let host = '';
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'This does not look like a valid link.';
+  }
+
+  const parts = [];
+
+  // Read the page itself (this also follows short links like vm.tiktok.com to the real post)
+  let finalUrl = url;
+  try {
+    const res = await fetchWithTimeout(url, { headers: BROWSER_HEADERS });
+    finalUrl = res.url || url;
+    const html = await res.text();
+    const meta = readMetaTags(html);
+    if (meta) parts.push(`Page preview: ${meta}`);
+    const body = html
       .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
-      .slice(0, 12000);
-  } catch {
-    return 'Could not open this link.';
+      .slice(0, 10000);
+    if (body.trim()) parts.push(`Page text: ${body}`);
+  } catch {}
+
+  // TikTok shares each video's caption and creator publicly
+  if (host.endsWith('tiktok.com')) {
+    try {
+      const res = await fetchWithTimeout(`https://www.tiktok.com/oembed?url=${encodeURIComponent(finalUrl)}`);
+      const data = await res.json();
+      if (data.title) parts.unshift(`TikTok caption: ${data.title}`);
+      if (data.author_name) parts.unshift(`TikTok video posted by: ${data.author_name}`);
+    } catch {}
   }
+
+  if (/instagram\.com|tiktok\.com|facebook\.com|x\.com|twitter\.com/.test(host)) {
+    parts.push(
+      'Note: this is a social media link. These sites often hide posts behind a login, so the content above may be incomplete. If you cannot tell what the post says, say so and suggest the user share a screenshot instead.'
+    );
+  }
+
+  return parts.length ? parts.join('\n\n') : 'Could not open this link.';
 }
 
 export async function analyze(input) {
