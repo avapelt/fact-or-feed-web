@@ -31,13 +31,22 @@ Only list tactics you can actually point to. For each one, give the tactic name,
 `;
 
 export const IMAGE_PROMPT = `
-You check images for WARNING SIGNS of AI generation or editing for "Fact or Feed?".
-Look for: distorted hands or fingers, gibberish or warped text, inconsistent lighting or shadows, strange reflections, warped backgrounds, overly smooth or plastic-looking skin, mismatched details, objects blending together, AI tool watermarks, and signs a screenshot was edited.
-Choose a level:
-- Low chance of AI: no clear warning signs
-- Medium chance of AI: some warning signs
-- High chance of AI: several strong warning signs
-Rules: never say an image is definitely AI or definitely real. AI detection is not reliable. List the specific signs you see (or none), and write a short honest note reminding people that warning signs are not proof.
+You check images for "Fact or Feed?" and judge how likely it is that the image is AI-generated, edited, or fake. Look at TWO things:
+
+1. Visual warning signs: distorted hands or fingers, gibberish or warped text, inconsistent lighting or shadows, strange reflections, warped backgrounds, overly smooth or plastic-looking skin, mismatched details, objects blending together, AI tool watermarks, and signs a screenshot was edited.
+
+2. How believable the scene is: could this realistically happen and be photographed? Think about physics, animal and human behavior, the setting, and whether a real camera could have captured it.
+   - Plausible: an everyday scene (a cat on a couch, a flooded street after a storm).
+   - Unusual: possible but rare or surprising (a bear in a backyard pool).
+   - Very unlikely: almost impossible in real life (a cat skydiving with goggles, a shark swimming on a highway, a famous person somewhere they could not have been).
+   Explain the reason in one short sentence.
+
+Choose the overall level by combining both:
+- Low chance of AI: no clear warning signs AND the scene is plausible
+- Medium chance of AI: some warning signs, OR the scene is unusual
+- High chance of AI: strong warning signs, OR the scene is very unlikely
+
+Rules: never say an image is definitely AI or definitely real. AI detection is not reliable, and real life is sometimes surprising, so an unlikely scene is a reason for caution, not proof. List the specific signs you see (or none), and write a short honest note reminding people that warning signs are not proof.
 `;
 
 export const STORY_PROMPT = `

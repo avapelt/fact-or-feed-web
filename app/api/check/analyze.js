@@ -33,6 +33,8 @@ const ReaderSchema = z.object({
 
 const ImageSchema = z.object({
   level: z.enum(['Low chance of AI', 'Medium chance of AI', 'High chance of AI']),
+  plausibility: z.enum(['Plausible', 'Unusual', 'Very unlikely']),
+  plausibility_reason: z.string(),
   signs: z.array(z.string()),
   note: z.string(),
 });
