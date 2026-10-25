@@ -346,6 +346,13 @@ function splitInput(raw) {
   return { text: value, url: match[0] };
 }
 
+function decodeResult(packed) {
+  const b64 = packed.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+  const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 let nextId = 1;
 
 export default function Home() {
@@ -372,6 +379,21 @@ export default function Home() {
   }, [loading]);
 
   useEffect(() => {
+    // A full result handed over from the iPhone popup (no need to check again)
+    const hash = window.location.hash;
+    if (hash.startsWith('#r=')) {
+      window.history.replaceState(null, '', window.location.pathname);
+      try {
+        const data = decodeResult(hash.slice(3));
+        add({ from: 'me', text: '📲 Shared from my phone' });
+        add({ from: 'bot', kind: 'result', data });
+        add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
+      } catch {
+        add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
+      }
+      return;
+    }
+
     const q = new URLSearchParams(window.location.search).get('q');
     if (!q) return;
     window.history.replaceState(null, '', window.location.pathname);
