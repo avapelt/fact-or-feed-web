@@ -178,9 +178,6 @@ const CSS = `
 .input:focus{outline:2px solid var(--moss);border-color:transparent}
 .foot{text-align:center;font-size:10.5px;color:var(--soft);margin-top:8px}
 
-.prefs select.lang{width:108px}
-@media (max-width:540px){.prefs select.lang{width:96px}}
-@media (max-width:400px){.prefs select.lang{width:90px}}
 
 /* Install ("Get it") button + sheet */
 .getapp{border:0;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;background:var(--moss);color:#fff;font-family:var(--sans);cursor:pointer;white-space:nowrap}
@@ -200,9 +197,32 @@ const CSS = `
 .step-box b:first-child{font-weight:700}
 .name,.status{white-space:nowrap}
 
-@media (max-width:540px){.status{display:none}.top .wordmark{font-size:34px}.top-in{gap:8px}.prefs{margin-left:0;width:100%;justify-content:flex-start}.howlink{padding:5px 10px;font-size:11px}.getapp{padding:6px 9px}.prefs{gap:4px}.prefs select{padding:5px 6px !important;font-size:11px !important}}
+@media (max-width:540px){.status{display:none}.top .wordmark{font-size:34px}.top-in{gap:8px}.prefs{margin-left:0;width:100%;justify-content:flex-start}.prefs{gap:6px}}
 @media (max-width:520px){.bub.wide{max-width:100%}}
 @media (max-width:380px){.top .wordmark{font-size:30px}}
+
+/* Header buttons: all the same height, font, and shape */
+.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap}
+.prefs .getapp{border:1px solid var(--moss)}
+.prefs .howlink,.prefs select{border:1px solid var(--line);background-color:var(--paper);color:var(--ink)}
+.prefs select{-webkit-appearance:none;appearance:none;padding:0 30px 0 14px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
+.prefs select.age{width:84px}
+.prefs select.lang{width:118px}
+@media (max-width:540px){
+  .prefs{gap:5px}
+  .prefs .getapp,.prefs .howlink,.prefs select{height:34px;font-size:12px;padding:0 10px}
+  .prefs select{padding:0 24px 0 10px;background-position:right 9px center}
+  .prefs select.age{width:64px}
+  .prefs select.lang{width:98px}
+}
+@media (max-width:380px){
+  .prefs{gap:4px}
+  .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 9px}
+  .prefs select{padding:0 22px 0 9px;background-position:right 8px center}
+  .prefs .howlink,.prefs .getapp{padding:0 8px}
+  .prefs select.age{width:58px}
+  .prefs select.lang{width:92px}
+}
 `;
 
 function Badge({ category }) {
