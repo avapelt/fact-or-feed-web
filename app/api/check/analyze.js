@@ -9,8 +9,20 @@ const MODEL = 'anthropic/claude-sonnet-4.5';
 // Faster model for the simple steps when speed matters (the iPhone popup)
 const FAST_MODEL = 'anthropic/claude-haiku-4.5';
 
+// Language codes the app supports, and the names the AI is told to write in
+const LANGUAGE_NAMES = {
+  en: 'English',
+  es: 'Spanish',
+  ht: 'Haitian Creole',
+  zh: 'Simplified Chinese (Mandarin)',
+  hi: 'Hindi',
+  ar: 'Arabic',
+  fr: 'French',
+  bn: 'Bengali',
+};
+
 const ReaderSchema = z.object({
-  language: z.enum(['en', 'es', 'ht']),
+  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
   content_summary: z.string(),
   claims: z.array(z.string()),
   topic_type: z.enum(['breaking_news', 'science_health', 'politics', 'scam', 'other']),
@@ -189,7 +201,7 @@ export async function analyze(input) {
   const audience = input.audience || 'teen';
   const fast = !!input.fast;
   const quickModel = fast ? FAST_MODEL : MODEL;
-  const language = input.language || 'auto';
+  const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';
 
   const content = [];
   if (text) content.push({ type: 'text', text: `The user was sent this:\n${text}` });
@@ -287,7 +299,7 @@ export async function analyze(input) {
     model: quickModel,
     system: `${STORY_PROMPT}\n\nRules you must follow:\n${RULES}`,
     prompt: `Audience: ${audience}
-Language: ${language !== 'auto' ? language : reader.language}
+Language: ${LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English'}
 
 What the user sent (summary): ${reader.content_summary}
 

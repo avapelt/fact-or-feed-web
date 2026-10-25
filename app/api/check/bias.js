@@ -1,5 +1,5 @@
 // Approximate media bias ratings. Check each one on AllSides.com before your demo and edit if needed.
-const RATINGS = {
+export const RATINGS = {
   'msnbc.com': 'Left',
   'huffpost.com': 'Left',
   'motherjones.com': 'Left',
@@ -40,9 +40,9 @@ const RATINGS = {
   'dailycaller.com': 'Right',
 };
 
-const FACT_CHECKERS = ['politifact.com', 'snopes.com', 'factcheck.org', 'fullfact.org', 'leadstories.com'];
+export const FACT_CHECKERS = ['politifact.com', 'snopes.com', 'factcheck.org', 'fullfact.org', 'leadstories.com'];
 
-const OFFICIAL = [
+export const OFFICIAL = [
   'miamidade.gov', 'dadeschools.net', 'weather.gov', 'noaa.gov', 'fema.gov',
   'floridadisaster.org', 'cdc.gov', 'nih.gov', 'who.int', 'un.org', 'myflorida.com',
 ];
