@@ -91,7 +91,7 @@ const StorySchema = z.object({
   key_source_ids: z.array(z.number()),
 });
 
-async function searchWeb(query, extra = {}) {
+export async function searchWeb(query, extra = {}) {
   try {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -527,7 +527,7 @@ ${sourceList || 'No sources were found.'}`,
     result: story,
     review,
     keySources,
-    sources: sources.map(({ snippet, ...rest }) => rest),
+    sources: sources.map(({ snippet, ...rest }) => ({ ...rest, snippet: (snippet || '').slice(0, 300) })),
     stats,
     imageCheck,
     trace: {

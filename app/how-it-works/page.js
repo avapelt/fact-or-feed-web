@@ -45,6 +45,10 @@ const STEPS = [
     title: 'Double-check it',
     body: 'Before you see anything, a separate Reviewer agent checks the Writer’s answer against the sources, like an editor. If the evidence is weak or a sentence isn’t backed up, it corrects the answer and tells you what it changed.',
   },
+  {
+    title: 'Answer your questions',
+    body: 'After the report, you can ask Vera anything about it. The Follow-up agent answers using the sources already found and cites them. If they don’t cover your question, it decides on its own to search again.',
+  },
 ];
 
 const VERDICTS = [

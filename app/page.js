@@ -135,6 +135,9 @@ const CSS = `
 .compare{margin-top:12px;padding-top:10px;border-top:1px solid #E2DCF2}
 .thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
 .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--line)}
+.newrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.newsearch{border:1px solid var(--moss);background:var(--paper);color:var(--moss);border-radius:999px;height:32px;padding:0 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;white-space:nowrap;-webkit-appearance:none;appearance:none}
+.newsearch:hover{background:var(--moss);color:#fff}
 .mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
 .mini b{font-weight:600}
 .blk{margin-top:16px}
@@ -621,6 +624,9 @@ function InstallSheet({ onClose }) {
   );
 }
 
+const FOLLOWUP_HINT =
+  'Got questions? Ask me anything about this report, like "Why did you say that?" or "Which source is most reliable?" Or tap ＋ New search to check something else.';
+
 let nextId = 1;
 
 export default function Home() {
@@ -633,6 +639,9 @@ export default function Home() {
   const [step, setStep] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
   const [checkingPhoto, setCheckingPhoto] = useState(false);
+  const [report, setReport] = useState(null); // the last report, so Vera can answer follow-up questions
+  const [askHistory, setAskHistory] = useState([]);
+  const [loadingKind, setLoadingKind] = useState('check');
   const steps = checkingPhoto ? STEPS : STEPS.filter((x) => !x.startsWith('Comparing photos'));
   const [showInstall, setShowInstall] = useState(false);
   const [platform, setPlatform] = useState('desktop');
@@ -674,6 +683,8 @@ export default function Home() {
         add({ from: 'me', text: '📲 Shared from my phone' });
         add({ from: 'bot', kind: 'result', data });
         add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
+        add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
+        setReport(data);
       } catch {
         add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
       }
@@ -704,6 +715,7 @@ export default function Home() {
     setDraft('');
     setImage(null);
     setCheckingPhoto(!!(img || imageUrl));
+    setLoadingKind('check');
     setLoading(true);
 
     try {
@@ -718,6 +730,9 @@ export default function Home() {
       } else {
         add({ from: 'bot', kind: 'result', data });
         add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
+        add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
+        setReport(data);
+        setAskHistory([]);
       }
     } catch {
       add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
@@ -732,10 +747,53 @@ export default function Home() {
     e.target.value = '';
   }
 
+  async function ask(rawQuestion) {
+    const question = (rawQuestion || '').trim();
+    if (!question || loading || !report) return;
+    add({ from: 'me', text: question });
+    setDraft('');
+    setLoadingKind('ask');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, report, history: askHistory, audience, language }),
+      });
+      const data = await res.json();
+      if (data.error || !data.answer) {
+        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
+      } else {
+        add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain });
+        setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
+        if (data.newSources?.length) {
+          setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
+        }
+      }
+    } catch {
+      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
+    }
+    setLoading(false);
+  }
+
+  // A photo always starts a new check; otherwise, after a report, messages are follow-up questions
+  function submit() {
+    if (image || !report) send(draft, image);
+    else ask(draft);
+  }
+
+  function newSearch() {
+    setMessages([]);
+    setReport(null);
+    setAskHistory([]);
+    setDraft('');
+    setImage(null);
+  }
+
   function onKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      send(draft, image);
+      submit();
     }
   }
 
@@ -816,6 +874,32 @@ export default function Home() {
                 </div>
               );
             }
+            if (m.kind === 'answer') {
+              return (
+                <div key={m.id} className="msg bot">
+                  <div className="av sm" aria-label="Vera">V</div>
+                  <div className="bub">
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                    {m.searchedAgain && <div className="muted" style={{ marginTop: 6 }}>🔎 I searched again to answer this.</div>}
+                    {m.cited?.length > 0 && (
+                      <ul style={{ marginTop: 8, fontSize: 13 }}>
+                        {m.cited.map((c) => (
+                          <SourceItem key={c.id} s={c} />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            if (m.kind === 'text') {
+              return (
+                <div key={m.id} className="msg bot">
+                  <div className="av sm" aria-label="Vera">V</div>
+                  <div className="bub">{m.text}</div>
+                </div>
+              );
+            }
             if (m.kind === 'reply') {
               return (
                 <div key={m.id} className="msg bot">
@@ -843,7 +927,7 @@ export default function Home() {
               <div className="av sm" aria-label="Vera">V</div>
               <div className="bub">
                 <span className="dots"><i /><i /><i /></span>
-                <span className="typing-step">{steps[step]}</span>
+                <span className="typing-step">{loadingKind === 'ask' ? 'Looking into that…' : steps[step]}</span>
               </div>
             </div>
           )}
@@ -860,6 +944,12 @@ export default function Home() {
               <button onClick={() => setImage(null)} aria-label="Remove photo">×</button>
             </div>
           )}
+          {report && !loading && (
+            <div className="newrow">
+              <span className="muted">Ask about this report, or</span>
+              <button className="newsearch" onClick={newSearch}>＋ New search</button>
+            </div>
+          )}
           <div className="bar">
             <button className="circle attach" onClick={() => fileRef.current?.click()} aria-label="Add a photo">
               📎
@@ -868,13 +958,13 @@ export default function Home() {
             <textarea
               className="input"
               rows={1}
-              placeholder="Paste a post or link…"
+              placeholder={report ? 'Ask Vera about this…' : 'Paste a post or link…'}
               dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
             />
-            <button className="circle send" onClick={() => send(draft, image)} disabled={!canSend} aria-label="Send">
+            <button className="circle send" onClick={submit} disabled={!canSend} aria-label="Send">
               ↑
             </button>
           </div>
