@@ -59,9 +59,17 @@ ${known.map(sourceLine).join('\n\n') || 'none'}`;
       { role: 'user', content: `Audience: ${audience}. Language: ${language}.\nQuestion: ${q}` },
     ];
 
+    // Only one clarifying question per conversation, so it stays easy for the user
+    const alreadyAsked = history.some(
+      (m) => m.role === 'assistant' && (/Clarifying question I asked/.test(m.content || '') || /\?\s*$/.test(String(m.content || '').trim()))
+    );
+    const noMoreQuestions = alreadyAsked
+      ? '\n\nIMPORTANT: A clarifying question was already asked in this conversation. Do NOT ask any more questions. Give your best final answer now.'
+      : '';
+
     const result = await generateText({
       model: MODEL,
-      system: `${FOLLOWUP_PROMPT}${lessonsFor(notebook, 'followup')}\n\nRules you must follow:\n${RULES}`,
+      system: `${FOLLOWUP_PROMPT}${lessonsFor(notebook, 'followup')}${noMoreQuestions}\n\nRules you must follow:\n${RULES}`,
       messages,
       tools: { searchNews },
       stopWhen: stepCountIs(4),
