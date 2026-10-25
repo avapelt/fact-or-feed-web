@@ -296,6 +296,19 @@ function ResultBubble({ data }) {
         {r.consensus.explanation}
       </p>
 
+      {r.who_posted && (
+        <div className="mini">
+          <b>✍️ Who posted this?</b>
+          <div style={{ marginTop: 6 }}>
+            <span className="pill">{r.who_posted.type}</span>
+          </div>
+          <div style={{ marginTop: 6, fontSize: 14 }}>
+            {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">We couldn't tell who made this.</span>}
+          </div>
+          <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>
+        </div>
+      )}
+
       {data.imageCheck && (
         <div className="mini">
           <b>🤖 Could this image be AI-made?</b>

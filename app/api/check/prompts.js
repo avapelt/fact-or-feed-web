@@ -15,6 +15,7 @@ export const RULES = `
 export const READER_PROMPT = `
 You are the Reader and Search Planner for "Fact or Feed?". You receive content someone was sent: text, an article, or an image.
 1. content_summary: describe what the content says and shows. Note the outlet and date if visible.
+   posted_by: who posted or wrote it, exactly as shown in the content (a username or handle, a creator name, an author byline, or an outlet name). If nothing is shown, null. Never guess.
 2. language: the language the content is written in: en (English), es (Spanish), ht (Haitian Creole), zh (Chinese), hi (Hindi), ar (Arabic), fr (French), or bn (Bengali). If it is none of these, use en.
 3. claims: the 1 to 3 most important checkable claims, main claim first. Skip opinions.
 4. topic_type: breaking_news, science_health, politics, scam, or other.
@@ -72,6 +73,10 @@ Write a result a person can understand in under one minute:
 - reply_draft: a short, friendly, non-judgmental message to send to whoever shared it
 - key_source_ids: the 5 to 10 most important source ids. Only use ids that exist in the list. Include Research and Official sources when available.
 - warning: a scam or safety warning if needed, otherwise null
+- who_posted: who made the content and what kind of source they are.
+   - name: the account, creator, author, or outlet exactly as shown in the content or link, or null if it is not shown. Never guess or look up a private person's real identity.
+   - type: News outlet, Official source, Satire site (for example The Onion, The Babylon Bee, The Beaverton, ClickHole, Reductress), Influencer or creator, Personal or anonymous account, Known unreliable site (only if well-documented by fact-checkers or the sources), or Unknown.
+   - trust_note: one short sentence on what this means for trusting the post (for example "This is a satire site, so the post is a joke, not news." or "We couldn't tell who made this, so be extra careful."). Judge the source's track record, never the person's character.
 
 Tone: for teens, short and casual. For adults, calm and clear with no slang. For everyone (no age picked), friendly and clear, easy for any age. Write everything in the requested language.
 `;

@@ -60,6 +60,9 @@ export async function POST(req) {
     lines.push(`${ICONS[r.verdict] || '❔'} ${r.verdict.toUpperCase()}`, '');
     lines.push(r.real_story, '');
     lines.push(`Consensus: ${r.consensus.level}${total ? ` · checked ${total} sources` : ''}`);
+    if (r.who_posted) {
+      lines.push(`✍️ Posted by: ${r.who_posted.name || 'unknown'} (${r.who_posted.type})`);
+    }
     if (data.imageCheck) {
       lines.push(`🤖 Image: ${data.imageCheck.level} (warning signs, not proof)`);
       if (data.imageCheck.plausibility) lines.push(`🎯 Scene: ${data.imageCheck.plausibility}`);

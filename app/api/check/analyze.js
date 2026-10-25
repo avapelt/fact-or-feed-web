@@ -24,6 +24,7 @@ const LANGUAGE_NAMES = {
 const ReaderSchema = z.object({
   language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
   content_summary: z.string(),
+  posted_by: z.string().nullable(),
   claims: z.array(z.string()),
   topic_type: z.enum(['breaking_news', 'science_health', 'politics', 'scam', 'other']),
   news_queries: z.array(z.string()),
@@ -41,6 +42,19 @@ const ImageSchema = z.object({
 
 const StorySchema = z.object({
   warning: z.string().nullable(),
+  who_posted: z.object({
+    name: z.string().nullable(),
+    type: z.enum([
+      'News outlet',
+      'Official source',
+      'Satire site',
+      'Influencer or creator',
+      'Personal or anonymous account',
+      'Known unreliable site',
+      'Unknown',
+    ]),
+    trust_note: z.string(),
+  }),
   verdict: z.enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"]),
   real_story: z.string(),
   consensus: z.object({
@@ -304,6 +318,7 @@ export async function analyze(input) {
 Language: ${LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English'}
 
 What the user sent (summary): ${reader.content_summary}
+Who posted or wrote it (as shown in the content): ${reader.posted_by || 'not shown'}
 
 Claims:
 ${reader.claims.join('\n')}
