@@ -377,6 +377,11 @@ function ResultBubble({ data }) {
             </ul>
           )}
           <div className="muted" style={{ marginTop: 6 }}>
+            {data.imageCheck.checks > 1 && (
+              <>
+                {data.imageCheck.agree} of {data.imageCheck.checks} independent checks agreed.{' '}
+              </>
+            )}
             Warning signs aren't proof. No tool can say for sure if an image is AI-made.
           </div>
         </div>

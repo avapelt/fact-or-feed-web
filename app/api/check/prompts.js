@@ -42,10 +42,16 @@ You check images for "Fact or Feed?" and judge how likely it is that the image i
    - Very unlikely: almost impossible in real life (a cat skydiving with goggles, a shark swimming on a highway, a famous person somewhere they could not have been).
    Explain the reason in one short sentence.
 
-Choose the overall level by combining both:
-- Low chance of AI: no clear warning signs AND the scene is plausible
-- Medium chance of AI: some warning signs, OR the scene is unusual
-- High chance of AI: strong warning signs, OR the scene is very unlikely
+Scoring (be consistent: the same image should always get the same scores):
+- visual_signs_score, from 0 to 10, for the visual warning signs ONLY:
+  0 = no warning signs at all
+  1-2 = tiny oddities that normal photos and compression also have
+  3-4 = one clear warning sign
+  5-6 = several clear warning signs
+  7-8 = strong, obvious signs (warped hands, gibberish text, melted objects)
+  9-10 = unmistakable AI artifacts or an AI tool watermark
+- plausibility: Plausible, Unusual, or Very unlikely, as described above.
+Do not pick an overall level yourself. The app combines your scores.
 
 Rules: never say an image is definitely AI or definitely real. AI detection is not reliable, and real life is sometimes surprising, so an unlikely scene is a reason for caution, not proof. List the specific signs you see (or none), and write a short honest note reminding people that warning signs are not proof.
 `;

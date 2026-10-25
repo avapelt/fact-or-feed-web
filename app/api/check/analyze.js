@@ -32,8 +32,9 @@ const ReaderSchema = z.object({
   academic_queries: z.array(z.string()),
 });
 
+// One image check: the AI scores the evidence; the code turns scores into a level (so it's consistent)
 const ImageSchema = z.object({
-  level: z.enum(['Low chance of AI', 'Medium chance of AI', 'High chance of AI']),
+  visual_signs_score: z.number(),
   plausibility: z.enum(['Plausible', 'Unusual', 'Very unlikely']),
   plausibility_reason: z.string(),
   signs: z.array(z.string()),
@@ -216,6 +217,37 @@ async function readArticle(url) {
   return parts.length ? parts.join('\n\n') : 'Could not open this link.';
 }
 
+const PLAUSIBILITY_SCORE = { Plausible: 0, Unusual: 4, 'Very unlikely': 8 };
+
+function imageScore(run) {
+  const visual = Math.max(0, Math.min(10, Number(run.visual_signs_score) || 0));
+  return Math.max(visual, PLAUSIBILITY_SCORE[run.plausibility] ?? 0);
+}
+
+function levelFor(score) {
+  if (score >= 7) return 'High chance of AI';
+  if (score >= 3) return 'Medium chance of AI';
+  return 'Low chance of AI';
+}
+
+function combineImageChecks(runs) {
+  if (!runs.length) return null;
+  const scored = runs.map((r) => ({ ...r, score: imageScore(r) })).sort((a, b) => a.score - b.score);
+  const middle = scored[Math.floor(scored.length / 2)];
+  const level = levelFor(middle.score);
+  const agree = scored.filter((r) => levelFor(r.score) === level).length;
+  return {
+    level,
+    score: middle.score,
+    plausibility: middle.plausibility,
+    plausibility_reason: middle.plausibility_reason,
+    signs: middle.signs,
+    note: middle.note,
+    checks: scored.length,
+    agree,
+  };
+}
+
 export async function analyze(input) {
   const start = Date.now();
   const timings = [];
@@ -272,23 +304,31 @@ export async function analyze(input) {
     return r.text;
   });
 
+  // Three independent image checks run at the same time; we keep the middle (median) answer,
+  // so one odd answer can't flip the result.
   const imagePromise = image
-    ? generateText({
-        model: MODEL,
-        system: IMAGE_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Check this image for warning signs of AI generation or editing.' },
-              { type: 'image', image },
+    ? Promise.allSettled(
+        [0, 1, 2].map(() =>
+          generateText({
+            model: MODEL,
+            system: IMAGE_PROMPT,
+            temperature: 0.3,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'Check this image for warning signs of AI generation or editing.' },
+                  { type: 'image', image },
+                ],
+              },
             ],
-          },
-        ],
-        output: Output.object({ schema: ImageSchema }),
-      }).then((r) => {
-        mark('Checked the image for AI warning signs');
-        return r.output;
+            output: Output.object({ schema: ImageSchema }),
+          }).then((r) => r.output)
+        )
+      ).then((results) => {
+        const runs = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
+        mark(`Checked the image for AI warning signs (${runs.length} independent checks)`);
+        return combineImageChecks(runs);
       })
     : Promise.resolve(null);
 
