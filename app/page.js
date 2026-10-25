@@ -47,17 +47,17 @@ const WELCOME = {
 };
 
 // Shown in the language menu
-// The 🌐 globe shows people they can tap here to change the language
+// "Language" tells people they can tap here to change it
 const LANGUAGES = [
-  ['auto', '🌐'],
-  ['en', '🌐 EN'],
-  ['es', '🌐 ES'],
-  ['ht', '🌐 HT'],
-  ['zh', '🌐 中文'],
-  ['hi', '🌐 हिन्दी'],
-  ['ar', '🌐 عربي'],
-  ['fr', '🌐 FR'],
-  ['bn', '🌐 বাংলা'],
+  ['auto', 'Language'],
+  ['en', 'English'],
+  ['es', 'Español'],
+  ['ht', 'Kreyòl'],
+  ['zh', '中文'],
+  ['hi', 'हिन्दी'],
+  ['ar', 'عربي'],
+  ['fr', 'Français'],
+  ['bn', 'বাংলা'],
 ];
 
 const CSS = `
@@ -86,8 +86,8 @@ const CSS = `
 .top .wordmark{font-size:40px}
 .top-in{flex-wrap:wrap}
 .prefs{align-items:center}
-.howlink{font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;padding:6px 10px;border-radius:999px;white-space:nowrap}
-.howlink:hover{background:#FFFFFF;color:var(--moss)}
+.howlink{font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;padding:6px 12px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);background:var(--paper);line-height:1.5}
+.howlink:hover{border-color:var(--moss);color:var(--moss)}
 .av{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);font-weight:700;font-size:16px;display:grid;place-items:center;flex-shrink:0}
 .av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end;background:var(--moss);color:#fff}
 .name{font-weight:800;font-size:24px;line-height:1;letter-spacing:-0.03em}
@@ -163,9 +163,9 @@ const CSS = `
 .input:focus{outline:2px solid var(--moss);border-color:transparent}
 .foot{text-align:center;font-size:10.5px;color:var(--soft);margin-top:8px}
 
-.prefs select.lang{width:84px}
-@media (max-width:540px){.prefs select.lang{width:66px}}
-@media (max-width:400px){.prefs select.lang{width:56px}.prefs select{max-width:60px}}
+.prefs select.lang{width:108px}
+@media (max-width:540px){.prefs select.lang{width:96px}}
+@media (max-width:400px){.prefs select.lang{width:90px}}
 
 /* Install ("Get it") button + sheet */
 .getapp{border:0;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;background:var(--moss);color:#fff;font-family:var(--sans);cursor:pointer;white-space:nowrap}
@@ -185,7 +185,7 @@ const CSS = `
 .step-box b:first-child{font-weight:700}
 .name,.status{white-space:nowrap}
 
-@media (max-width:540px){.status{display:none}.top .wordmark{font-size:34px}.top-in{gap:8px}.prefs{margin-left:0;width:100%;justify-content:flex-end}.howlink{margin-right:auto;padding-left:0}.getapp{padding:6px 9px}.prefs{gap:4px}.prefs select{padding:5px 6px !important;font-size:11px !important}}
+@media (max-width:540px){.status{display:none}.top .wordmark{font-size:34px}.top-in{gap:8px}.prefs{margin-left:0;width:100%;justify-content:flex-start}.howlink{padding:5px 10px;font-size:11px}.getapp{padding:6px 9px}.prefs{gap:4px}.prefs select{padding:5px 6px !important;font-size:11px !important}}
 @media (max-width:520px){.bub.wide{max-width:100%}}
 @media (max-width:380px){.top .wordmark{font-size:30px}}
 `;
@@ -681,10 +681,10 @@ export default function Home() {
             </div>
           </div>
           <div className="prefs">
-            <a className="howlink" href="/how-it-works">How we check</a>
             <button className="getapp" onClick={() => setShowInstall(true)} aria-label="Get it on your phone">
               📲<span className="lbl"> Get it</span>
             </button>
+            <a className="howlink" href="/how-it-works">How we check</a>
             <select value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Who's asking">
               <option value="teen">Teen</option>
               <option value="adult">Adult</option>
