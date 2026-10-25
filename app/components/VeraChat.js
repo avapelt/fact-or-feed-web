@@ -371,11 +371,21 @@ function Meter({ labels, colors, active }) {
   );
 }
 
+// Only real web links (http or https) are ever turned into links, never javascript: or data:
+function safeHref(url) {
+  try {
+    const u = new URL(String(url || ''));
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function SourceItem({ s }) {
   return (
     <li style={{ marginBottom: 6 }}>
       <Badge category={s.category} />{' '}
-      <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>{' '}
+      <a href={safeHref(s.url)} target="_blank" rel="noreferrer">{s.title}</a>{' '}
       <span className="muted">
         ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ''})
       </span>
@@ -436,10 +446,10 @@ function Feedback({ claims, verdict, realStory, areas = [] }) {
   if (state === 'done') {
     return (
       <div className="feedback muted" style={{ display: 'block' }}>
-        📒 Thanks! I wrote that in my notebook so I'll do better next time.
+        📒 Thanks! I saved that so it can be reviewed, to help me do better next time.
         {lesson && (
           <div style={{ marginTop: 4 }}>
-            Lesson learned{lesson.job ? ` for ${lesson.job.split(' (')[0]}` : ''}: "{lesson.text.replace(/[.!]+$/, '')}."
+            Suggested lesson{lesson.job ? ` for ${lesson.job.split(' (')[0]}` : ''} (waiting for review): "{lesson.text.replace(/[.!]+$/, '')}."
           </div>
         )}
       </div>
@@ -513,8 +523,8 @@ function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
               {check.comparison.compared?.length > 0 && (
                 <div className="thumbs">
                   {check.comparison.compared.map((c, i) => (
-                    <a key={i} href={c.url} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
-                      <img src={c.url} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
+                    <a key={i} href={safeHref(c.url)} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
+                      <img src={safeHref(c.url)} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
                     </a>
                   ))}
                 </div>
@@ -731,7 +741,7 @@ function FactsBubble({ data }) {
           <div style={{ marginTop: 4 }}>{original.what_it_says}</div>
           {originalSrc && (
             <div style={{ marginTop: 4 }}>
-              <a href={originalSrc.url} target="_blank" rel="noreferrer">{originalSrc.title}</a>
+              <a href={safeHref(originalSrc.url)} target="_blank" rel="noreferrer">{originalSrc.title}</a>
             </div>
           )}
         </div>
@@ -754,7 +764,7 @@ function FactsBubble({ data }) {
                   {srcs.length > 0 && (
                     <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {srcs.map((s) => (
-                        <a key={s.id} href={s.url} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                        <a key={s.id} href={safeHref(s.url)} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                           <Badge category={s.original ? 'Official' : s.category} /> {s.domain}
                         </a>
                       ))}
@@ -1080,15 +1090,34 @@ export default function VeraChat({ tool = 'credible' }) {
   useEffect(() => {
     // A full result handed over from the iPhone popup (no need to check again)
     const hash = window.location.hash;
+    // It is signed by our server, so we check the signature before trusting it.
     if (hash.startsWith('#r=')) {
       window.history.replaceState(null, '', window.location.pathname);
-      try {
-        const data = decodeResult(hash.slice(3));
-        add({ from: 'me', text: '📲 Shared from my phone' });
-        presentReport(data);
-      } catch {
-        add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
-      }
+      const packed = hash.slice(3);
+      const dot = packed.lastIndexOf('.');
+      const payload = dot > 0 ? packed.slice(0, dot) : '';
+      const sig = dot > 0 ? packed.slice(dot + 1) : '';
+      add({ from: 'me', text: '📲 Shared from my phone' });
+      (async () => {
+        let valid = false;
+        try {
+          const res = await fetch('/api/verify-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payload, sig }),
+          });
+          valid = res.ok && (await res.json()).valid === true;
+        } catch {}
+        if (!valid) {
+          add({ from: 'bot', kind: 'error', text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
+          return;
+        }
+        try {
+          presentReport(decodeResult(payload));
+        } catch {
+          add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
+        }
+      })();
       return;
     }
 
