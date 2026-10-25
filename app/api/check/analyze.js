@@ -6,6 +6,8 @@ import { categorize } from './bias';
 
 // Paste your Opus model ID inside the quotes
 const MODEL = 'anthropic/claude-sonnet-4.5';
+// Faster model for the simple steps when speed matters (the iPhone popup)
+const FAST_MODEL = 'anthropic/claude-haiku-4.5';
 
 const ReaderSchema = z.object({
   language: z.enum(['en', 'es', 'ht']),
@@ -116,6 +118,8 @@ export async function analyze(input) {
   const url = (input.url || '').trim();
   const image = input.image || null;
   const audience = input.audience || 'teen';
+  const fast = !!input.fast;
+  const quickModel = fast ? FAST_MODEL : MODEL;
   const language = input.language || 'auto';
 
   const content = [];
@@ -130,16 +134,16 @@ export async function analyze(input) {
 
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
-    model: MODEL,
+    model: quickModel,
     system: READER_PROMPT,
     messages: [{ role: 'user', content }],
     output: Output.object({ schema: ReaderSchema }),
   });
   mark('Read the content and planned the searches');
 
-  const newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, 6);
-  const officialQ = reader.official_queries.slice(0, 2);
-  const researchQ = reader.academic_queries.slice(0, 3);
+  const newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, fast ? 4 : 6);
+  const officialQ = reader.official_queries.slice(0, fast ? 1 : 2);
+  const researchQ = reader.academic_queries.slice(0, fast ? 1 : 3);
 
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
   const searchesPromise = Promise.all([
@@ -152,7 +156,7 @@ export async function analyze(input) {
   });
 
   const persuasionPromise = generateText({
-    model: MODEL,
+    model: quickModel,
     system: PERSUASION_PROMPT,
     prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
   }).then((r) => {

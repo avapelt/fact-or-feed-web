@@ -51,7 +51,7 @@ async function readRequest(req) {
 export async function POST(req) {
   try {
     const input = await readRequest(req);
-    const data = await analyze(input);
+    const data = await analyze({ ...input, fast: true });
     const r = data.result;
     const total = data.sources?.length || 0;
 
