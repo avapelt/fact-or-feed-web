@@ -202,28 +202,39 @@ const CSS = `
 @media (max-width:380px){.top .wordmark{font-size:30px}}
 
 /* Header buttons: all the same height, font, and shape */
-.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap;-webkit-appearance:none;appearance:none;vertical-align:middle;gap:5px}
+.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1.2;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap;-webkit-appearance:none;appearance:none;vertical-align:middle;gap:5px;min-width:0}
 .prefs .emo{font-size:14px;line-height:1}
 .prefs .getapp{border:1px solid var(--moss)}
 .prefs .howlink,.prefs select{border:1px solid var(--line);background-color:var(--paper);color:var(--ink)}
-.prefs select{-webkit-appearance:none;appearance:none;padding:0 30px 0 14px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
-.prefs select.age{width:84px}
-.prefs select.lang{width:128px}
+.prefs select{display:block;text-align:left;padding:0 30px 0 14px;text-overflow:ellipsis;overflow:hidden;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
+.prefs select.age{width:88px}
+.prefs select.lang{width:132px}
+
+/* Phones: the four buttons share one row that always fits the screen width */
 @media (max-width:540px){
-  .prefs{gap:5px}
-  .prefs .getapp,.prefs .howlink,.prefs select{height:34px;font-size:12px;padding:0 10px}
-  .prefs select{padding:0 24px 0 10px;background-position:right 9px center}
+  .prefs{display:grid !important;grid-template-columns:max-content max-content max-content minmax(0,1fr);gap:6px;width:100%}
+  .prefs .getapp,.prefs .howlink,.prefs select{height:36px;font-size:12.5px;padding:0 12px}
+  .prefs select{padding:0 26px 0 12px;background-position:right 10px center}
+  .prefs select.age{width:70px}
+  .prefs select.lang{width:100%}
   .prefs .emo{display:none}
-  .prefs select.age{width:64px}
-  .prefs select.lang{width:108px}
 }
-@media (max-width:380px){
-  .prefs{gap:4px}
-  .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 9px}
-  .prefs select{padding:0 22px 0 9px;background-position:right 8px center}
-  .prefs .howlink,.prefs .getapp{padding:0 8px}
-  .prefs select.age{width:58px}
-  .prefs select.lang{width:100px}
+@media (max-width:430px){
+  .prefs{gap:5px}
+  .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
+  .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
+  .prefs select.age{width:62px}
+}
+@media (max-width:370px){
+  .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 8px}
+  .prefs select{padding:0 20px 0 8px;background-position:right 7px center}
+  .prefs select.age{width:56px}
+}
+@media (max-width:330px){
+  .prefs{gap:5px}
+  .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
+  .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
+  .prefs select.age{width:62px}
 }
 `;
 
