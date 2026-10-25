@@ -66,11 +66,13 @@ const CSS = `
 .hw *{box-sizing:border-box}
 .hw a{color:var(--rust);text-underline-offset:2px}
 .hw-top{background:#EFEAFA;border-bottom:1px solid #DCD4F0;padding:14px 16px}
-.hw-top-in{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.hw-top-in{max-width:820px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.hw-top-in .hw-brand{grid-column:2;text-align:center}
+.hw-top-in .hw-back{grid-column:3;justify-self:end}
 .hw-brand{white-space:nowrap;font-family:var(--sans);font-weight:800;font-size:40px;line-height:1;letter-spacing:-0.035em;color:var(--ink);text-decoration:none}
-.hw-back{margin-left:auto;border:0;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--moss);color:#fff !important;text-decoration:none;white-space:nowrap}
+.hw-back{border:0;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--moss);color:#fff !important;text-decoration:none;white-space:nowrap}
 .hw a.hw-brand{color:var(--ink)}
-@media (max-width:540px){.hw a.hw-brand{font-size:32px}}
+@media (max-width:540px){.hw a.hw-brand{font-size:32px}.hw-top-in{grid-template-columns:1fr;justify-items:center;gap:10px}.hw-top-in .hw-brand,.hw-top-in .hw-back{grid-column:1;justify-self:center}}
 .hw-main{max-width:820px;margin:0 auto;padding:28px 16px 60px}
 .hw h1{font-family:var(--sans);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,7vw,52px);line-height:1.05;margin:0 0 12px}
 .hw h1 em{font-family:var(--caslon);text-transform:none;font-size:.8em}
