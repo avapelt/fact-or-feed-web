@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
+import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor } from './notebook';
 
@@ -30,6 +30,8 @@ const ManagerSchema = z.object({
   persuasion: z.boolean(),
   photo_comparison: z.boolean(),
   emergency_mode: z.boolean(),
+  go_to_original: z.boolean(),
+  original_source: z.string().nullable(),
   reasons: z.array(z.string()),
 });
 
@@ -42,6 +44,7 @@ const ReaderSchema = z.object({
   topic_type: z.enum(['breaking_news', 'science_health', 'politics', 'scam', 'other']),
   news_queries: z.array(z.string()),
   official_queries: z.array(z.string()),
+  original_queries: z.array(z.string()),
   academic_queries: z.array(z.string()),
 });
 
@@ -89,6 +92,7 @@ const StorySchema = z.object({
     ]),
     trust_note: z.string(),
   }),
+  bias_note: z.string().nullable(),
   verdict: z.enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"]),
   real_story: z.string(),
   consensus: z.object({
@@ -103,6 +107,32 @@ const StorySchema = z.object({
   how_we_figured_it_out: z.array(z.string()),
   reply_draft: z.string(),
   key_source_ids: z.array(z.number()),
+});
+
+// "Find the facts" answers a question instead of judging a post
+const FactsSchema = z.object({
+  answer: z.string(),
+  details: z.string(),
+  consensus: z.object({
+    level: z.enum(['Strong', 'Mixed', 'Weak', 'None yet']),
+    explanation: z.string(),
+  }),
+  original_source: z
+    .object({ name: z.string(), what_it_says: z.string(), source_id: z.number().nullable() })
+    .nullable(),
+  breakdown: z.array(
+    z.object({
+      point: z.string(),
+      source_ids: z.array(z.number()),
+      agreement: z.enum(['Sources agree', 'Sources disagree', 'Only one source']),
+    })
+  ),
+  disputed: z.array(z.string()),
+  unknown: z.array(z.string()),
+  how_we_figured_it_out: z.array(z.string()),
+  key_source_ids: z.array(z.number()),
+  clarifying_question: z.string().nullable(),
+  notebook_note: z.string().nullable(),
 });
 
 export async function searchWeb(query, extra = {}) {
@@ -351,13 +381,14 @@ export async function analyze(input) {
   const image = input.image || null;
   const audience = input.audience || 'everyone';
   const fast = !!input.fast;
+  const toolName = input.tool === 'facts' ? 'facts' : 'credible';
   // In "Is this true?" mode the photo is only read for its claims; the AI photo check is its own mode
   const photoChecks = !!image && input.mode !== 'fact';
   const quickModel = fast ? FAST_MODEL : MODEL;
   const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';
 
   const content = [];
-  if (text) content.push({ type: 'text', text: `The user was sent this:\n${text}` });
+  if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${text}` : `The user was sent this:\n${text}` });
   if (url) content.push({ type: 'text', text: `Article from ${url}:\n${await readArticle(url)}` });
   if (image) content.push({ type: 'image', image });
   if (content.length === 0) {
@@ -376,7 +407,22 @@ export async function analyze(input) {
       model: FAST_MODEL,
       system: MANAGER_PROMPT + lessonsFor(notebook, 'manager'),
       temperature: 0.2,
-      messages: [{ role: 'user', content: [...content, { type: 'text', text: image ? 'A photo was sent.' : 'No photo was sent.' }] }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            ...content,
+            {
+              type: 'text',
+              text: `${image ? 'A photo was sent.' : 'No photo was sent.'}\nTool: ${
+                toolName === 'facts'
+                  ? '"Find the facts": the user asked a question and wants the answer with where it came from.'
+                  : '"Is this news credible?": the user wants to know if this post or article is credible: its bias, its persuasion tactics, and whether the facts are accurate.'
+              }`,
+            },
+          ],
+        },
+      ],
       output: Output.object({ schema: ManagerSchema }),
     });
     plan = output;
@@ -392,8 +438,16 @@ export async function analyze(input) {
     persuasion: true,
     photo_comparison: true,
     emergency_mode: false,
+    go_to_original: false,
+    original_source: null,
     reasons: ['Using the full team to be safe.'],
   };
+  // Each tool has its own job: credibility always looks at persuasion; Find the facts answers a question
+  if (toolName === 'credible') plan.persuasion = true;
+  if (toolName === 'facts') {
+    plan.persuasion = false;
+    plan.photo_comparison = false;
+  }
   mark(`Manager made a game plan: ${plan.analysis}`);
 
   // Step 1: Read the content and plan the searches
@@ -410,11 +464,14 @@ export async function analyze(input) {
   let newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, newsCount);
   const officialQ = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
   const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
+  // Going straight to the original source when the Manager decided that's the best move
+  const originalQ = plan.go_to_original ? (reader.original_queries || []).slice(0, 2) : [];
   // Never search nothing at all if there is a checkable claim
-  if (!newsQ.length && !officialQ.length && !researchQ.length && reader.claims.length) newsQ = reader.claims.slice(0, 1);
+  if (!newsQ.length && !officialQ.length && !researchQ.length && !originalQ.length && reader.claims.length) newsQ = reader.claims.slice(0, 1);
 
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
   const searchesPromise = Promise.all([
+    ...originalQ.map((q) => searchWeb(q, { max_results: 5 }).then((list) => list.map((x) => ({ ...x, original: true })))),
     ...newsQ.map((q) => searchWeb(q, { topic: 'news' })),
     ...officialQ.map((q) => searchWeb(q)),
     ...researchQ.map((q) => searchResearch(q)),
@@ -499,7 +556,7 @@ export async function analyze(input) {
       const key = (s.url || '').split('?')[0].replace(/\/$/, '');
       if (!key || seen.has(key)) continue;
       seen.add(key);
-      all.push({ ...s, ...categorize(s) });
+      all.push({ ...s, ...categorize(s), original: !!s.original });
     }
   }
   const sources = all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 }));
@@ -510,22 +567,49 @@ export async function analyze(input) {
   const sourceList = sources
     .map(
       (s) =>
-        `[${s.id}] ${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
+        `[${s.id}] ${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
     )
     .join('\n\n');
 
   const notebookText = notebookForPrompt(notebook);
+  // The outlet that published a pasted link, with its bias rating (bias is not the same as accuracy)
+  const outlet = url ? categorize({ url }) : null;
   mark(`Every agent read Vera's notebook (${notebook.rumors.length} past rumors, ${notebook.lessons.length} lessons)`);
 
-  // Step 4: Weigh the evidence and write the real story
-  const { output: story } = await generateText({
+  // Step 4: Weigh the evidence and write the answer
+  const writerLanguage = LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English';
+  let story;
+  if (toolName === 'facts') {
+    const { output } = await generateText({
+      model: quickModel,
+      system: `${FACTS_PROMPT}${lessonsFor(notebook, 'writer')}\n\nRules you must follow:\n${RULES}`,
+      prompt: `Audience: ${audience}
+Language: ${writerLanguage}
+
+The question: ${text || reader.content_summary}
+What it's about: ${reader.content_summary}
+
+Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to Miami-Dade Emergency Management and the National Weather Service for safety information.' : ''}
+
+Vera's notebook (use only as hints; today's sources always win):
+${notebookForPrompt(notebook)}
+
+Sources found (${sources.length}):
+${sourceList || 'No sources were found.'}`,
+      output: Output.object({ schema: FactsSchema }),
+    });
+    story = output;
+    mark('Weighed the evidence and wrote the answer');
+  } else {
+  const { output } = await generateText({
     model: quickModel,
     system: `${STORY_PROMPT}${lessonsFor(notebook, 'writer')}\n\nRules you must follow:\n${RULES}`,
     prompt: `Audience: ${audience}
-Language: ${LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English'}
+Language: ${writerLanguage}
 
 What the user sent (summary): ${reader.content_summary}
 Who posted or wrote it (as shown in the content): ${reader.posted_by || 'not shown'}
+Outlet bias rating: ${outlet ? `${outlet.domain} is rated ${outlet.category}` : 'not a rated outlet'}
 
 Claims:
 ${reader.claims.join('\n')}
@@ -544,7 +628,10 @@ Sources found (${sources.length}):
 ${sourceList || 'No sources were found.'}`,
     output: Output.object({ schema: StorySchema }),
   });
+  story = output;
   mark('Weighed the evidence and wrote the real story');
+  }
+
 
   // Step 5: A separate Reviewer agent double-checks the draft against the sources
   let review = null;
@@ -556,13 +643,11 @@ ${sourceList || 'No sources were found.'}`,
 ${reader.claims.join('\n')}
 
 Vera's draft result:
-${JSON.stringify({
-  verdict: story.verdict,
-  real_story: story.real_story,
-  consensus: story.consensus,
-  right_and_wrong: story.right_and_wrong,
-  key_source_ids: story.key_source_ids,
-})}
+${JSON.stringify(
+  toolName === 'facts'
+    ? { answer: story.answer, details: story.details, consensus: story.consensus, original_source: story.original_source, breakdown: story.breakdown, key_source_ids: story.key_source_ids, note: 'This is an answer to a question, not a verdict on a post. Use corrected_real_story to fix the answer if needed; leave corrected_verdict null.' }
+    : { verdict: story.verdict, real_story: story.real_story, consensus: story.consensus, right_and_wrong: story.right_and_wrong, key_source_ids: story.key_source_ids }
+)}
 
 Sources she had (${sources.length}):
 ${sourceList || 'No sources were found.'}`,
@@ -570,8 +655,12 @@ ${sourceList || 'No sources were found.'}`,
     });
     review = output;
     if (review && !review.approved) {
-      if (review.corrected_verdict) story.verdict = review.corrected_verdict;
-      if (review.corrected_real_story) story.real_story = review.corrected_real_story;
+      if (toolName === 'facts') {
+        if (review.corrected_real_story) story.answer = review.corrected_real_story;
+      } else {
+        if (review.corrected_verdict) story.verdict = review.corrected_verdict;
+        if (review.corrected_real_story) story.real_story = review.corrected_real_story;
+      }
     }
     mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
   } catch (err) {
@@ -584,6 +673,8 @@ ${sourceList || 'No sources were found.'}`,
     .filter(Boolean);
 
   return {
+    tool: toolName,
+    outlet,
     result: story,
     review,
     keySources,
@@ -594,7 +685,7 @@ ${sourceList || 'No sources were found.'}`,
       plan,
       topic: reader.topic_type,
       claims: reader.claims,
-      queries: { news: newsQ, official: officialQ, research: researchQ },
+      queries: { original: originalQ, news: newsQ, official: officialQ, research: researchQ },
       timings,
     },
   };

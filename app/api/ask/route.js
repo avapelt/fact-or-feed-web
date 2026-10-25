@@ -38,16 +38,43 @@ export async function POST(req) {
     });
 
     const r = report?.result || {};
-    const context = `The report you sent:
-Verdict: ${r.verdict}
+    let summary;
+    if (report?.tool === 'photo') {
+      const p = report.photo || {};
+      summary = `The AI photo check you sent:
+Result: ${p.level} (${p.headline || ''})
+Why: ${p.explanation || ''}
+What the photo shows: ${p.description || 'unknown'}
+How believable the scene is: ${p.plausibility || ''} ${p.plausibility_reason || ''}
+Warning signs: ${(p.signs || []).join('; ') || 'none'}
+Comparison with real photos: ${p.comparison ? `${p.comparison.match}, ${p.comparison.effect}: ${p.comparison.comparison}` : 'none'}
+${p.checks ? `${p.agree} of ${p.checks} checks agreed.` : ''}
+Remember: warning signs are not proof; never say a photo is definitely AI or definitely real.`;
+    } else if (report?.tool === 'facts') {
+      summary = `The answer you sent (Find the facts):
+Question: ${report.question || ''}
+Answer: ${r.answer}
+Details: ${r.details}
+Consensus: ${r.consensus?.level} - ${r.consensus?.explanation}
+Original source: ${r.original_source ? `${r.original_source.name}: ${r.original_source.what_it_says}` : 'none'}
+Key points: ${(r.breakdown || []).map((b) => `${b.point} (${b.agreement}; sources ${b.source_ids.join(', ')})`).join('; ') || 'none'}
+Still unknown: ${(r.unknown || []).join('; ') || 'none'}
+Double-check: ${report?.review ? `${report.review.approved ? 'approved' : 'corrected'}, confidence ${report.review.confidence}` : 'none'}`;
+    } else {
+      summary = `The credibility report you sent:
+Accuracy verdict: ${r.verdict}
 Real story: ${r.real_story}
 Consensus: ${r.consensus?.level} - ${r.consensus?.explanation}
+Outlet and its lean: ${report?.outlet ? `${report.outlet.domain} (${report.outlet.category})` : 'not a rated outlet'}${r.bias_note ? ` - ${r.bias_note}` : ''}
 Who posted it: ${r.who_posted ? `${r.who_posted.name || 'unknown'} (${r.who_posted.type})` : 'not given'}
 What the post got wrong: ${(r.right_and_wrong || []).map((x) => `${x.post_says} -> ${x.actually}`).join('; ') || 'none'}
-Persuasion tactics: ${(r.persuasion_tactics || []).map((t) => t.tactic).join(', ') || 'none'}
+Persuasion tactics: ${(r.persuasion_tactics || []).map((t) => `${t.tactic}: ${t.explanation}`).join('; ') || 'none'}
 Still unknown: ${(r.unknown || []).join('; ') || 'none'}
-Image check: ${report?.imageCheck ? JSON.stringify({ level: report.imageCheck.level, plausibility: report.imageCheck.plausibility, signs: report.imageCheck.signs, comparison: report.imageCheck.comparison?.comparison }) : 'no image'}
+Image check: ${report?.imageCheck ? JSON.stringify({ level: report.imageCheck.level, plausibility: report.imageCheck.plausibility, signs: report.imageCheck.signs }) : 'none'}
 Double-check: ${report?.review ? `${report.review.approved ? 'approved' : 'corrected'}, confidence ${report.review.confidence}` : 'none'}
+Remember: an outlet's lean does not make it true or false.`;
+    }
+    const context = `${summary}
 
 Sources you already have:
 ${known.map(sourceLine).join('\n\n') || 'none'}`;

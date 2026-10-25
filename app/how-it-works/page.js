@@ -19,23 +19,23 @@ const LEANS = [
 const STEPS = [
   {
     title: 'Make a game plan',
-    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. A hurricane rumor switches on emergency mode and puts official sources first; and a health claim adds published research.',
+    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. Sometimes the best move isn’t reading 30 articles but going straight to the original source, so the Manager decides that too. A hurricane rumor switches on emergency mode and puts official sources first; and a health claim adds published research.',
   },
   {
     title: 'Find the claims',
     body: 'Following the game plan, the Planner agent reads what you sent (text, a link, or a screenshot), pulls out the 1 to 3 most important claims that can actually be checked, notes who posted it, and writes its own search plan. Opinions are skipped.',
   },
   {
-    title: 'Search widely',
-    body: 'The Researcher runs 10+ searches at the same time: news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
+    title: 'Go to the source, or search widely',
+    body: 'If the Manager chose the original source, the Researcher goes there first (an agency, election office, school district, or study). Otherwise it runs 10+ searches at the same time: news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
   },
   {
     title: 'Look for persuasion',
-    body: 'At the same time, the Persuasion Analyst looks at how the post tries to convince you: fear, urgency, outrage, vague "experts say" claims, fake authority, or scam signals.',
+    body: 'In Is this news credible?, the Persuasion Analyst looks at how the post tries to convince you: fear, urgency, outrage, vague "experts say" claims, fake authority, or scam signals.',
   },
   {
     title: 'Check photos (its own mode)',
-    body: 'Tap “Is this photo AI?” to run only the photo agents. Three Image agents check it for signs of AI at the same time, a Photo Finder figures out what the photo shows and searches for real photos of it, the Comparison agent compares them, and Vera explains the result in plain words. In “Is this true?” mode, a screenshot is only read for its claims.',
+    body: 'Tap “Is this photo AI?” to run only the photo agents. Three Image agents check it for signs of AI at the same time, a Photo Finder figures out what the photo shows and searches for real photos of it, the Comparison agent compares them, and Vera explains the result in plain words. In the other tools, a screenshot is only read for its claims.',
   },
   {
     title: 'Label every source',
@@ -163,7 +163,7 @@ export default function HowItWorks() {
       <header className="hw-top">
         <div className="hw-top-in">
           <a className="hw-brand" href="/">fact or feed<span style={{ color: 'var(--moss)' }}>?</span></a>
-          <a className="hw-back" href="/">← Check something</a>
+          <a className="hw-back" href="/">← Home</a>
         </div>
       </header>
 
@@ -172,12 +172,31 @@ export default function HowItWorks() {
           How we check
         </h1>
         <p className="lede">
-          Fact or Feed? never trusts a single source. Every check searches news, official sources, and published
-          research, labels each source by how credible it is and which way it leans, and shows you all of it.
+          Fact or Feed? never trusts a single source without showing you why. Every check labels each source by how
+          credible it is and which way it leans, and shows you all of it.
         </p>
 
         <section>
+          <h2>Three tools</h2>
+          <div className="callout" style={{ marginTop: 14 }}>
+            <b>🔎 Find the facts.</b> Ask a question or name a topic. The Manager decides whether the best move is to go
+            straight to the original source (like the elections office for an election date) or to search widely
+            across the spectrum. Vera gives the answer, the consensus, and where each piece came from.
+          </div>
+          <div className="callout">
+            <b>📰 Is this news credible?</b> Paste a link, a post, or a screenshot. You get who published it and how
+            they lean, the persuasion tactics it uses, and a separate check of whether the facts are accurate. Leaning
+            left or right doesn’t make something false.
+          </div>
+          <div className="callout">
+            <b>🤖 Is this photo AI?</b> Add a photo. Only the photo agents run: they look for AI warning signs, judge
+            how believable the scene is, and compare it with real photos online.
+          </div>
+        </section>
+
+        <section>
           <h2>What happens when you hit send</h2>
+          <p className="sub">For Find the facts and Is this news credible?</p>
           <ol className="steps">
             {STEPS.map((s, i) => (
               <li key={s.title}>

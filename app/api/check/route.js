@@ -36,8 +36,8 @@ export async function POST(req) {
       bookkeep({
         model: 'anthropic/claude-haiku-4.5',
         claims: data.trace?.claims,
-        verdict: data.result?.verdict,
-        realStory: data.result?.real_story,
+        verdict: data.result?.verdict || `answer (consensus: ${data.result?.consensus?.level || 'unknown'})`,
+        realStory: data.result?.real_story || data.result?.answer,
         review: data.review,
       })
     );

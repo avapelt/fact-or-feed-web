@@ -1,1062 +1,159 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+// The front page: what Fact or Feed? is, and the three tools to pick from.
+import { useState, useEffect } from 'react';
+import { CSS, LANGUAGES, TOOLS, TOOL_ORDER, toolName, InstallSheet } from './components/VeraChat';
 
-const STEPS = [
-  'The Manager is making a game plan…',
-  'Reading what you sent…',
-  'Searching 30+ news sources across the spectrum…',
-  'Checking official sources and published research…',
-  'Spotting persuasion tactics…',
-  'Weighing the evidence…',
-  'Writing you the real story…',
-  'Having a second AI double-check it…',
-];
-
-const COLORS = {
-  Left: '#3B5BA9',
-  'Lean Left': '#8EA6D9',
-  Center: '#B9B6C2',
-  'Lean Right': '#E3A397',
-  Right: '#B5402F',
-  Official: '#2F8F5B',
-  Research: '#5B3FA6',
-  'Fact-check': '#D99A2B',
-  'Not rated': '#E2E0E6',
+const TEXT = {
+  en: {
+    intro: "Saw something online and not sure it's real? Vera and her team of AI agents check it for you, show you where every fact came from, and never tell you what to think.",
+    pick: 'Pick a tool',
+    open: 'Open',
+    facts: 'Ask a question. Vera goes straight to the original source when that’s best, or checks 30+ sources across the spectrum, and shows where each piece came from.',
+    credible: 'Paste a link, post, or screenshot. See who published it and how they lean, the persuasion tactics it uses, and whether the facts hold up.',
+    photo: 'Add a photo. Vera checks for AI warning signs, how believable the scene is, and compares it with real photos online.',
+    note: 'Leaning left or right doesn’t make something false. We judge the facts separately.',
+  },
+  es: {
+    intro: '¿Viste algo en internet y no sabes si es real? Vera y su equipo de agentes de IA lo revisan por ti, te muestran de dónde salió cada dato y nunca te dicen qué pensar.',
+    pick: 'Elige una herramienta',
+    open: 'Abrir',
+    facts: 'Haz una pregunta. Vera va directo a la fuente original cuando es lo mejor, o revisa más de 30 fuentes de todo el espectro, y te muestra de dónde salió cada dato.',
+    credible: 'Pega un enlace, una publicación o una captura. Mira quién lo publicó y hacia dónde se inclina, las tácticas de persuasión que usa y si los hechos son correctos.',
+    photo: 'Añade una foto. Vera busca señales de IA, revisa qué tan creíble es la escena y la compara con fotos reales en internet.',
+    note: 'Inclinarse a la izquierda o a la derecha no hace que algo sea falso. Los hechos se revisan por separado.',
+  },
+  ht: {
+    intro: 'Ou wè yon bagay sou entènèt epi ou pa sèten si se vre? Vera ak ekip ajan IA li a tcheke l pou ou, montre w kote chak enfòmasyon soti, epi yo pa janm di w sa pou w panse.',
+    pick: 'Chwazi yon zouti',
+    open: 'Louvri',
+    facts: 'Poze yon kesyon. Vera ale dirèkteman nan sous orijinal la lè sa pi bon, oswa tcheke plis pase 30 sous, epi montre w kote chak enfòmasyon soti.',
+    credible: 'Kole yon lyen, yon post, oswa yon foto ekran. Wè kiyès ki pibliye l ak ki bò li panche, taktik pou konvenk moun li itilize, ak si fè yo kòrèk.',
+    photo: 'Ajoute yon foto. Vera chèche siy IA, gade si sèn nan kredib, epi konpare l ak vrè foto sou entènèt.',
+    note: 'Panche agoch oswa adwat pa fè yon bagay fo. Nou jije fè yo apa.',
+  },
+  zh: {
+    intro: '在网上看到一些内容却不确定真假？Vera 和她的 AI 智能体团队会帮你核查，告诉你每条事实出自哪里，而且从不告诉你该怎么想。',
+    pick: '选择一个工具',
+    open: '打开',
+    facts: '提出一个问题。在最合适的时候，Vera 会直接去找原始来源，或者查阅不同立场的 30 多个来源，并告诉你每条信息出自哪里。',
+    credible: '粘贴链接、帖子或截图。看看是谁发布的、立场偏向哪边、用了哪些说服手法，以及事实是否站得住。',
+    photo: '添加一张照片。Vera 会检查 AI 警示迹象、场景是否可信，并与网上的真实照片进行对比。',
+    note: '偏左或偏右并不代表内容是假的。我们会单独判断事实。',
+  },
+  hi: {
+    intro: 'ऑनलाइन कुछ देखा और यकीन नहीं कि सच है? वेरा और उसकी AI एजेंट टीम आपके लिए जाँच करती है, बताती है कि हर तथ्य कहाँ से आया, और कभी नहीं बताती कि आपको क्या सोचना है।',
+    pick: 'एक टूल चुनें',
+    open: 'खोलें',
+    facts: 'कोई सवाल पूछें। जब सबसे अच्छा हो, वेरा सीधे मूल स्रोत पर जाती है, या हर विचारधारा के 30 से ज़्यादा स्रोत देखती है, और बताती है कि हर जानकारी कहाँ से आई।',
+    credible: 'कोई लिंक, पोस्ट या स्क्रीनशॉट पेस्ट करें। देखें किसने छापा और उसका झुकाव किस ओर है, उसमें कौन-सी मनाने की तरकीबें हैं, और क्या तथ्य सही हैं।',
+    photo: 'एक फ़ोटो जोड़ें। वेरा AI के चेतावनी संकेत देखती है, दृश्य कितना विश्वसनीय है, और उसकी तुलना ऑनलाइन असली फ़ोटो से करती है।',
+    note: 'बाएँ या दाएँ झुकाव से कोई चीज़ झूठी नहीं हो जाती। हम तथ्यों को अलग से जाँचते हैं।',
+  },
+  ar: {
+    intro: 'رأيت شيئًا على الإنترنت ولست متأكدًا من صحته؟ فيرا وفريقها من وكلاء الذكاء الاصطناعي يتحققون منه لك، ويُظهرون لك مصدر كل معلومة، ولا يخبرونك أبدًا بما يجب أن تفكر فيه.',
+    pick: 'اختر أداة',
+    open: 'افتح',
+    facts: 'اطرح سؤالًا. تذهب فيرا مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو تتحقق من أكثر من 30 مصدرًا من مختلف التوجهات، وتُظهر لك مصدر كل معلومة.',
+    credible: 'الصق رابطًا أو منشورًا أو لقطة شاشة. اعرف من نشره وإلى أي اتجاه يميل، وأساليب الإقناع التي يستخدمها، وهل الحقائق صحيحة.',
+    photo: 'أضف صورة. تبحث فيرا عن علامات الذكاء الاصطناعي، ومدى واقعية المشهد، وتقارنها بصور حقيقية على الإنترنت.',
+    note: 'الميل إلى اليسار أو اليمين لا يجعل الخبر كاذبًا. نحكم على الحقائق بشكل منفصل.',
+  },
+  fr: {
+    intro: 'Tu as vu quelque chose en ligne et tu n’es pas sûr que ce soit vrai ? Vera et son équipe d’agents IA vérifient pour toi, te montrent d’où vient chaque info, et ne te disent jamais quoi penser.',
+    pick: 'Choisis un outil',
+    open: 'Ouvrir',
+    facts: 'Pose une question. Vera va directement à la source d’origine quand c’est le mieux, ou vérifie plus de 30 sources de tout le spectre, et te montre d’où vient chaque info.',
+    credible: 'Colle un lien, une publication ou une capture. Vois qui l’a publié et de quel côté il penche, les techniques de persuasion utilisées, et si les faits tiennent.',
+    photo: 'Ajoute une photo. Vera cherche les signes d’IA, vérifie si la scène est crédible et la compare avec de vraies photos en ligne.',
+    note: 'Pencher à gauche ou à droite ne rend pas une info fausse. Nous jugeons les faits séparément.',
+  },
+  bn: {
+    intro: 'অনলাইনে কিছু দেখেছ আর নিশ্চিত নও সেটা সত্যি কি না? ভেরা আর তার AI এজেন্টদের দল তোমার হয়ে যাচাই করে, দেখায় প্রতিটি তথ্য কোথা থেকে এসেছে, আর কখনো বলে না তোমার কী ভাবা উচিত।',
+    pick: 'একটা টুল বেছে নাও',
+    open: 'খোলো',
+    facts: 'একটা প্রশ্ন করো। দরকার হলে ভেরা সরাসরি মূল সূত্রে যায়, নয়তো সব মতের ৩০টিরও বেশি সূত্র দেখে, আর দেখায় প্রতিটি তথ্য কোথা থেকে এসেছে।',
+    credible: 'একটা লিংক, পোস্ট বা স্ক্রিনশট পেস্ট করো। দেখো কে প্রকাশ করেছে ও তাদের ঝোঁক কোন দিকে, কী প্রভাবিত করার কৌশল আছে, আর তথ্যগুলো ঠিক কি না।',
+    photo: 'একটা ছবি দাও। ভেরা AI-এর সতর্কতার চিহ্ন খোঁজে, দৃশ্যটা কতটা বিশ্বাসযোগ্য দেখে, আর অনলাইনের আসল ছবির সাথে তুলনা করে।',
+    note: 'বাম বা ডান দিকে ঝোঁক থাকলেই কিছু মিথ্যা হয়ে যায় না। আমরা তথ্য আলাদাভাবে যাচাই করি।',
+  },
 };
-const ORDER = Object.keys(COLORS);
-const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
 
-const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
-const VERDICT_COLORS = ['#2F8F5B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
-const PHOTO_STEPS = [
-  'Three photo agents are looking for AI warning signs…',
-  'Figuring out what the photo shows…',
-  'Searching for real photos of the same thing…',
-  'Comparing your photo with the real ones…',
-  'Writing up what I found…',
-];
-
-// The two modes, in each language: [fact check, photo check]
-const MODES = {
-  en: ['Is this true?', 'Is this photo AI?'],
-  es: ['¿Es verdad?', '¿Esta foto es IA?'],
-  ht: ['Èske se vre?', 'Èske foto sa a se IA?'],
-  zh: ['这是真的吗？', '这张照片是AI做的吗？'],
-  hi: ['क्या यह सच है?', 'क्या यह फ़ोटो AI है?'],
-  ar: ['هل هذا صحيح؟', 'هل هذه الصورة ذكاء اصطناعي؟'],
-  fr: ['Est-ce vrai ?', 'Cette photo est-elle IA ?'],
-  bn: ['এটা কি সত্যি?', 'এই ছবি কি AI?'],
-};
-
-const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
-const AI_COLORS = ['#2F8F5B', '#D99A2B', '#C2413B'];
-
-// iCloud link of the Fact or Feed? Shortcut (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
-const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c96143b1500';
-
-
-const WELCOME = {
-  en: "Hey! 👋 I'm Vera, your fact-checking friend. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real. Pick ✅ Is this true? to fact-check it, or 🤖 Is this photo AI? to check a photo.",
-  es: '¡Hola! 👋 Soy Vera, tu amiga que verifica los hechos. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real de verdad. Elige ✅ ¿Es verdad? para verificarlo, o 🤖 ¿Esta foto es IA? para revisar una foto.',
-  ht: 'Bonjou! 👋 Mwen se Vera, zanmi w ki verifye enfòmasyon. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre. Chwazi ✅ Èske se vre? pou verifye l, oswa 🤖 Èske foto sa a se IA? pou tcheke yon foto.',
-  zh: '你好！👋 我是 Vera，你的事实核查好朋友。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。 选择 ✅ 这是真的吗？来核查事实，或选择 🤖 这张照片是AI做的吗？来检查照片。',
-  hi: 'नमस्ते! 👋 मैं वेरा हूँ, आपकी फ़ैक्ट-चेक करने वाली दोस्त। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगी कि असल में क्या सच है। तथ्य जाँचने के लिए ✅ क्या यह सच है? चुनें, या फ़ोटो जाँचने के लिए 🤖 क्या यह फ़ोटो AI है? चुनें।',
-  ar: 'مرحبًا! 👋 أنا فيرا، صديقتك في التحقق من الحقائق. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا. اختر ✅ هل هذا صحيح؟ للتحقق من المعلومة، أو 🤖 هل هذه الصورة ذكاء اصطناعي؟ لفحص صورة.',
-  fr: "Salut ! 👋 Je suis Vera, ton amie qui vérifie les infos. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai. Choisis ✅ Est-ce vrai ? pour vérifier une info, ou 🤖 Cette photo est-elle IA ? pour vérifier une photo.",
-  bn: 'হ্যালো! 👋 আমি ভেরা, তোমার ফ্যাক্ট-চেক করার বন্ধু। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি। তথ্য যাচাই করতে ✅ এটা কি সত্যি? বেছে নাও, অথবা ছবি যাচাই করতে 🤖 এই ছবি কি AI? বেছে নাও।',
-};
-
-// Shown in the language menu
-// "Language" tells people they can tap here to change it
-const LANGUAGES = [
-  ['auto', 'Language'],
-  ['en', 'English'],
-  ['es', 'Español'],
-  ['ht', 'Kreyòl'],
-  ['zh', '中文'],
-  ['hi', 'हिन्दी'],
-  ['ar', 'عربي'],
-  ['fr', 'Français'],
-  ['bn', 'বাংলা'],
-];
-
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
-/* Matches the Fact or Feed? deck: warm white, near-black ink, one purple accent, Poppins */
-.ff{
-  --cream:#FBFAF6; --paper:#FFFFFF; --sand:#F4F1FA; --line:#E7E4EC; --ink:#1D1D1F; --muted:#6B6A73;
-  --moss:#5B3FA6; --moss-dk:#4A3189; --sage:#E9E4F5; --olive:#5B3FA6; --rust:#1D1D1F;
-  --chartreuse:#CFC6EA; --lavender:#E9E4F5; --soft:#8C8A94;
-  --serif:'Poppins',ui-sans-serif,system-ui,sans-serif; --caslon:'Poppins',ui-sans-serif,system-ui,sans-serif;
-  --sans:'Poppins',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  height:100dvh;display:flex;flex-direction:column;background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.55
-}
-.ff *{box-sizing:border-box}
-
-/* Logo: lowercase wordmark with a purple question mark */
-.wordmark{font-family:var(--sans);font-weight:800;letter-spacing:-0.035em;line-height:1;color:var(--ink);white-space:nowrap}
-.wordmark span{color:var(--moss)}
-.kicker{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;color:var(--ink)}
-.kicker i{width:7px;height:7px;border-radius:50%;background:var(--moss);display:inline-block;flex-shrink:0}
-
-/* Header */
-.top{background:#EFEAFA;border-bottom:1px solid #DCD4F0;padding:14px 16px}
-.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
-.top .wordmark{font-size:40px}
-.top-in{flex-wrap:wrap}
-.prefs{align-items:center}
-.howlink{font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;padding:6px 12px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);background:var(--paper);line-height:1.5}
-.howlink:hover{border-color:var(--moss);color:var(--moss)}
-.av{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);font-weight:700;font-size:16px;display:grid;place-items:center;flex-shrink:0}
-.av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end;background:var(--moss);color:#fff}
-.name{font-weight:800;font-size:24px;line-height:1;letter-spacing:-0.03em}
-.status{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-top:6px;font-weight:600;display:flex;align-items:center;gap:6px}
-.status i{width:6px;height:6px;border-radius:50%;background:var(--moss);display:inline-block}
-.prefs{margin-left:auto;display:flex;gap:6px}
-.prefs select{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:500;background:var(--paper);color:var(--ink);font-family:var(--sans);cursor:pointer}
-
-/* Scrolling ticker (quiet) */
-.ticker{overflow:hidden;white-space:nowrap;border-bottom:1px solid var(--line);background:var(--cream);padding:6px 0}
-.ticker-track{display:inline-block;animation:tick 40s linear infinite;font-size:10.5px;letter-spacing:.22em;font-weight:600;color:var(--soft)}
-.ticker-track em{font-style:normal;color:var(--moss)}
-@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-/* Front page logo */
-.hero{padding:28px 4px 18px}
-.hero .wordmark{font-size:clamp(52px,13vw,96px)}
-.hero .kicker{margin:18px 0 0 6px}
-.hero .rule{height:1px;background:var(--line);width:min(320px,70%);margin:18px 0 0 6px}
-
-/* Thread */
-.thread{flex:1;overflow-y:auto;padding:20px 16px}
-.thread-in{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-.msg{display:flex;gap:8px;align-items:flex-end}
-.msg.me{justify-content:flex-end}
-.bub{max-width:80%;padding:12px 16px;border-radius:18px;background:var(--paper);border:1px solid var(--line);overflow-wrap:anywhere}
-.bot .bub{border-bottom-left-radius:6px}
-.me .bub{background:var(--moss);color:#fff;border:0;border-bottom-right-radius:6px}
-.me .bub a{color:#fff}
-.bub.wide{max-width:88%;width:100%}
-.bub img.shot{max-width:220px;max-height:260px;border-radius:12px;display:block}
-
-.dots{display:inline-flex;gap:4px;margin-right:8px;vertical-align:middle}
-.dots i{width:7px;height:7px;border-radius:50%;background:var(--moss);animation:b 1.2s infinite}
-.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
-@keyframes b{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
-.typing-step{font-size:14px;color:var(--muted)}
-
-/* Result pieces */
-.vchip{display:inline-block;color:#fff;font-weight:700;font-size:18px;letter-spacing:-0.01em;padding:4px 14px;border-radius:999px}
-.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;background:var(--sage);color:var(--moss);margin-right:6px}
-.muted{color:var(--muted);font-size:13px}
-.warn{background:#FFF6E5;border-left:3px solid #E0A030;padding:8px 12px;margin:8px 0;border-radius:6px}
-.review{margin-top:10px;font-size:13.5px;border-left:3px solid var(--moss);padding:6px 0 6px 12px}
-.compare{margin-top:12px;padding-top:10px;border-top:1px solid #E2DCF2}
-.thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
-.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--line)}
-.modes{display:flex;gap:6px;margin-bottom:8px}
-.modes button{flex:1;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
-.modes button.on{background:#5B3FA6;border-color:#5B3FA6;color:#fff}
-.choose{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.btn:disabled{opacity:.5;cursor:default}
-.newrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.newsearch{border:1px solid var(--moss);background:var(--paper);color:var(--moss);border-radius:999px;height:32px;padding:0 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;white-space:nowrap;-webkit-appearance:none;appearance:none}
-.newsearch:hover{background:var(--moss);color:#fff}
-.notebook{margin-top:10px;font-size:13.5px;background:#FFF8E6;border-radius:10px;padding:8px 12px}
-.feedback{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
-.feedback .btn{padding:5px 12px}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:var(--sans);cursor:pointer;color:var(--ink)}
-.chip.on{background:var(--moss);border-color:var(--moss);color:#fff}
-.mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
-.mini b{font-weight:600}
-.blk{margin-top:16px}
-.blk h4{margin:0 0 6px;font-size:15px;font-weight:600}
-.more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
-.more summary{cursor:pointer;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--moss);list-style:none}
-.more summary::-webkit-details-marker{display:none}
-.sub{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
-.sub>summary{cursor:pointer;list-style:none;padding:10px 14px;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
-.sub>summary::after{content:'›';margin-left:auto;color:var(--moss);font-size:18px;transition:transform .15s}
-.sub[open]>summary::after{transform:rotate(90deg)}
-.sub summary::-webkit-details-marker,.group summary::-webkit-details-marker{display:none}
-.sub-in{padding:4px 14px 12px}
-.sub-label{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:6px 0 6px}
-.count{font-size:12px;font-weight:600;color:var(--muted);background:var(--sand);border-radius:999px;padding:1px 8px}
-.group{border-top:1px solid var(--line);padding:8px 0}
-.group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
-.group>summary::after{content:'›';margin-left:auto;color:var(--soft);transition:transform .15s}
-.group[open]>summary::after{transform:rotate(90deg)}
-.more .sub>summary,.more .group>summary{text-transform:none;letter-spacing:normal;color:var(--ink)}
-.more .sub>summary{font-size:15px;font-weight:600}
-.more .group>summary{font-size:13px;font-weight:500}
-.ff ul,.ff ol{padding-left:20px;margin:0}
-.ff li{margin:3px 0}
-.bot a{color:var(--moss);text-underline-offset:2px}
-.replybox{background:var(--lavender);padding:10px 14px;margin:8px 0;border-radius:12px}
-.btn{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink);font-family:var(--sans)}
-.btn:hover{border-color:var(--moss);color:var(--moss)}
-.err .bub{background:#FBECEC;border-color:#F0C9C9;color:#8A2B2B}
-
-/* Composer */
-.composer{background:var(--cream);border-top:1px solid var(--line);padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
-.comp-in{max-width:760px;margin:0 auto}
-.preview{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.preview img{height:56px;border-radius:8px}
-.preview button{border:0;background:var(--sand);border-radius:999px;width:24px;height:24px;cursor:pointer}
-.bar{display:flex;gap:8px;align-items:flex-end}
-.circle{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:20px;cursor:pointer}
-.attach{border:1px solid var(--line);background:var(--paper)}
-.send{border:0;color:#fff;background:var(--moss)}
-.send:hover:not(:disabled){background:var(--moss-dk)}
-.send:disabled{opacity:.3;cursor:not-allowed}
-.input{flex:1;border:1px solid var(--line);border-radius:22px;padding:11px 16px;font-size:16px;resize:none;max-height:140px;font-family:inherit;background:var(--paper);color:var(--ink)}
-.input::placeholder{color:var(--soft)}
-.input:focus{outline:2px solid var(--moss);border-color:transparent}
-.foot{text-align:center;font-size:10.5px;color:var(--soft);margin-top:8px}
-
-
-/* Install ("Get it") button + sheet */
-.getapp{border:0;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;background:var(--moss);color:#fff;font-family:var(--sans);cursor:pointer;white-space:nowrap}
-.getapp:hover{background:var(--moss-dk)}
-.sheet-bg{position:fixed;inset:0;background:rgba(29,29,31,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-.sheet{background:var(--cream);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:24px 20px calc(22px + env(safe-area-inset-bottom));max-height:90dvh;overflow-y:auto}
-.sheet h2{margin:0 0 6px;font-weight:800;font-size:26px;letter-spacing:-0.03em}
-.sheet ol{padding-left:22px}
-.sheet li{margin:8px 0}
-.stabs{display:flex;background:var(--sand);border-radius:999px;padding:4px}
-.stab{flex:1;border:0;padding:8px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:var(--sans)}
-.stab.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.bigbtn{display:block;text-align:center;text-decoration:none;border:0;width:100%;padding:14px;border-radius:999px;font-size:15px;font-weight:600;color:#fff;background:var(--moss);cursor:pointer;margin:14px 0;font-family:var(--sans)}
-.bigbtn:hover{background:var(--moss-dk)}
-.bigbtn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
-.step-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:12px}
-.step-box b:first-child{font-weight:700}
-.name,.status{white-space:nowrap}
-
-@media (max-width:540px){.status{display:none}.top .wordmark{font-size:34px}.top-in{gap:8px}.prefs{margin-left:0;width:100%;justify-content:flex-start}.prefs{gap:6px}}
-@media (max-width:520px){.bub.wide{max-width:100%}}
-@media (max-width:380px){.top .wordmark{font-size:30px}}
-
-/* Header buttons: all the same height, font, and shape */
-.prefs .getapp,.prefs .howlink,.prefs select{height:36px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;font-size:13px;font-weight:600;line-height:1.2;border-radius:999px;font-family:var(--sans);margin:0;white-space:nowrap;-webkit-appearance:none;appearance:none;vertical-align:middle;gap:5px;min-width:0}
-.prefs .emo{font-size:14px;line-height:1}
-.prefs .getapp{border:1px solid var(--moss)}
-.prefs .howlink,.prefs select{border:1px solid var(--line);background-color:var(--paper);color:var(--ink)}
-.prefs select{display:block;text-align:left;padding:0 30px 0 14px;text-overflow:ellipsis;overflow:hidden;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231D1D1F' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px 6px}
-.prefs select.age{width:96px}
-.prefs select.lang{width:132px}
-
-/* Phones: the four buttons share one row that always fits the screen width */
-@media (max-width:540px){
-  .prefs{display:grid !important;grid-template-columns:max-content max-content max-content minmax(0,1fr);gap:6px;width:100%}
-  .prefs .getapp,.prefs .howlink,.prefs select{height:36px;font-size:12.5px;padding:0 12px}
-  .prefs select{padding:0 26px 0 12px;background-position:right 10px center}
-  .prefs select.age{width:92px}
-  .prefs select.lang{width:100%}
-  .prefs .emo{display:none}
-}
-@media (max-width:430px){
-  .prefs{gap:5px}
-  .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
-  .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
-  .prefs select.age{width:78px}
-}
-@media (max-width:370px){
-  .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 8px}
-  .prefs select{padding:0 20px 0 8px;background-position:right 7px center}
-  .prefs select.age{width:64px}
-}
-@media (max-width:330px){
-  .prefs{gap:5px}
-  .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 10px}
-  .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
-  .prefs select.age{width:74px}
-}
+const HOME_CSS = `
+.home{min-height:100dvh;height:auto;display:block}
+.home-hero{background:#EFEAFA;border-bottom:1px solid #DCD4F0;padding:18px 16px 30px}
+.home-hero-in{max-width:760px;margin:0 auto}
+.home-top{display:flex;justify-content:flex-end}
+.home .wordmark.big{font-size:clamp(56px,15vw,104px);display:block;text-align:center;margin-top:18px}
+.home .status{justify-content:center;margin-top:12px}
+.home .intro{font-size:17px;text-align:center;max-width:560px;margin:18px auto 0;color:var(--ink)}
+.home-main{max-width:760px;margin:0 auto;padding:22px 16px 40px}
+.home .pick{font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:0 0 12px}
+.cards{display:grid;gap:12px}
+@media (min-width:700px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--moss);transform:translateY(-2px)}
+.card .ico{width:44px;height:44px;border-radius:12px;background:var(--sage);display:grid;place-items:center;font-size:22px}
+.card h2{margin:4px 0 0;font-size:19px;font-weight:700;letter-spacing:-0.01em}
+.card p{margin:0;font-size:14px;color:var(--muted);flex:1}
+.card .go{margin-top:6px;align-self:flex-start;background:var(--moss);color:#fff;border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600}
+.home .lean-note{margin-top:18px;font-size:14px;background:var(--sand);border-radius:12px;padding:12px 14px;text-align:center}
+.home-links{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.home-links a,.home-links button{height:38px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);text-decoration:none;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer}
+.home-links .primary{background:var(--moss);border-color:var(--moss);color:#fff}
+.home .prefs{margin-left:0;width:auto;display:flex !important}
+.home .prefs select.lang{width:132px}
 `;
 
-function Badge({ category }) {
-  return (
-    <span
-      style={{
-        background: COLORS[category] || '#E2E0E6',
-        color: DARK.includes(category) ? '#1D1D1F' : '#FFFFFF',
-        fontSize: 11,
-        padding: '2px 8px',
-        borderRadius: 999,
-        whiteSpace: 'nowrap',
-        fontWeight: 700,
-      }}
-    >
-      {category}
-    </span>
-  );
-}
-
-function Meter({ labels, colors, active }) {
-  return (
-    <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
-      {labels.map((label, i) => (
-        <div key={label} style={{ flex: 1, textAlign: 'center', fontSize: 10.5, lineHeight: 1.2 }}>
-          <div style={{ height: 8, borderRadius: 4, background: colors[i], opacity: i === active ? 1 : 0.18 }} />
-          <div style={{ fontWeight: i === active ? 700 : 400, marginTop: 3 }}>{label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SourceItem({ s }) {
-  return (
-    <li style={{ marginBottom: 6 }}>
-      <Badge category={s.category} />{' '}
-      <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>{' '}
-      <span className="muted">
-        ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ''})
-      </span>
-    </li>
-  );
-}
-
-function Block({ title, children }) {
-  return (
-    <div className="blk">
-      <h4>{title}</h4>
-      {children}
-    </div>
-  );
-}
-
-function SpectrumBar({ stats, total }) {
-  const used = ORDER.filter((c) => stats[c]);
-  return (
-    <>
-      <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
-        {used.map((c) => (
-          <div key={c} title={`${c}: ${stats[c]}`} style={{ width: `${(stats[c] / total) * 100}%`, background: COLORS[c] }} />
-        ))}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-        {used.map((c) => (
-          <span key={c} style={{ fontSize: 12 }}>
-            <Badge category={c} /> {stats[c]}
-          </span>
-        ))}
-      </div>
-    </>
-  );
-}
-
-// Optional rating. A 👎 asks which part was wrong, so the lesson goes to the agent who does that job.
-function Feedback({ claims, verdict, realStory, areas = [] }) {
-  const [state, setState] = useState('ask'); // ask | why | sending | done
-  const [area, setArea] = useState('');
-  const [note, setNote] = useState('');
-  const [lesson, setLesson] = useState(null);
-
-  async function sendFeedback(correct, chosenArea = '', why = '') {
-    setState('sending');
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claims, verdict, realStory, correct, note: why, area: chosenArea }),
-      });
-      const out = await res.json();
-      setLesson(out.lesson ? { text: out.lesson, job: out.job } : null);
-    } catch {}
-    setState('done');
-  }
-
-  if (state === 'done') {
-    return (
-      <div className="feedback muted" style={{ display: 'block' }}>
-        📒 Thanks! I wrote that in my notebook so I'll do better next time.
-        {lesson && (
-          <div style={{ marginTop: 4 }}>
-            Lesson learned{lesson.job ? ` for ${lesson.job.split(' (')[0]}` : ''}: "{lesson.text.replace(/[.!]+$/, '')}."
-          </div>
-        )}
-      </div>
-    );
-  }
-  if (state === 'sending') return <div className="feedback muted">Writing it in my notebook…</div>;
-  if (state === 'why') {
-    return (
-      <div className="feedback" style={{ display: 'block' }}>
-        {areas.length > 0 && (
-          <>
-            <div className="muted" style={{ marginBottom: 6 }}>Which part was wrong?</div>
-            <div className="chips">
-              {areas.map((a) => (
-                <button key={a} className={`chip ${area === a ? 'on' : ''}`} onClick={() => setArea(a)}>
-                  {a}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        <div className="muted" style={{ margin: '8px 0 6px' }}>Tell me more (optional, no names or personal info):</div>
-        <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <button className="btn" onClick={() => sendFeedback(false, area, note)}>Send</button>
-          <button className="btn" onClick={() => setState('ask')}>Cancel</button>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="feedback">
-      <span className="muted">Rate this (optional):</span>
-      <button className="btn" onClick={() => sendFeedback(true)} aria-label="This was right">👍</button>
-      <button className="btn" onClick={() => setState('why')} aria-label="This was wrong">👎</button>
-    </div>
-  );
-}
-
-function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
-  return (
-    <div className="mini">
-          {title && <b>{title}</b>}
-          <Meter labels={AI_LEVELS} colors={AI_COLORS} active={AI_LEVELS.indexOf(check.level)} />
-          {check.plausibility && (
-            <div style={{ marginTop: 10, fontSize: 14 }}>
-              🎯 <b>How believable is this scene?</b> {check.plausibility}
-              {check.plausibility_reason ? `: ${check.plausibility_reason}` : ''}
-            </div>
-          )}
-          {check.signs.length > 0 && (
-            <ul style={{ marginTop: 8, fontSize: 14 }}>
-              {check.signs.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
-          )}
-          {check.comparison && (
-            <div className="compare">
-              <div>
-                <b>🔍 Compared with real photos online</b>
-              </div>
-              <div style={{ marginTop: 4 }}>
-                <span className="pill">{check.comparison.match}</span>
-                <span className="pill">{check.comparison.effect}</span>
-              </div>
-              {check.comparison.reused_old_photo && (
-                <div className="warn" style={{ marginTop: 6 }}>⚠️ This photo may be an older or unrelated photo being reposted.</div>
-              )}
-              <div style={{ marginTop: 6, fontSize: 14 }}>{check.comparison.comparison}</div>
-              {check.comparison.compared?.length > 0 && (
-                <div className="thumbs">
-                  {check.comparison.compared.map((c, i) => (
-                    <a key={i} href={c.url} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
-                      <img src={c.url} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <div className="muted" style={{ marginTop: 6 }}>
-            {check.checks > 1 && (
-              <>
-                {check.agree} of {check.checks} independent checks agreed.{' '}
-              </>
-            )}
-            Warning signs aren't proof. No tool can say for sure if an image is AI-made.
-          </div>
-        </div>
-  );
-}
-
-function PhotoResultBubble({ data, image, onFactCheck }) {
-  const p = data.photo;
-  const color = AI_COLORS[AI_LEVELS.indexOf(p.level)] || '#6f6858';
-  return (
-    <div className="bub wide">
-      <span className="vchip" style={{ background: color }}>{p.level}</span>
-      <p dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600 }}>{p.headline}</p>
-      <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
-      {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>📷 What I see: {p.description}</p>}
-      <PhotoCheck check={p} title="🔎 The details" />
-      <div className="notebook">💡 <b>Check it yourself:</b> {p.tip}</div>
-      {image && onFactCheck && (
-        <div style={{ marginTop: 10 }}>
-          <button className="btn" onClick={onFactCheck}>✅ Now check if the story is true</button>
-        </div>
-      )}
-      <Feedback
-        claims={[`Photo check: ${p.description || 'a photo'}`]}
-        verdict={p.level}
-        realStory={p.explanation}
-        areas={['The photo check', 'The photo comparison', 'Something else']}
-      />
-    </div>
-  );
-}
-
-function ResultBubble({ data, image, onPhotoCheck }) {
-  const r = data.result;
-  const total = data.sources?.length || 0;
-  const vIndex = VERDICTS.indexOf(r.verdict);
-  const vColor = vIndex >= 0 ? VERDICT_COLORS[vIndex] : '#6f6858';
-
-  return (
-    <div className="bub wide">
-      <span className="vchip" style={{ background: vColor }}>{r.verdict}</span>
-      {vIndex >= 0 && <Meter labels={VERDICTS} colors={VERDICT_COLORS} active={vIndex} />}
-
-      {r.warning && <div className="warn">⚠️ {r.warning}</div>}
-
-      <p dir="auto" style={{ margin: '12px 0 8px' }}>{r.real_story}</p>
-      <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
-        <span className="pill">Consensus: {r.consensus.level}</span>
-        {r.consensus.explanation}
-      </p>
-
-      {data.review && (
-        <div className="review">
-          <div>
-            <b>{data.review.approved ? '✅ Double-checked' : '🔧 Double-checked & corrected'}</b>
-            <span className="pill" style={{ marginLeft: 8 }}>Confidence: {data.review.confidence}</span>
-          </div>
-          <div style={{ marginTop: 4 }}>{data.review.review_note}</div>
-          {!data.review.approved && data.review.issues.length > 0 && (
-            <ul style={{ marginTop: 6 }}>
-              {data.review.issues.map((x, i) => (
-                <li key={i}>{x}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {r.notebook_note && (
-        <div className="notebook">📒 <b>From my notebook:</b> {r.notebook_note}</div>
-      )}
-
-      {r.who_posted && (
-        <div className="mini">
-          <b>✍️ Who posted this?</b>
-          <div style={{ marginTop: 6 }}>
-            <span className="pill">{r.who_posted.type}</span>
-          </div>
-          <div style={{ marginTop: 6, fontSize: 14 }}>
-            {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">We couldn't tell who made this.</span>}
-          </div>
-          <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>
-        </div>
-      )}
-
-      {data.imageCheck && <PhotoCheck check={data.imageCheck} />}
-
-      {total > 0 && (
-        <div className="mini">
-          <b>⚖️ I checked {total} sources</b>
-          <SpectrumBar stats={data.stats || {}} total={total} />
-        </div>
-      )}
-
-      <details className="more">
-        <summary>See the full breakdown ↓</summary>
-
-        {r.right_and_wrong.length > 0 && (
-          <Block title="❌ What the post got wrong">
-            {r.right_and_wrong.map((x, i) => (
-              <p key={i} style={{ margin: '0 0 8px', fontSize: 14 }}>
-                <b>Post says:</b> {x.post_says}
-                <br />
-                <b>Actually:</b> {x.actually}
-              </p>
-            ))}
-          </Block>
-        )}
-
-        {r.origin_timeline.length > 0 && (
-          <Block title="🕒 How this claim spread">
-            <ol style={{ fontSize: 14 }}>
-              {r.origin_timeline.map((t, i) => (
-                <li key={i}>
-                  <b>{t.when}:</b> {t.what}
-                </li>
-              ))}
-            </ol>
-          </Block>
-        )}
-
-        {r.disputed.length > 0 && (
-          <Block title="🤔 Sources disagree on">
-            <ul style={{ fontSize: 14 }}>
-              {r.disputed.map((d, i) => (
-                <li key={i}>{d}</li>
-              ))}
-            </ul>
-          </Block>
-        )}
-
-        {r.unknown.length > 0 && (
-          <Block title="❓ Still unknown">
-            <ul style={{ fontSize: 14 }}>
-              {r.unknown.map((u, i) => (
-                <li key={i}>{u}</li>
-              ))}
-            </ul>
-          </Block>
-        )}
-
-        {r.persuasion_tactics.length > 0 && (
-          <Block title="🎣 How it tries to persuade you">
-            <ul style={{ fontSize: 14 }}>
-              {r.persuasion_tactics.map((t, i) => (
-                <li key={i}>
-                  <b>{t.tactic}</b> ({t.where}): {t.explanation}
-                </li>
-              ))}
-            </ul>
-          </Block>
-        )}
-
-        <Block title="🧠 How I figured this out">
-          <ol style={{ fontSize: 14 }}>
-            {r.how_we_figured_it_out.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </Block>
-
-        {data.trace?.plan && (
-          <Block title="🧭 The Manager's game plan">
-            <p style={{ margin: '0 0 6px', fontSize: 14 }}>{data.trace.plan.analysis}</p>
-            <div className="chips" style={{ marginBottom: 6 }}>
-              {[
-                [`News search: ${data.trace.plan.news_search}`, data.trace.plan.news_search !== 'none'],
-                ['Official sources', data.trace.plan.official_sources || data.trace.plan.emergency_mode],
-                ['Research papers', data.trace.plan.research_papers],
-                ['Persuasion check', data.trace.plan.persuasion],
-                ['Photo checks', !!data.imageCheck],
-                ['Photo comparison', !!data.imageCheck?.comparison],
-                ['🚨 Emergency mode', data.trace.plan.emergency_mode],
-              ]
-                .filter(([, on]) => on)
-                .map(([label]) => (
-                  <span key={label} className="chip on" style={{ cursor: 'default' }}>
-                    {label}
-                  </span>
-                ))}
-            </div>
-            <ul style={{ fontSize: 13.5 }}>
-              {data.trace.plan.reasons.map((x, i) => (
-                <li key={i}>{x}</li>
-              ))}
-            </ul>
-          </Block>
-        )}
-
-        {data.trace && (
-          <Block title="⚙️ What I did behind the scenes">
-            <ol style={{ fontSize: 14 }}>
-              {data.trace.timings.map((t, i) => (
-                <li key={i}>
-                  {t.label} <span className="muted">({t.seconds}s)</span>
-                </li>
-              ))}
-            </ol>
-            <details style={{ marginTop: 6, fontSize: 14 }}>
-              <summary style={{ cursor: 'pointer' }}>Searches I ran</summary>
-              <ul>
-                {[...data.trace.queries.news, ...data.trace.queries.official, ...data.trace.queries.research].map((q, i) => (
-                  <li key={i}>{q}</li>
-                ))}
-              </ul>
-            </details>
-          </Block>
-        )}
-
-        {total > 0 && (
-          <details className="sub">
-            <summary>
-              📚 Sources <span className="count">{total}</span>
-            </summary>
-
-            {data.keySources?.length > 0 && (
-              <div className="sub-in">
-                <div className="sub-label">Most important</div>
-                <ul style={{ fontSize: 14 }}>
-                  {data.keySources.map((s) => (
-                    <SourceItem key={s.id} s={s} />
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="sub-in">
-              <div className="sub-label">Everything I read, by type</div>
-              {ORDER.filter((c) => data.sources.some((s) => s.category === c)).map((c) => {
-                const group = data.sources.filter((s) => s.category === c);
-                return (
-                  <details key={c} className="group">
-                    <summary>
-                      <Badge category={c} /> <span className="count">{group.length}</span>
-                    </summary>
-                    <ul style={{ fontSize: 14, marginTop: 6 }}>
-                      {group.map((s) => (
-                        <SourceItem key={s.id} s={s} />
-                      ))}
-                    </ul>
-                  </details>
-                );
-              })}
-              <div className="muted" style={{ marginTop: 8 }}>
-                Bias labels are approximate, based on published media bias ratings.
-              </div>
-            </div>
-          </details>
-        )}
-      </details>
-
-      <Feedback
-        claims={data.trace?.claims || [r.real_story]}
-        verdict={r.verdict}
-        realStory={r.real_story}
-        areas={['The verdict', ...(data.imageCheck ? ['The photo check'] : []), 'The sources', 'Persuasion tactics', 'Who posted it', 'Something else']}
-      />
-      {image && onPhotoCheck && !data.imageCheck && (
-        <div style={{ marginTop: 10 }}>
-          <button className="btn" onClick={onPhotoCheck}>🤖 Also check if this photo is AI</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function compressImage(file) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const max = 1600;
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-function splitInput(raw) {
-  const value = (raw || '').trim();
-  const match = value.match(/https?:\/\/\S+/i);
-  if (!match) return { text: value, url: '' };
-  if (match[0] === value) return { text: '', url: value };
-  return { text: value, url: match[0] };
-}
-
-function decodeResult(packed) {
-  const b64 = packed.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
-  return JSON.parse(new TextDecoder().decode(bytes));
-}
-
-function InstallSheet({ onClose }) {
-  return (
-    <div className="sheet-bg" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>Put it on your iPhone</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
-        </p>
-
-        <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
-          Add the Fact or Feed? shortcut
-        </a>
-        <div className="step-box">
-          <b>How it works</b>
-          <ol>
-            <li>Tap the button above, then <b>Add Shortcut</b>.</li>
-            <li>On any post, link, article, or screenshot, tap <b>Share</b>.</li>
-            <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
-            <li>You can also open Fact or Feed? and tap <b>📎</b> to add a photo.</li>
-          </ol>
-        </div>
-        <div className="step-box">
-          <b>Add the app to your Home Screen</b>
-          <ol>
-            <li>Open this site in <b>Safari</b>.</li>
-            <li>Tap <b>Share</b> (the square with the arrow).</li>
-            <li>Tap <b>Add to Home Screen</b>.</li>
-          </ol>
-        </div>
-
-        <button className="bigbtn ghost" onClick={onClose}>Close</button>
-      </div>
-    </div>
-  );
-}
-
-const FOLLOWUP_HINT =
-  'Got questions? Ask me anything about this report, like "Why did you say that?" or "Which source is most reliable?" Or tap ＋ New search to check something else.';
-
-let nextId = 1;
-
 export default function Home() {
-  const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState('');
-  const [image, setImage] = useState(null);
-  const [audience, setAudience] = useState('everyone');
   const [language, setLanguage] = useState('auto');
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0);
-  const [copiedId, setCopiedId] = useState(null);
-  const [checkingPhoto, setCheckingPhoto] = useState(false);
-  const [report, setReport] = useState(null); // the last report, so Vera can answer follow-up questions
-  const [askHistory, setAskHistory] = useState([]);
-  const [loadingKind, setLoadingKind] = useState('check');
-  const [mode, setMode] = useState('fact'); // fact = "Is this true?", photo = "Is this photo AI?"
-  const steps = loadingKind === 'photo' ? PHOTO_STEPS : STEPS;
   const [showInstall, setShowInstall] = useState(false);
-  const [platform, setPlatform] = useState('desktop');
-  const [installEvent, setInstallEvent] = useState(null);
 
   useEffect(() => {
-    const ua = navigator.userAgent || '';
-    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform('ios');
-    else if (/Android/i.test(ua)) setPlatform('android');
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    const onPrompt = (e) => {
-      e.preventDefault();
-      setInstallEvent(e);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
-  const endRef = useRef(null);
-  const fileRef = useRef(null);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading, step]);
-
-  useEffect(() => {
-    if (!loading) return;
-    setStep(0);
-    const t = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), 8000);
-    return () => clearInterval(t);
-  }, [loading]);
-
-  useEffect(() => {
-    // A full result handed over from the iPhone popup (no need to check again)
-    const hash = window.location.hash;
-    if (hash.startsWith('#r=')) {
-      window.history.replaceState(null, '', window.location.pathname);
-      try {
-        const data = decodeResult(hash.slice(3));
-        add({ from: 'me', text: '📲 Shared from my phone' });
-        presentReport(data);
-      } catch {
-        add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
-      }
+    // Old share links (from the iPhone shortcut) still work: send them to the credibility check
+    const { search, hash } = window.location;
+    const params = new URLSearchParams(search);
+    if (hash.startsWith('#r=') || params.get('q') || params.get('img') || params.get('url') || params.get('text') || params.get('title')) {
+      window.location.replace(`/credible${search}${hash}`);
       return;
     }
-
-    const params = new URLSearchParams(window.location.search);
-    const q =
-      params.get('q') ||
-      [params.get('title'), params.get('text'), params.get('url')].filter(Boolean).join(' ');
-    const sharedPhoto = params.get('img');
-    if (!q && !sharedPhoto) return;
-    window.history.replaceState(null, '', window.location.pathname);
-    if (sharedPhoto) {
-      // A photo from the phone: ask which check they want (the photo is deleted after one check)
-      add({ from: 'me', text: (q || '').trim(), image: sharedPhoto });
-      add({ from: 'bot', kind: 'choose', text: q, imageUrl: sharedPhoto });
-    } else {
-      send(q, null, null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    try {
+      const saved = JSON.parse(localStorage.getItem('ff-prefs') || '{}');
+      if (saved.language) setLanguage(saved.language);
+    } catch {}
   }, []);
 
-  // Shows a finished report, then either invites questions or asks a clarifying question
-  function presentReport(data, image = null) {
-    add({ from: 'bot', kind: 'result', data, image });
-    add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
-    const q = data.result.clarifying_question;
-    if (q) add({ from: 'bot', kind: 'text', text: `🤔 Help me dig deeper: ${q} Just type your answer below.` });
-    else add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
-    setReport(data);
-    setAskHistory(q ? [{ role: 'assistant', content: `Clarifying question I asked: ${q}` }] : []);
-  }
-
-  function add(msg) {
-    setMessages((m) => [...m, { id: nextId++, ...msg }]);
-  }
-
-  async function send(rawText, img, imageUrl = null, echo = true) {
-    const { text, url } = splitInput(rawText);
-    if (!text && !url && !img && !imageUrl) return;
-    if (loading) return;
-
-    setMode('fact');
-    if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
-    setDraft('');
-    setImage(null);
-    setCheckingPhoto(!!(img || imageUrl));
-    setLoadingKind('check');
-    setLoading(true);
-
+  function changeLanguage(value) {
+    setLanguage(value);
     try {
-      const res = await fetch('/api/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, url, image: img, imageUrl, audience, language, mode: 'fact' }),
-      });
-      const data = await res.json();
-      if (data.error || !data.result) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        presentReport(data, img);
-      }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
-    }
-    setLoading(false);
+      const saved = JSON.parse(localStorage.getItem('ff-prefs') || '{}');
+      localStorage.setItem('ff-prefs', JSON.stringify({ ...saved, language: value }));
+    } catch {}
   }
 
-  // "Is this photo AI?" mode: only the photo agents run
-  async function sendPhoto(rawText, img, imageUrl = null, echo = true) {
-    if (loading || (!img && !imageUrl)) return;
-    setMode('photo');
-    if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
-    setDraft('');
-    setImage(null);
-    setLoadingKind('photo');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: (rawText || '').trim(), image: img, imageUrl, audience, language }),
-      });
-      const data = await res.json();
-      if (data.error || !data.photo) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        add({ from: 'bot', kind: 'photo', data, image: img, note: (rawText || '').trim() });
-        // Questions after a photo check start fresh, since there is no fact report to ask about
-        setReport(null);
-        setAskHistory([]);
-      }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
-    }
-    setLoading(false);
-  }
-
-  async function onFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImage(await compressImage(file));
-    e.target.value = '';
-  }
-
-  async function ask(rawQuestion) {
-    const question = (rawQuestion || '').trim();
-    if (!question || loading || !report) return;
-    add({ from: 'me', text: question });
-    setDraft('');
-    setLoadingKind('ask');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, report, history: askHistory, audience, language }),
-      });
-      const data = await res.json();
-      if (data.error || !data.answer) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain, question });
-        setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
-        if (data.newSources?.length) {
-          setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
-        }
-      }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
-    }
-    setLoading(false);
-  }
-
-  // A photo always starts a new check; otherwise, after a report, messages are follow-up questions
-  function submit() {
-    if (mode === 'photo') {
-      if (image) sendPhoto(draft, image);
-      else fileRef.current?.click();
-      return;
-    }
-    if (image || !report) send(draft, image);
-    else ask(draft);
-  }
-
-  function newSearch() {
-    setMessages([]);
-    setReport(null);
-    setAskHistory([]);
-    setDraft('');
-    setImage(null);
-  }
-
-  function onKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submit();
-    }
-  }
-
-  function copy(id, text) {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-  }
-
-  const welcome = WELCOME[language] || WELCOME.en;
-  const canSend = !loading && (mode === 'photo' ? !!image : draft.trim() || image);
-  const modeNames = MODES[language] || MODES.en;
+  const t = TEXT[language] || TEXT.en;
 
   return (
-    <div className="ff">
-      <style>{CSS}</style>
+    <div className="ff home">
+      <style>{CSS + HOME_CSS}</style>
 
-      <header className="top">
-        <div className="top-in">
-          <div>
-            <div className="wordmark">
-              fact or feed<span>?</span>
-            </div>
-            <div className="status">
-              <i />
-              {loading ? 'Vera is checking…' : 'your fact-checking friend'}
+      <header className="home-hero">
+        <div className="home-hero-in">
+          <div className="home-top">
+            <div className="prefs">
+              <select className="lang" value={language} onChange={(e) => changeLanguage(e.target.value)} aria-label="Change language">
+                {LANGUAGES.map(([code, label]) => (
+                  <option key={code} value={code}>{label}</option>
+                ))}
+              </select>
             </div>
           </div>
-          <div className="prefs">
-            <button className="getapp" onClick={() => setShowInstall(true)} aria-label="Get it on your phone">
-              <span className="emo">📲</span>
-              <span>Get it</span>
-            </button>
-            <a className="howlink" href="/how-it-works">How we check</a>
-            <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="How detailed" title="How detailed">
-              <option value="everyone">Level</option>
-              <option value="simple">Simple</option>
-              <option value="complex">Complex</option>
-            </select>
-            <select className="lang" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Change language" title="Change language">
-              {LANGUAGES.map(([code, label]) => (
-                <option key={code} value={code}>{label}</option>
-              ))}
-            </select>
+          <h1 className="wordmark big" style={{ margin: '18px 0 0' }}>
+            fact or feed<span>?</span>
+          </h1>
+          <div className="status">
+            <i /> your fact-checking friend
           </div>
+          <p className="intro" dir="auto">{t.intro}</p>
         </div>
       </header>
 
@@ -1068,175 +165,31 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="thread">
-        <div className="thread-in">
-          <div className="msg bot">
-            <div className="av sm" aria-label="Vera">V</div>
-            <div className="bub" dir="auto">{welcome}</div>
-          </div>
-
-          {messages.map((m) => {
-            if (m.from === 'me') {
-              return (
-                <div key={m.id} className="msg me">
-                  <div className="bub">
-                    {m.image && <img className="shot" src={m.image} alt="What you sent" />}
-                    {m.text && <div dir="auto" style={{ marginTop: m.image ? 8 : 0 }}>{m.text}</div>}
-                  </div>
-                </div>
-              );
-            }
-            if (m.kind === 'result') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <ResultBubble data={m.data} image={m.image} onPhotoCheck={loading ? null : () => sendPhoto('', m.image, null, false)} />
-                </div>
-              );
-            }
-            if (m.kind === 'photo') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <PhotoResultBubble data={m.data} image={m.image} onFactCheck={loading ? null : () => send(m.note, m.image, null, false)} />
-                </div>
-              );
-            }
-            if (m.kind === 'choose') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub">
-                    Got your photo! What do you want to know?
-                    <div className="choose">
-                      <button className="btn" disabled={loading || m.used} onClick={() => { m.used = true; send(m.text, null, m.imageUrl, false); }}>✅ {modeNames[0]}</button>
-                      <button className="btn" disabled={loading || m.used} onClick={() => { m.used = true; sendPhoto(m.text, null, m.imageUrl, false); }}>🤖 {modeNames[1]}</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            if (m.kind === 'answer') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub">
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                    {m.searchedAgain && <div className="muted" style={{ marginTop: 6 }}>🔎 I searched again to answer this.</div>}
-                    {m.cited?.length > 0 && (
-                      <ul style={{ marginTop: 8, fontSize: 13 }}>
-                        {m.cited.map((c) => (
-                          <SourceItem key={c.id} s={c} />
-                        ))}
-                      </ul>
-                    )}
-                    <Feedback claims={[`Follow-up question: ${m.question || ''}`]} verdict="follow-up answer" realStory={m.text} />
-                  </div>
-                </div>
-              );
-            }
-            if (m.kind === 'text') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub">{m.text}</div>
-                </div>
-              );
-            }
-            if (m.kind === 'reply') {
-              return (
-                <div key={m.id} className="msg bot">
-                  <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub">
-                    Want to reply to whoever sent it? You could say:
-                    <div className="replybox" dir="auto">{m.text}</div>
-                    <button className="btn" onClick={() => copy(m.id, m.text)}>
-                      {copiedId === m.id ? '✓ Copied!' : 'Copy message'}
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div key={m.id} className="msg bot err">
-                <div className="av sm" aria-label="Vera">V</div>
-                <div className="bub">{m.text}</div>
-              </div>
-            );
-          })}
-
-          {loading && (
-            <div className="msg bot">
-              <div className="av sm" aria-label="Vera">V</div>
-              <div className="bub">
-                <span className="dots"><i /><i /><i /></span>
-                <span className="typing-step">{loadingKind === 'ask' ? 'Looking into that…' : steps[Math.min(step, steps.length - 1)]}</span>
-              </div>
-            </div>
-          )}
-
-          <div ref={endRef} />
+      <main className="home-main">
+        <h2 className="pick">{t.pick}</h2>
+        <div className="cards">
+          {TOOL_ORDER.map((tool) => (
+            <a key={tool} className="card" href={TOOLS[tool].href} dir="auto">
+              <span className="ico" aria-hidden="true">{TOOLS[tool].icon}</span>
+              <h2>{toolName(tool, language)}</h2>
+              <p>{t[tool]}</p>
+              <span className="go">{t.open} →</span>
+            </a>
+          ))}
         </div>
-      </div>
 
-      <footer className="composer">
-        <div className="comp-in">
-          {image && (
-            <div className="preview">
-              <img src={image} alt="Photo to send" />
-              <button onClick={() => setImage(null)} aria-label="Remove photo">×</button>
-            </div>
-          )}
-          <div className="modes" role="tablist" aria-label="What do you want to check?">
-            <button role="tab" aria-selected={mode === 'fact'} className={mode === 'fact' ? 'on' : ''} onClick={() => setMode('fact')}>
-              ✅ {modeNames[0]}
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === 'photo'}
-              className={mode === 'photo' ? 'on' : ''}
-              onClick={() => {
-                setMode('photo');
-                if (!image) fileRef.current?.click();
-              }}
-            >
-              🤖 {modeNames[1]}
-            </button>
-          </div>
-          {report && !loading && mode === 'fact' && (
-            <div className="newrow">
-              <span className="muted">Ask about this report, or</span>
-              <button className="newsearch" onClick={newSearch}>＋ New search</button>
-            </div>
-          )}
-          <div className="bar">
-            <button className="circle attach" onClick={() => fileRef.current?.click()} aria-label="Add a photo">
-              📎
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
-            <textarea
-              className="input"
-              rows={1}
-              placeholder={mode === 'photo' ? (image ? 'Add a note (optional)…' : 'Tap 📎 to add a photo…') : report ? 'Ask Vera about this…' : 'Paste a post or link…'}
-              dir="auto"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={onKey}
-            />
-            <button className="circle send" onClick={submit} disabled={!canSend} aria-label="Send">
-              ↑
-            </button>
-          </div>
-          <div className="foot">
-            Fact or Feed? uses AI and can make mistakes. Always check the sources.
-          </div>
+        <div className="lean-note" dir="auto">⚖️ {t.note}</div>
+
+        <div className="home-links">
+          <a href="/how-it-works">How we check</a>
+          <button className="primary" onClick={() => setShowInstall(true)}>📲 Get it on your iPhone</button>
         </div>
-      </footer>
+        <p className="foot" style={{ marginTop: 18 }}>
+          Fact or Feed? uses AI and can make mistakes. Always check the sources.
+        </p>
+      </main>
 
-      {showInstall && (
-        <InstallSheet onClose={() => setShowInstall(false)} />
-      )}
+      {showInstall && <InstallSheet onClose={() => setShowInstall(false)} />}
     </div>
   );
 }
-
