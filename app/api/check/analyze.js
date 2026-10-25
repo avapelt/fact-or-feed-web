@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
+import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor } from './notebook';
 
@@ -21,6 +21,17 @@ const LANGUAGE_NAMES = {
   fr: 'French',
   bn: 'Bengali',
 };
+
+const ManagerSchema = z.object({
+  analysis: z.string(),
+  news_search: z.enum(['none', 'light', 'full']),
+  official_sources: z.boolean(),
+  research_papers: z.boolean(),
+  persuasion: z.boolean(),
+  photo_comparison: z.boolean(),
+  emergency_mode: z.boolean(),
+  reasons: z.array(z.string()),
+});
 
 const ReaderSchema = z.object({
   language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
@@ -355,18 +366,49 @@ export async function analyze(input) {
   // 📒 Every agent reads Vera's notebook before doing its job
   const notebook = await loadNotebook();
 
+  // Step 0: 🧭 The Manager analyzes the post and chooses the game plan
+  let plan = null;
+  try {
+    const { output } = await generateText({
+      model: FAST_MODEL,
+      system: MANAGER_PROMPT + lessonsFor(notebook, 'manager'),
+      temperature: 0.2,
+      messages: [{ role: 'user', content: [...content, { type: 'text', text: image ? 'A photo was sent.' : 'No photo was sent.' }] }],
+      output: Output.object({ schema: ManagerSchema }),
+    });
+    plan = output;
+  } catch (err) {
+    console.error('Manager failed, using the full team', err);
+  }
+  // If the Manager can't decide, use the full team (safe default)
+  plan = plan || {
+    analysis: 'Using the full team to be safe.',
+    news_search: 'full',
+    official_sources: true,
+    research_papers: true,
+    persuasion: true,
+    photo_comparison: true,
+    emergency_mode: false,
+    reasons: ['Using the full team to be safe.'],
+  };
+  mark(`Manager made a game plan: ${plan.analysis}`);
+
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
     model: quickModel,
     system: READER_PROMPT + lessonsFor(notebook, 'planner'),
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: [...content, { type: 'text', text: `Manager's game plan: ${JSON.stringify(plan)}` }] }],
     output: Output.object({ schema: ReaderSchema }),
   });
-  mark('Read the content and planned the searches');
+  mark('Planner found the claims and planned the searches');
 
-  const newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, fast ? 3 : 6);
-  const officialQ = reader.official_queries.slice(0, fast ? 1 : 2);
-  const researchQ = reader.academic_queries.slice(0, fast ? 1 : 3);
+  // The Manager's plan decides how much each kind of search runs
+  const newsCount = plan.news_search === 'none' ? 0 : plan.news_search === 'light' ? 3 : fast ? 3 : 6;
+  let newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims).slice(0, newsCount);
+  const officialQ = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
+  const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
+  // Never search nothing at all if there is a checkable claim
+  if (!newsQ.length && !officialQ.length && !researchQ.length && reader.claims.length) newsQ = reader.claims.slice(0, 1);
 
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
   const searchesPromise = Promise.all([
@@ -378,14 +420,16 @@ export async function analyze(input) {
     return results;
   });
 
-  const persuasionPromise = generateText({
-    model: quickModel,
-    system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion'),
-    prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
-  }).then((r) => {
-    mark('Analyzed persuasion tactics');
-    return r.text;
-  });
+  const persuasionPromise = plan.persuasion
+    ? generateText({
+        model: quickModel,
+        system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion'),
+        prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
+      }).then((r) => {
+        mark('Analyzed persuasion tactics');
+        return r.text;
+      })
+    : Promise.resolve('The Manager skipped the persuasion check for this one.');
 
   // Three independent image checks run at the same time; we keep the middle (median) answer,
   // so one odd answer can't flip the result.
@@ -416,7 +460,7 @@ export async function analyze(input) {
     : Promise.resolve(null);
 
   const comparePromise =
-    image && reader.photo_search_query
+    image && plan.photo_comparison && reader.photo_search_query
       ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'))
           .then((r) => {
             mark(`Compared the photo with ${r.compared.length} real photos found online`);
@@ -483,6 +527,8 @@ Who posted or wrote it (as shown in the content): ${reader.posted_by || 'not sho
 Claims:
 ${reader.claims.join('\n')}
 
+Manager's game plan: ${plan.analysis}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to Miami-Dade Emergency Management and the National Weather Service for safety information.' : ''}
+
 Persuasion analysis:
 ${persuasion}
 
@@ -542,6 +588,7 @@ ${sourceList || 'No sources were found.'}`,
     stats,
     imageCheck,
     trace: {
+      plan,
       topic: reader.topic_type,
       claims: reader.claims,
       queries: { news: newsQ, official: officialQ, research: researchQ },

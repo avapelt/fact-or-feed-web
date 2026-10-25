@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 const STEPS = [
+  'The Manager is making a game plan…',
   'Reading what you sent…',
   'Searching 30+ news sources across the spectrum…',
   'Checking official sources and published research…',
@@ -568,6 +569,34 @@ function ResultBubble({ data }) {
             ))}
           </ol>
         </Block>
+
+        {data.trace?.plan && (
+          <Block title="🧭 The Manager's game plan">
+            <p style={{ margin: '0 0 6px', fontSize: 14 }}>{data.trace.plan.analysis}</p>
+            <div className="chips" style={{ marginBottom: 6 }}>
+              {[
+                [`News search: ${data.trace.plan.news_search}`, data.trace.plan.news_search !== 'none'],
+                ['Official sources', data.trace.plan.official_sources || data.trace.plan.emergency_mode],
+                ['Research papers', data.trace.plan.research_papers],
+                ['Persuasion check', data.trace.plan.persuasion],
+                ['Photo checks', !!data.imageCheck],
+                ['Photo comparison', !!data.imageCheck?.comparison],
+                ['🚨 Emergency mode', data.trace.plan.emergency_mode],
+              ]
+                .filter(([, on]) => on)
+                .map(([label]) => (
+                  <span key={label} className="chip on" style={{ cursor: 'default' }}>
+                    {label}
+                  </span>
+                ))}
+            </div>
+            <ul style={{ fontSize: 13.5 }}>
+              {data.trace.plan.reasons.map((x, i) => (
+                <li key={i}>{x}</li>
+              ))}
+            </ul>
+          </Block>
+        )}
 
         {data.trace && (
           <Block title="⚙️ What I did behind the scenes">

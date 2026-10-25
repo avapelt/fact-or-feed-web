@@ -14,9 +14,10 @@ const MAX_LESSONS = 40;
 const EMPTY = { rumors: [], lessons: [] };
 
 // Which agent a lesson is for, so each one learns in its own job
-export const AGENTS = ['planner', 'persuasion', 'image', 'comparison', 'writer', 'reviewer', 'followup', 'all'];
+export const AGENTS = ['manager', 'planner', 'persuasion', 'image', 'comparison', 'writer', 'reviewer', 'followup', 'all'];
 
 const AGENT_JOBS = {
+  manager: 'the Manager (analyzes the post first and chooses which agents to use)',
   planner: 'the Planner (reads the post, finds claims, plans searches)',
   persuasion: 'the Persuasion Analyst (spots manipulation tactics)',
   image: 'the Image agent (checks photos for AI warning signs and believability)',
@@ -83,7 +84,7 @@ Write notes in GENERAL terms. NEVER include: names of private people, usernames 
 You get the claims Vera just checked, her final verdict, and any corrections. You also get the list of rumors already in the notebook.
 - entries: for each main claim (at most 2), a general one-sentence version of the claim, the verdict, one key fact from the evidence, and matches_id: the id of an existing notebook rumor that is the SAME claim, or null if it's new.
 - lesson: ONLY if something went wrong (the Reviewer corrected Vera, or the user said the answer was wrong), one short, general lesson that would help avoid the same mistake next time, and which agent should learn it:
-  planner (finding claims, planning searches, missing sources), persuasion (manipulation tactics), image (AI photo warning signs, believability), comparison (comparing with real photos), writer (verdict, real story, who posted it), reviewer (double-checking), followup (answering follow-up questions), or all.
+  manager (chose the wrong agents or plan), planner (finding claims, planning searches, missing sources), persuasion (manipulation tactics), image (AI photo warning signs, believability), comparison (comparing with real photos), writer (verdict, real story, who posted it), reviewer (double-checking), followup (answering follow-up questions), or all.
   If the user said which part was wrong, use that to pick the agent. Otherwise null.
 `;
 
@@ -99,7 +100,7 @@ const BookSchema = z.object({
   lesson: z
     .object({
       text: z.string(),
-      agent: z.enum(['planner', 'persuasion', 'image', 'comparison', 'writer', 'reviewer', 'followup', 'all']),
+      agent: z.enum(['manager', 'planner', 'persuasion', 'image', 'comparison', 'writer', 'reviewer', 'followup', 'all']),
     })
     .nullable(),
 });

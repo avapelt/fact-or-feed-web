@@ -18,8 +18,12 @@ const LEANS = [
 
 const STEPS = [
   {
-    title: 'Read it and plan',
-    body: 'The Planner agent reads what you sent (text, a link, or a screenshot), pulls out the 1 to 3 most important claims that can actually be checked, notes who posted it, and writes its own search plan. Opinions are skipped.',
+    title: 'Make a game plan',
+    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. A hurricane rumor switches on emergency mode and puts official sources first; a health claim adds published research; a photo of a real scene gets compared with real photos online.',
+  },
+  {
+    title: 'Find the claims',
+    body: 'Following the game plan, the Planner agent reads what you sent (text, a link, or a screenshot), pulls out the 1 to 3 most important claims that can actually be checked, notes who posted it, and writes its own search plan. Opinions are skipped.',
   },
   {
     title: 'Search widely',
