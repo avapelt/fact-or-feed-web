@@ -718,6 +718,19 @@ function TraceBlock({ data }) {
   );
 }
 
+// Shown when Find the facts found no sources at all
+const NO_SOURCES = {
+  en: "No sources found. I couldn't find any sources for this, so don't rely on this answer.",
+  es: 'No se encontraron fuentes. No encontré ninguna fuente sobre esto, así que no confíes en esta respuesta.',
+  ht: 'Pa gen sous ki jwenn. M pa t jwenn okenn sous sou sa, kidonk pa konte sou repons sa a.',
+  zh: '未找到来源。我没有找到任何相关来源，所以请不要依赖这个回答。',
+  hi: 'कोई स्रोत नहीं मिला। मुझे इसके लिए कोई स्रोत नहीं मिला, इसलिए इस जवाब पर भरोसा न करें।',
+  ar: 'لم يتم العثور على مصادر. لم أجد أي مصادر لهذا، لذا لا تعتمد على هذه الإجابة.',
+  fr: "Aucune source trouvée. Je n'ai trouvé aucune source à ce sujet, alors ne te fie pas à cette réponse.",
+  bn: 'কোনো সূত্র পাওয়া যায়নি। এ বিষয়ে কোনো সূত্র পাইনি, তাই এই উত্তরের ওপর ভরসা কোরো না।',
+  it: 'Nessuna fonte trovata. Non ho trovato nessuna fonte su questo, quindi non fidarti di questa risposta.',
+};
+
 // 🔎 Find the facts: the answer, the consensus, and the sources it used
 function FactsBubble({ data }) {
   const r = data.result;
@@ -730,7 +743,7 @@ function FactsBubble({ data }) {
       {r.reframed && <div className="muted" dir="auto" style={{ marginBottom: 6 }}>ℹ️ {r.reframed}</div>}
       <div className="answer" dir="auto">{r.answer}</div>
       {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>}
-      {total === 0 && <div className="warn">⚠️ No sources found. I couldn't find any sources for this, so don't rely on this answer.</div>}
+      {total === 0 && <div className="warn" dir="auto">⚠️ {NO_SOURCES[data.lang] || NO_SOURCES.en}</div>}
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
         <span className="pill">Consensus: {r.consensus.level}</span>
         {r.consensus.explanation}
@@ -1066,8 +1079,9 @@ export default function VeraChat({ tool = 'credible' }) {
     // A full result handed over from the iPhone popup (no need to check again)
     const hash = window.location.hash;
     // It is signed by our server, so we check the signature before trusting it.
+    // The #r= stays in the address bar until we get a clear answer, so a reload can retry.
     if (hash.startsWith('#r=')) {
-      window.history.replaceState(null, '', window.location.pathname);
+      const clearHash = () => window.history.replaceState(null, '', window.location.pathname);
       const packed = hash.slice(3);
       const dot = packed.lastIndexOf('.');
       const payload = dot > 0 ? packed.slice(0, dot) : '';
@@ -1086,9 +1100,10 @@ export default function VeraChat({ tool = 'credible' }) {
           if (out && typeof out.valid === 'boolean' && (res.ok || res.status === 400 || res.status === 413)) valid = out.valid;
         } catch {}
         if (valid === null) {
-          add({ from: 'bot', kind: 'error', text: "I couldn't check this link right now. Please try again in a moment." });
+          add({ from: 'bot', kind: 'error', text: "I couldn't check this link right now. Please reload the page to try again." });
           return;
         }
+        clearHash();
         if (!valid) {
           add({ from: 'bot', kind: 'error', text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
           return;

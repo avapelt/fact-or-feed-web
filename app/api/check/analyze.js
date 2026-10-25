@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang } from './safety';
 
 
 // Paste your Opus model ID inside the quotes
@@ -722,11 +722,13 @@ ${sourceList || 'No sources were found.'}`,
     claims: needsCheck ? Math.max(1, reader.claims.length) : 0,
     searchesFailed: searchTrack.failed,
   });
+  // Fixed messages use the language the user picked, else the language Vera detected
+  const msgLang = pickLang(input.language, reader.language);
   if (toolName === 'facts') {
     // Also: questions about the future always open with a fixed sentence and never get a yes or no
-    story = finalizeFacts(story, { questionType, problem });
+    story = finalizeFacts(story, { questionType, problem, lang: msgLang });
   } else if (problem) {
-    story = forceCantConfirm(story, toolName, problem);
+    story = forceCantConfirm(story, toolName, problem, msgLang);
   }
   if (problem) {
     review = null; // the double-check was about the replaced draft, so don't show it
@@ -739,6 +741,7 @@ ${sourceList || 'No sources were found.'}`,
 
   return {
     tool: toolName,
+    lang: msgLang,
     outlet,
     result: story,
     review,

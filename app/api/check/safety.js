@@ -143,13 +143,80 @@ export function verifyPayload(payload, sig, env = process.env) {
 // ── Enough evidence? ──────────────────────────────────────────
 // A claim needs at least 3 sources from at least 2 different websites,
 // and the web searches must mostly have worked. Otherwise we never guess.
-export const SEARCH_DOWN = "I couldn't reach enough news sources right now. Please try again in a few minutes.";
-export const THIN_SOURCES = "I couldn't find enough reliable sources on this yet, so I can't confirm it.";
-export const THIN_SOURCES_FACTS = "I couldn't find enough reliable sources to answer this right now.";
+// Fixed messages the code writes itself, in every language the app supports
+export const MESSAGES = {
+  en: {
+    search_down: "I couldn't reach enough news sources right now. Please try again in a few minutes.",
+    thin: "I couldn't find enough reliable sources on this yet, so I can't confirm it.",
+    thin_facts: "I couldn't find enough reliable sources to answer this right now.",
+    future: "Nobody can know who will win or how this will turn out yet. Here's what I can check right now:",
+  },
+  es: {
+    search_down: 'No pude acceder a suficientes fuentes de noticias en este momento. Inténtalo de nuevo en unos minutos.',
+    thin: 'Todavía no encontré suficientes fuentes confiables sobre esto, así que no puedo confirmarlo.',
+    thin_facts: 'No encontré suficientes fuentes confiables para responder esto ahora mismo.',
+    future: 'Nadie puede saber todavía quién ganará ni cómo terminará esto. Esto es lo que puedo comprobar ahora mismo:',
+  },
+  ht: {
+    search_down: 'M pa t ka jwenn ase sous nouvèl kounye a. Tanpri eseye ankò nan kèk minit.',
+    thin: 'M poko jwenn ase sous serye sou sa, kidonk m pa ka konfime l.',
+    thin_facts: 'M pa t jwenn ase sous serye pou m reponn sa kounye a.',
+    future: 'Pèsonn pa ka konnen kounye a kiyès ki pral genyen oswa kijan sa pral fini. Men sa m ka verifye kounye a:',
+  },
+  zh: {
+    search_down: '我现在无法访问足够多的新闻来源。请过几分钟再试一次。',
+    thin: '我还没有找到足够可靠的来源，所以无法证实这一点。',
+    thin_facts: '我现在找不到足够可靠的来源来回答这个问题。',
+    future: '现在还没有人能知道谁会赢，或者结果会怎样。以下是我现在能核实的内容：',
+  },
+  hi: {
+    search_down: 'मैं अभी पर्याप्त समाचार स्रोतों तक नहीं पहुँच पाई। कृपया कुछ मिनट बाद फिर से कोशिश करें।',
+    thin: 'मुझे इस पर अभी पर्याप्त भरोसेमंद स्रोत नहीं मिले, इसलिए मैं इसकी पुष्टि नहीं कर सकती।',
+    thin_facts: 'मुझे अभी इसका जवाब देने के लिए पर्याप्त भरोसेमंद स्रोत नहीं मिले।',
+    future: 'अभी कोई नहीं जान सकता कि कौन जीतेगा या इसका नतीजा क्या होगा। मैं अभी यह जाँच सकती हूँ:',
+  },
+  ar: {
+    search_down: 'لم أتمكن من الوصول إلى عدد كافٍ من مصادر الأخبار الآن. يُرجى المحاولة مرة أخرى بعد بضع دقائق.',
+    thin: 'لم أجد بعد مصادر موثوقة كافية حول هذا الأمر، لذلك لا يمكنني تأكيده.',
+    thin_facts: 'لم أجد مصادر موثوقة كافية للإجابة عن هذا الآن.',
+    future: 'لا أحد يستطيع أن يعرف بعد من سيفوز أو كيف ستنتهي الأمور. إليك ما يمكنني التحقق منه الآن:',
+  },
+  fr: {
+    search_down: "Je n'ai pas pu accéder à assez de sources d'information pour le moment. Réessaie dans quelques minutes.",
+    thin: "Je n'ai pas encore trouvé assez de sources fiables à ce sujet, donc je ne peux pas le confirmer.",
+    thin_facts: "Je n'ai pas trouvé assez de sources fiables pour répondre à cela pour le moment.",
+    future: "Personne ne peut encore savoir qui va gagner ni comment cela va tourner. Voici ce que je peux vérifier pour l'instant :",
+  },
+  bn: {
+    search_down: 'আমি এখন যথেষ্ট খবরের সূত্রে পৌঁছাতে পারিনি। কয়েক মিনিট পরে আবার চেষ্টা করো।',
+    thin: 'এ বিষয়ে এখনো যথেষ্ট নির্ভরযোগ্য সূত্র পাইনি, তাই আমি এটা নিশ্চিত করতে পারছি না।',
+    thin_facts: 'এই মুহূর্তে এর উত্তর দেওয়ার মতো যথেষ্ট নির্ভরযোগ্য সূত্র পাইনি।',
+    future: 'কে জিতবে বা শেষ পর্যন্ত কী হবে, তা এখনো কেউ জানতে পারে না। এই মুহূর্তে আমি যা যাচাই করতে পারি:',
+  },
+  it: {
+    search_down: 'Al momento non sono riuscita a raggiungere abbastanza fonti di notizie. Riprova tra qualche minuto.',
+    thin: 'Non ho ancora trovato abbastanza fonti affidabili su questo, quindi non posso confermarlo.',
+    thin_facts: 'Al momento non ho trovato abbastanza fonti affidabili per rispondere.',
+    future: 'Nessuno può ancora sapere chi vincerà o come andrà a finire. Ecco cosa posso verificare in questo momento:',
+  },
+};
 
-function messageFor(reason, toolName) {
-  if (reason === 'search_down') return SEARCH_DOWN;
-  return toolName === 'facts' ? THIN_SOURCES_FACTS : THIN_SOURCES;
+// The language the user picked, else the one the Reader detected, else English
+export function pickLang(requested, detected) {
+  if (MESSAGES[requested]) return requested;
+  if (MESSAGES[detected]) return detected;
+  return 'en';
+}
+
+const msgs = (lang) => MESSAGES[lang] || MESSAGES.en;
+export const SEARCH_DOWN = MESSAGES.en.search_down;
+export const THIN_SOURCES = MESSAGES.en.thin;
+export const THIN_SOURCES_FACTS = MESSAGES.en.thin_facts;
+
+function messageFor(reason, toolName, lang) {
+  const m = msgs(lang);
+  if (reason === 'search_down') return m.search_down;
+  return toolName === 'facts' ? m.thin_facts : m.thin;
 }
 
 function domainOf(s) {
@@ -177,8 +244,8 @@ export function hasEnoughEvidence(sources, opts) {
 }
 
 // Replaces a result that can't be trusted with an honest "Can't confirm yet"
-export function forceCantConfirm(story, toolName, reason = 'search_down') {
-  const msg = messageFor(reason, toolName);
+export function forceCantConfirm(story, toolName, reason = 'search_down', lang = 'en') {
+  const msg = messageFor(reason, toolName, lang);
   const consensus = { level: 'None yet', explanation: msg };
   if (toolName === 'facts') {
     return {
@@ -211,20 +278,32 @@ export function forceCantConfirm(story, toolName, reason = 'search_down') {
 
 // ── Future outcomes (who will win, what will happen) ──────────
 // Vera never predicts. The code always opens with this sentence and removes any yes/no.
-export const FUTURE_OPENER = "Nobody can know who will win or how this will turn out yet. Here's what I can check right now:";
+export const FUTURE_OPENER = MESSAGES.en.future;
+
+// A bare yes/no (in any of our languages) right before punctuation, like "Yes," "No." "Sí," "Oui,"
+// "Nein," "是的，" "نعم،". Longer words come first. A dash only counts with a space after it,
+// so "No-one knows" is left alone. Hedge words like "likely" or "probably" are never removed.
+const YES_NO_RE =
+  /^(?:yes|no|sí|sì|si|oui|non|wi|nein|ja|हाँ|हां|नहीं|نعم|كلا|لا|হ্যাঁ|না|是的|不是|不会|会的|不|是)\s*(?:[,.:;!，。：；！،।]|[-–—]\s)\s*/iu;
 
 export function stripPrediction(answer) {
-  let a = String(answer || '').trim();
-  if (a.startsWith(FUTURE_OPENER)) a = a.slice(FUTURE_OPENER.length).trim();
-  return a.replace(/^(yes|no|probably|probably not|likely|unlikely|maybe)\b[\s,.!:;—–-]*/i, '').trim();
+  let a = String(answer || '').normalize('NFC').trim();
+  for (const m of Object.values(MESSAGES)) {
+    if (a.startsWith(m.future)) a = a.slice(m.future.length).trim();
+  }
+  const stripped = a.replace(YES_NO_RE, '').trim();
+  if (stripped === a) return a;
+  // "No, polls show..." becomes "Polls show..."
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 }
 
 // The final say on a "Find the facts" answer, after the Writer and Reviewer are done
-export function finalizeFacts(story, { questionType, problem } = {}) {
-  if (problem) return forceCantConfirm(story, 'facts', problem);
+export function finalizeFacts(story, { questionType, problem, lang = 'en' } = {}) {
+  if (problem) return forceCantConfirm(story, 'facts', problem, lang);
   if (questionType === 'future_outcome') {
+    const opener = msgs(lang).future;
     const rest = stripPrediction(story?.answer);
-    return { ...story, answer: rest ? `${FUTURE_OPENER} ${rest}` : FUTURE_OPENER };
+    return { ...story, answer: rest ? `${opener} ${rest}` : opener };
   }
   return story;
 }
