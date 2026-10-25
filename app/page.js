@@ -36,14 +36,14 @@ const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c961
 const PHOTO_SHORTCUT_URL = '';
 
 const WELCOME = {
-  en: "Hey! 👋 I'm Fact or Feed. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
-  es: '¡Hola! 👋 Soy Fact or Feed. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real.',
-  ht: 'Bonjou! 👋 Mwen se Fact or Feed. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre.',
-  zh: '你好！👋 我是 Fact or Feed。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。',
-  hi: 'नमस्ते! 👋 मैं Fact or Feed हूँ। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगा कि असल में क्या सच है।',
-  ar: 'مرحبًا! 👋 أنا Fact or Feed. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا.',
-  fr: "Salut ! 👋 Je suis Fact or Feed. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai.",
-  bn: 'হ্যালো! 👋 আমি Fact or Feed। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি।',
+  en: "Hey! 👋 I'm Vera, your fact-checking friend. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
+  es: '¡Hola! 👋 Soy Vera, tu amiga que verifica los hechos. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real de verdad.',
+  ht: 'Bonjou! 👋 Mwen se Vera, zanmi w ki verifye enfòmasyon. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre.',
+  zh: '你好！👋 我是 Vera，你的事实核查好朋友。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。',
+  hi: 'नमस्ते! 👋 मैं वेरा हूँ, आपकी फ़ैक्ट-चेक करने वाली दोस्त। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगी कि असल में क्या सच है।',
+  ar: 'مرحبًا! 👋 أنا فيرا، صديقتك في التحقق من الحقائق. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا.',
+  fr: "Salut ! 👋 Je suis Vera, ton amie qui vérifie les infos. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai.",
+  bn: 'হ্যালো! 👋 আমি ভেরা, তোমার ফ্যাক্ট-চেক করার বন্ধু। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি।',
 };
 
 // Shown in the language menu
@@ -259,6 +259,12 @@ function ResultBubble({ data }) {
         <div className="mini">
           <b>🤖 Could this image be AI-made?</b>
           <Meter labels={AI_LEVELS} colors={AI_COLORS} active={AI_LEVELS.indexOf(data.imageCheck.level)} />
+          {data.imageCheck.plausibility && (
+            <div style={{ marginTop: 10, fontSize: 14 }}>
+              🎯 <b>How believable is this scene?</b> {data.imageCheck.plausibility}
+              {data.imageCheck.plausibility_reason ? `: ${data.imageCheck.plausibility_reason}` : ''}
+            </div>
+          )}
           {data.imageCheck.signs.length > 0 && (
             <ul style={{ marginTop: 8, fontSize: 14 }}>
               {data.imageCheck.signs.map((s, i) => (
