@@ -6,10 +6,30 @@ import { RULES, FOLLOWUP_PROMPT } from '../check/prompts';
 import { searchWeb } from '../check/analyze';
 import { categorize } from '../check/bias';
 import { loadNotebook, lessonsFor } from '../check/notebook';
+import { dateRule } from '../check/safety';
 
 export const maxDuration = 120;
 
 const MODEL = 'anthropic/claude-sonnet-4.5';
+
+// The report comes from the user's browser, so we never trust its size:
+// every string, list, and nested object is cut down before it reaches the AI.
+const FIELD_LIMITS = { title: 200, snippet: 400, real_story: 2000, answer: 2000, details: 2000, question: 1000 };
+const LIST_LIMITS = { sources: 30 };
+
+function clip(value, key = '', depth = 0) {
+  if (value == null || typeof value === 'boolean') return value;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') return value.slice(0, FIELD_LIMITS[key] || 500);
+  if (depth > 4) return null;
+  if (Array.isArray(value)) return value.slice(0, LIST_LIMITS[key] || 12).map((v) => clip(v, key === 'sources' ? '' : key, depth + 1));
+  if (typeof value === 'object') {
+    const out = {};
+    for (const k of Object.keys(value).slice(0, 40)) out[k] = clip(value[k], k, depth + 1);
+    return out;
+  }
+  return null;
+}
 
 function sourceLine(s) {
   return `[${s.id}] ${s.category || 'Not rated'} | ${s.domain || ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet || ''}`;
@@ -17,20 +37,28 @@ function sourceLine(s) {
 
 export async function POST(req) {
   try {
-    const { question, report, history = [], audience = 'everyone', language = 'auto' } = await req.json();
-    const q = String(question || '').trim().slice(0, 1000);
+    const body = await req.json();
+    const q = String(body?.question || '').trim().slice(0, 1000);
+    const report = clip(body?.report && typeof body.report === 'object' ? body.report : {});
+    const history = (Array.isArray(body?.history) ? body.history : [])
+      .slice(-6)
+      .map((m) => ({ role: m?.role === 'assistant' ? 'assistant' : 'user', content: String(m?.content || '').slice(0, 2000) }));
+    const audience = String(body?.audience || 'everyone').slice(0, 20);
+    const language = String(body?.language || 'auto').slice(0, 10);
     if (!q) return Response.json({ error: 'Ask a question about the report.' }, { status: 400 });
 
     const notebook = await loadNotebook();
-    const known = (report?.sources || []).slice(0, 60);
+    const known = (Array.isArray(report?.sources) ? report.sources : []).filter((s) => s && typeof s === 'object').slice(0, 30);
     const extra = [];
-    let nextId = known.reduce((m, s) => Math.max(m, s.id || 0), 0) + 1;
+    let nextId = known.reduce((m, s) => Math.max(m, Number(s?.id) || 0), 0) + 1;
 
     const searchNews = tool({
       description: 'Search news and official sources when the sources you already have do not answer the question.',
       inputSchema: z.object({ query: z.string() }),
       execute: async ({ query }) => {
-        const found = await searchWeb(query, { max_results: 6 });
+        const track = { tried: 0, failed: 0 };
+        const found = await searchWeb(String(query).slice(0, 300), { max_results: 6 }, track);
+        if (track.failed) return 'The search is not working right now. Do NOT guess: tell the user you could not search for this right now and they can try again in a few minutes.';
         const labeled = found.map((s) => ({ ...s, ...categorize(s), id: nextId++, snippet: (s.snippet || '').slice(0, 300) }));
         extra.push(...labeled);
         return labeled.map(sourceLine).join('\n\n') || 'No results.';
@@ -82,7 +110,7 @@ ${known.map(sourceLine).join('\n\n') || 'none'}`;
     const messages = [
       { role: 'user', content: context },
       { role: 'assistant', content: 'Got it. I will answer follow-up questions using this report and these sources.' },
-      ...history.slice(-6).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '').slice(0, 2000) })),
+      ...history,
       { role: 'user', content: `Audience: ${audience}. Language: ${language}.\nQuestion: ${q}` },
     ];
 
@@ -96,7 +124,7 @@ ${known.map(sourceLine).join('\n\n') || 'none'}`;
 
     const result = await generateText({
       model: MODEL,
-      system: `${FOLLOWUP_PROMPT}${lessonsFor(notebook, 'followup')}${noMoreQuestions}\n\nRules you must follow:\n${RULES}`,
+      system: `${FOLLOWUP_PROMPT}${lessonsFor(notebook, 'followup')}${dateRule()}${noMoreQuestions}\n\nRules you must follow:\n${RULES}`,
       messages,
       tools: { searchNews },
       stopWhen: stepCountIs(4),

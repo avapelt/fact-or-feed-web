@@ -2,7 +2,8 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
 import { categorize } from './bias';
-import { loadNotebook, notebookForPrompt, lessonsFor } from './notebook';
+import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
+import { dateRule, hasEnoughEvidence, forceCantConfirm } from './safety';
 
 
 // Paste your Opus model ID inside the quotes
@@ -32,6 +33,7 @@ const ManagerSchema = z.object({
   emergency_mode: z.boolean(),
   go_to_original: z.boolean(),
   original_source: z.string().nullable(),
+  is_recent: z.boolean(),
   reasons: z.array(z.string()),
 });
 
@@ -135,7 +137,17 @@ const FactsSchema = z.object({
   notebook_note: z.string().nullable(),
 });
 
-export async function searchWeb(query, extra = {}) {
+// Searches the web with Tavily. If a `track` object is passed, it counts how many searches
+// were tried and how many failed (no key, an error, a timeout, or a broken answer),
+// so the check can say "I couldn't reach enough sources" instead of guessing.
+export async function searchWeb(query, extra = {}, track = null) {
+  if (track) track.tried = (track.tried || 0) + 1;
+  const failed = (why) => {
+    if (track) track.failed = (track.failed || 0) + 1;
+    console.error('Search failed:', why);
+    return [];
+  };
+  if (!process.env.TAVILY_API_KEY) return failed('missing TAVILY_API_KEY');
   try {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -144,16 +156,19 @@ export async function searchWeb(query, extra = {}) {
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
       body: JSON.stringify({ query, max_results: 10, ...extra }),
+      signal: AbortSignal.timeout(15000),
     });
+    if (!res.ok) return failed(`status ${res.status}`);
     const data = await res.json();
-    return (data.results || []).map((r) => ({
+    if (!data || !Array.isArray(data.results)) return failed('no results list');
+    return data.results.map((r) => ({
       title: r.title || r.url,
       url: r.url,
       snippet: (r.content || '').slice(0, 500),
       date: r.published_date || null,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failed(err?.name || 'error');
   }
 }
 
@@ -167,6 +182,7 @@ async function searchPhotos(query) {
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
       body: JSON.stringify({ query, max_results: 5, include_images: true, include_image_descriptions: true }),
+      signal: AbortSignal.timeout(15000),
     });
     const data = await res.json();
     return (data.images || [])
@@ -239,7 +255,8 @@ function rebuildAbstract(inverted) {
 async function searchResearch(query) {
   try {
     const res = await fetch(
-      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=6`
+      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=6`,
+      { signal: AbortSignal.timeout(15000) }
     );
     const data = await res.json();
     return (data.results || [])
@@ -379,7 +396,7 @@ export async function analyze(input) {
   const text = (input.text || '').slice(0, 6000);
   const url = (input.url || '').trim();
   const image = input.image || null;
-  const audience = input.audience || 'everyone';
+  const audience = String(input.audience || 'everyone').slice(0, 20);
   const fast = !!input.fast;
   const toolName = input.tool === 'facts' ? 'facts' : 'credible';
   // In "Is this true?" mode the photo is only read for its claims; the AI photo check is its own mode
@@ -399,13 +416,15 @@ export async function analyze(input) {
 
   // 📒 Every agent reads Vera's notebook before doing its job
   const notebook = await loadNotebook();
+  // 📅 Every agent is told today's date (worked out fresh for each check)
+  const today = dateRule();
 
   // Step 0: 🧭 The Manager analyzes the post and chooses the game plan
   let plan = null;
   try {
     const { output } = await generateText({
       model: FAST_MODEL,
-      system: MANAGER_PROMPT + lessonsFor(notebook, 'manager'),
+      system: MANAGER_PROMPT + lessonsFor(notebook, 'manager') + today,
       temperature: 0.2,
       messages: [
         {
@@ -440,6 +459,7 @@ export async function analyze(input) {
     emergency_mode: false,
     go_to_original: false,
     original_source: null,
+    is_recent: false,
     reasons: ['Using the full team to be safe.'],
   };
   // Each tool has its own job: credibility always looks at persuasion; Find the facts answers a question
@@ -453,7 +473,7 @@ export async function analyze(input) {
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
     model: quickModel,
-    system: READER_PROMPT + lessonsFor(notebook, 'planner'),
+    system: READER_PROMPT + lessonsFor(notebook, 'planner') + today,
     messages: [{ role: 'user', content: [...content, { type: 'text', text: `Manager's game plan: ${JSON.stringify(plan)}` }] }],
     output: Output.object({ schema: ReaderSchema }),
   });
@@ -469,11 +489,15 @@ export async function analyze(input) {
   // Never search nothing at all if there is a checkable claim
   if (!newsQ.length && !officialQ.length && !researchQ.length && !originalQ.length && reader.claims.length) newsQ = reader.claims.slice(0, 1);
 
+  // Recent or breaking news: the first news search only looks at the past week
+  const recent = !!plan.is_recent || reader.topic_type === 'breaking_news';
+
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
+  const searchTrack = { tried: 0, failed: 0 };
   const searchesPromise = Promise.all([
-    ...originalQ.map((q) => searchWeb(q, { max_results: 5 }).then((list) => list.map((x) => ({ ...x, original: true })))),
-    ...newsQ.map((q) => searchWeb(q, { topic: 'news' })),
-    ...officialQ.map((q) => searchWeb(q)),
+    ...originalQ.map((q) => searchWeb(q, { max_results: 5 }, searchTrack).then((list) => list.map((x) => ({ ...x, original: true })))),
+    ...newsQ.map((q, i) => searchWeb(q, recent && i === 0 ? { topic: 'news', time_range: 'week' } : { topic: 'news' }, searchTrack)),
+    ...officialQ.map((q) => searchWeb(q, {}, searchTrack)),
     ...researchQ.map((q) => searchResearch(q)),
   ]).then((results) => {
     mark('Searched news, official sources, and published research');
@@ -483,7 +507,7 @@ export async function analyze(input) {
   const persuasionPromise = plan.persuasion
     ? generateText({
         model: quickModel,
-        system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion'),
+        system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion') + today,
         prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
       }).then((r) => {
         mark('Analyzed persuasion tactics');
@@ -498,7 +522,7 @@ export async function analyze(input) {
         [0, 1, 2].map(() =>
           generateText({
             model: MODEL,
-            system: IMAGE_PROMPT + lessonsFor(notebook, 'image'),
+            system: IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
             temperature: 0.3,
             messages: [
               {
@@ -521,7 +545,7 @@ export async function analyze(input) {
 
   const comparePromise =
     photoChecks && plan.photo_comparison && reader.photo_search_query
-      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'))
+      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison') + today)
           .then((r) => {
             mark(`Compared the photo with ${r.compared.length} real photos found online`);
             return r;
@@ -574,7 +598,7 @@ export async function analyze(input) {
   const notebookText = notebookForPrompt(notebook);
   // The outlet that published a pasted link, with its bias rating (bias is not the same as accuracy)
   const outlet = url ? categorize({ url }) : null;
-  mark(`Every agent read Vera's notebook (${notebook.rumors.length} past rumors, ${notebook.lessons.length} lessons)`);
+  mark(`Every agent read Vera's notebook (${notebook.rumors.length} past rumors as unverified hints, ${approvedLessonCount()} approved lessons)`);
 
   // Step 4: Weigh the evidence and write the answer
   const writerLanguage = LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English';
@@ -582,7 +606,7 @@ export async function analyze(input) {
   if (toolName === 'facts') {
     const { output } = await generateText({
       model: quickModel,
-      system: `${FACTS_PROMPT}${lessonsFor(notebook, 'writer')}\n\nRules you must follow:\n${RULES}`,
+      system: `${FACTS_PROMPT}${lessonsFor(notebook, 'writer')}${today}\n\nRules you must follow:\n${RULES}`,
       prompt: `Audience: ${audience}
 Language: ${writerLanguage}
 
@@ -591,7 +615,7 @@ What it's about: ${reader.content_summary}
 
 Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to Miami-Dade Emergency Management and the National Weather Service for safety information.' : ''}
 
-Vera's notebook (use only as hints; today's sources always win):
+Vera's notebook (unverified hints from past checks; re-verify against today's sources, which always win):
 ${notebookForPrompt(notebook)}
 
 Sources found (${sources.length}):
@@ -603,7 +627,7 @@ ${sourceList || 'No sources were found.'}`,
   } else {
   const { output } = await generateText({
     model: quickModel,
-    system: `${STORY_PROMPT}${lessonsFor(notebook, 'writer')}\n\nRules you must follow:\n${RULES}`,
+    system: `${STORY_PROMPT}${lessonsFor(notebook, 'writer')}${today}\n\nRules you must follow:\n${RULES}`,
     prompt: `Audience: ${audience}
 Language: ${writerLanguage}
 
@@ -619,7 +643,7 @@ Manager's game plan: ${plan.analysis}${plan.emergency_mode ? ' EMERGENCY MODE IS
 Persuasion analysis:
 ${persuasion}
 
-Vera's notebook (use only as hints; today's sources always win):
+Vera's notebook (unverified hints from past checks; re-verify against today's sources, which always win):
 ${notebookText}
 
 Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : image ? 'Not run here (the AI photo check is a separate mode). Judge the claims, not whether the photo is AI-made.' : 'No image was sent'}
@@ -638,7 +662,7 @@ ${sourceList || 'No sources were found.'}`,
   try {
     const { output } = await generateText({
       model: quickModel,
-      system: `${REVIEWER_PROMPT}${lessonsFor(notebook, 'reviewer')}\n\nRules the result must follow:\n${RULES}`,
+      system: `${REVIEWER_PROMPT}${lessonsFor(notebook, 'reviewer')}${today}\n\nRules the result must follow:\n${RULES}`,
       prompt: `Claims being checked:
 ${reader.claims.join('\n')}
 
@@ -668,6 +692,19 @@ ${sourceList || 'No sources were found.'}`,
     console.error('Reviewer failed', err);
   }
 
+  // Step 6: Never guess. If search was down or there are too few sources (fewer than 3,
+  // or all from one website), the code itself says "Can't confirm yet", whatever the AI wrote.
+  const enough = hasEnoughEvidence(sources, {
+    claims: reader.claims.length,
+    searchesTried: searchTrack.tried,
+    searchesFailed: searchTrack.failed,
+  });
+  if (!enough) {
+    story = forceCantConfirm(story, toolName);
+    review = null; // the double-check was about the replaced draft, so don't show it
+    mark(`Not enough sources to check this (${sources.length} found, ${searchTrack.failed} of ${searchTrack.tried} searches failed), so I'm not guessing`);
+  }
+
   const keySources = (story.key_source_ids || [])
     .map((id) => sources.find((s) => s.id === id))
     .filter(Boolean);
@@ -686,6 +723,8 @@ ${sourceList || 'No sources were found.'}`,
       topic: reader.topic_type,
       claims: reader.claims,
       queries: { original: originalQ, news: newsQ, official: officialQ, research: researchQ },
+      recent,
+      search: { ...searchTrack, enough },
       timings,
     },
   };
@@ -728,12 +767,13 @@ export async function checkPhoto(input) {
   }
 
   const notebook = await loadNotebook();
+  const today = dateRule();
 
   const imagePromise = Promise.allSettled(
     [0, 1, 2].map(() =>
       generateText({
         model: MODEL,
-        system: IMAGE_PROMPT + lessonsFor(notebook, 'image'),
+        system: IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
         temperature: 0.3,
         messages: [
           {
@@ -757,7 +797,7 @@ export async function checkPhoto(input) {
   const comparePromise = generateText({
     model: FAST_MODEL,
     system:
-      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.',
+      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.' + today,
     messages: [
       {
         role: 'user',
@@ -773,7 +813,7 @@ export async function checkPhoto(input) {
       mark('Described the photo and planned a search for real ones');
       if (!d?.photo_search_query) return { describe: d, comparison: null };
       try {
-        const comparison = await compareWithRealPhotos(image, d.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'));
+        const comparison = await compareWithRealPhotos(image, d.photo_search_query, MODEL, lessonsFor(notebook, 'comparison') + today);
         mark(`Compared the photo with ${comparison.compared.length} real photos found online`);
         return { describe: d, comparison };
       } catch (err) {
@@ -811,7 +851,7 @@ You are Vera from "Fact or Feed?", a friendly fact-checking friend. Explain an A
 - signs, plausibility_reason, comparison: rewrite the given text in the requested language, plain words (comparison null if none).
 Never say a photo is definitely AI or definitely real; warning signs are not proof.
 Tone: ${audience === 'simple' ? 'very short and simple words' : audience === 'complex' ? 'more detail and nuance, still clear' : 'friendly and clear for any age'}.
-Write in ${LANGUAGE_NAMES[langCode] || 'English'}.`,
+Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
       prompt: JSON.stringify({
         level: check.level,
         plausibility: check.plausibility,
