@@ -2,7 +2,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
 import { categorize } from './bias';
-import { loadNotebook, notebookForPrompt } from './notebook';
+import { loadNotebook, notebookForPrompt, lessonsFor } from './notebook';
 
 
 // Paste your Opus model ID inside the quotes
@@ -156,7 +156,7 @@ async function fetchImageAsDataUrl(url) {
   }
 }
 
-async function compareWithRealPhotos(image, query, model) {
+async function compareWithRealPhotos(image, query, model, lessons = '') {
   const found = await searchPhotos(query);
   const downloaded = await Promise.all(
     found.slice(0, 8).map(async (img) => ({ ...img, dataUrl: await fetchImageAsDataUrl(img.url) }))
@@ -167,7 +167,7 @@ async function compareWithRealPhotos(image, query, model) {
   }
   const { output } = await generateText({
     model,
-    system: COMPARE_PROMPT,
+    system: COMPARE_PROMPT + lessons,
     temperature: 0.2,
     messages: [
       {
@@ -352,13 +352,13 @@ export async function analyze(input) {
     throw e;
   }
 
-  // Vera's notebook (anonymous notes from past checks) loads while she reads the post
-  const notebookPromise = loadNotebook();
+  // 📒 Every agent reads Vera's notebook before doing its job
+  const notebook = await loadNotebook();
 
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
     model: quickModel,
-    system: READER_PROMPT,
+    system: READER_PROMPT + lessonsFor(notebook, 'planner'),
     messages: [{ role: 'user', content }],
     output: Output.object({ schema: ReaderSchema }),
   });
@@ -380,7 +380,7 @@ export async function analyze(input) {
 
   const persuasionPromise = generateText({
     model: quickModel,
-    system: PERSUASION_PROMPT,
+    system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion'),
     prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
   }).then((r) => {
     mark('Analyzed persuasion tactics');
@@ -394,7 +394,7 @@ export async function analyze(input) {
         [0, 1, 2].map(() =>
           generateText({
             model: MODEL,
-            system: IMAGE_PROMPT,
+            system: IMAGE_PROMPT + lessonsFor(notebook, 'image'),
             temperature: 0.3,
             messages: [
               {
@@ -417,7 +417,7 @@ export async function analyze(input) {
 
   const comparePromise =
     image && reader.photo_search_query
-      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL)
+      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison'))
           .then((r) => {
             mark(`Compared the photo with ${r.compared.length} real photos found online`);
             return r;
@@ -467,14 +467,13 @@ export async function analyze(input) {
     )
     .join('\n\n');
 
-  const notebook = await notebookPromise;
   const notebookText = notebookForPrompt(notebook);
-  mark(`Checked Vera's notebook (${notebook.rumors.length} past rumors, ${notebook.lessons.length} lessons)`);
+  mark(`Every agent read Vera's notebook (${notebook.rumors.length} past rumors, ${notebook.lessons.length} lessons)`);
 
   // Step 4: Weigh the evidence and write the real story
   const { output: story } = await generateText({
     model: quickModel,
-    system: `${STORY_PROMPT}\n\nRules you must follow:\n${RULES}`,
+    system: `${STORY_PROMPT}${lessonsFor(notebook, 'writer')}\n\nRules you must follow:\n${RULES}`,
     prompt: `Audience: ${audience}
 Language: ${LANGUAGE_NAMES[language !== 'auto' ? language : reader.language] || 'English'}
 
@@ -503,7 +502,7 @@ ${sourceList || 'No sources were found.'}`,
   try {
     const { output } = await generateText({
       model: quickModel,
-      system: `${REVIEWER_PROMPT}\n\nRules the result must follow:\n${RULES}`,
+      system: `${REVIEWER_PROMPT}${lessonsFor(notebook, 'reviewer')}\n\nRules the result must follow:\n${RULES}`,
       prompt: `Claims being checked:
 ${reader.claims.join('\n')}
 

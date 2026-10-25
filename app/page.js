@@ -141,6 +141,9 @@ const CSS = `
 .notebook{margin-top:10px;font-size:13.5px;background:#FFF8E6;border-radius:10px;padding:8px 12px}
 .feedback{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
 .feedback .btn{padding:5px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:var(--sans);cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--moss);border-color:var(--moss);color:#fff}
 .mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
 .mini b{font-weight:600}
 .blk{margin-top:16px}
@@ -320,47 +323,59 @@ function SpectrumBar({ stats, total }) {
   );
 }
 
-function Feedback({ data }) {
+// Optional rating. A 👎 asks which part was wrong, so the lesson goes to the agent who does that job.
+function Feedback({ claims, verdict, realStory, areas = [] }) {
   const [state, setState] = useState('ask'); // ask | why | sending | done
+  const [area, setArea] = useState('');
   const [note, setNote] = useState('');
   const [lesson, setLesson] = useState(null);
 
-  async function sendFeedback(correct, why = '') {
+  async function sendFeedback(correct, chosenArea = '', why = '') {
     setState('sending');
     try {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          claims: data.trace?.claims || [data.result.real_story],
-          verdict: data.result.verdict,
-          realStory: data.result.real_story,
-          correct,
-          note: why,
-        }),
+        body: JSON.stringify({ claims, verdict, realStory, correct, note: why, area: chosenArea }),
       });
       const out = await res.json();
-      setLesson(out.lesson || null);
+      setLesson(out.lesson ? { text: out.lesson, job: out.job } : null);
     } catch {}
     setState('done');
   }
 
   if (state === 'done') {
     return (
-      <div className="feedback muted">
+      <div className="feedback muted" style={{ display: 'block' }}>
         📒 Thanks! I wrote that in my notebook so I'll do better next time.
-        {lesson && <div style={{ marginTop: 4 }}>Lesson learned: "{lesson.replace(/[.!]+$/, '')}."</div>}
+        {lesson && (
+          <div style={{ marginTop: 4 }}>
+            Lesson learned{lesson.job ? ` for ${lesson.job.split(' (')[0]}` : ''}: "{lesson.text.replace(/[.!]+$/, '')}."
+          </div>
+        )}
       </div>
     );
   }
   if (state === 'sending') return <div className="feedback muted">Writing it in my notebook…</div>;
   if (state === 'why') {
     return (
-      <div className="feedback">
-        <div className="muted" style={{ marginBottom: 6 }}>What was wrong? (optional, please don't include names or personal info)</div>
+      <div className="feedback" style={{ display: 'block' }}>
+        {areas.length > 0 && (
+          <>
+            <div className="muted" style={{ marginBottom: 6 }}>Which part was wrong?</div>
+            <div className="chips">
+              {areas.map((a) => (
+                <button key={a} className={`chip ${area === a ? 'on' : ''}`} onClick={() => setArea(a)}>
+                  {a}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="muted" style={{ margin: '8px 0 6px' }}>Tell me more (optional, no names or personal info):</div>
         <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <button className="btn" onClick={() => sendFeedback(false, note)}>Send</button>
+          <button className="btn" onClick={() => sendFeedback(false, area, note)}>Send</button>
           <button className="btn" onClick={() => setState('ask')}>Cancel</button>
         </div>
       </div>
@@ -368,9 +383,9 @@ function Feedback({ data }) {
   }
   return (
     <div className="feedback">
-      <span className="muted">Was this right?</span>
-      <button className="btn" onClick={() => sendFeedback(true)} aria-label="Yes, this was right">👍</button>
-      <button className="btn" onClick={() => setState('why')} aria-label="No, this was wrong">👎</button>
+      <span className="muted">Rate this (optional):</span>
+      <button className="btn" onClick={() => sendFeedback(true)} aria-label="This was right">👍</button>
+      <button className="btn" onClick={() => setState('why')} aria-label="This was wrong">👎</button>
     </div>
   );
 }
@@ -616,7 +631,12 @@ function ResultBubble({ data }) {
         )}
       </details>
 
-      <Feedback data={data} />
+      <Feedback
+        claims={data.trace?.claims || [r.real_story]}
+        verdict={r.verdict}
+        realStory={r.real_story}
+        areas={['The verdict', ...(data.imageCheck ? ['The photo check'] : []), 'The sources', 'Persuasion tactics', 'Who posted it', 'Something else']}
+      />
     </div>
   );
 }
@@ -828,7 +848,7 @@ export default function Home() {
       if (data.error || !data.answer) {
         add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
       } else {
-        add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain });
+        add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain, question });
         setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
         if (data.newSources?.length) {
           setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
@@ -952,6 +972,7 @@ export default function Home() {
                         ))}
                       </ul>
                     )}
+                    <Feedback claims={[`Follow-up question: ${m.question || ''}`]} verdict="follow-up answer" realStory={m.text} />
                   </div>
                 </div>
               );

@@ -51,7 +51,7 @@ const STEPS = [
   },
   {
     title: 'Learn from it',
-    body: 'The Bookkeeper agent keeps Vera’s notebook: short, anonymous notes about rumors she has checked and lessons from her mistakes (when the Reviewer corrects her, or you tap 👎). Vera reads it before every check, so she recognizes repeat rumors and gets better over time. It never saves names, accounts, contact info, your own words, or photos.',
+    body: 'The Bookkeeper agent keeps Vera’s notebook: short, anonymous notes about rumors she has checked and lessons from her mistakes. Lessons come from the Reviewer’s corrections and from your optional 👍/👎 ratings, where you can say which part was wrong. Each lesson is filed under the agent whose job it is, and every agent reads its own lessons before working, so each one gets better at its own job. It never saves names, accounts, contact info, your own words, or photos.',
   },
 ];
 

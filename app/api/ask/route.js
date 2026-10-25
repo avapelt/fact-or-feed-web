@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { RULES, FOLLOWUP_PROMPT } from '../check/prompts';
 import { searchWeb } from '../check/analyze';
 import { categorize } from '../check/bias';
+import { loadNotebook, lessonsFor } from '../check/notebook';
 
 export const maxDuration = 120;
 
@@ -20,6 +21,7 @@ export async function POST(req) {
     const q = String(question || '').trim().slice(0, 1000);
     if (!q) return Response.json({ error: 'Ask a question about the report.' }, { status: 400 });
 
+    const notebook = await loadNotebook();
     const known = (report?.sources || []).slice(0, 60);
     const extra = [];
     let nextId = known.reduce((m, s) => Math.max(m, s.id || 0), 0) + 1;
@@ -59,7 +61,7 @@ ${known.map(sourceLine).join('\n\n') || 'none'}`;
 
     const result = await generateText({
       model: MODEL,
-      system: `${FOLLOWUP_PROMPT}\n\nRules you must follow:\n${RULES}`,
+      system: `${FOLLOWUP_PROMPT}${lessonsFor(notebook, 'followup')}\n\nRules you must follow:\n${RULES}`,
       messages,
       tools: { searchNews },
       stopWhen: stepCountIs(4),
