@@ -67,7 +67,6 @@ const CSS = `
 .hw a{color:var(--rust);text-underline-offset:2px}
 .hw-top{border-bottom:1px solid var(--line);padding:12px 16px}
 .hw-top-in{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:12px}
-.hw-av{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-family:var(--serif);font-size:16px;display:grid;place-items:center;text-decoration:none;flex-shrink:0}
 .hw-brand{white-space:nowrap;font-family:var(--sans);font-weight:800;font-size:22px;letter-spacing:-0.03em;color:var(--ink);text-decoration:none}
 .hw-back{margin-left:auto;border:0;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--moss);color:#fff !important;text-decoration:none;white-space:nowrap}
 .hw a.hw-brand{color:var(--ink)}
@@ -140,7 +139,6 @@ export default function HowItWorks() {
 
       <header className="hw-top">
         <div className="hw-top-in">
-          <a className="hw-av" href="/">F?</a>
           <a className="hw-brand" href="/">fact or feed<span style={{ color: 'var(--moss)' }}>?</span></a>
           <a className="hw-back" href="/">← Check something</a>
         </div>
