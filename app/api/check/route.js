@@ -1,19 +1,10 @@
 import { del } from '@vercel/blob';
+import { isOurPhoto, fetchOurPhoto, checkImageField, badRequest } from './safety';
 import { after } from 'next/server';
 import { analyze } from './analyze';
 import { bookkeep } from './notebook';
 
 export const maxDuration = 300;
-
-// Only photos saved by our own /api/share upload are allowed here
-function isOurPhoto(url) {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && u.hostname.endsWith('.public.blob.vercel-storage.com');
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req) {
   let imageUrl = null;
@@ -21,12 +12,13 @@ export async function POST(req) {
     const body = await req.json();
 
     // A photo shared from the iPhone Shortcut arrives as a link to our photo storage
-    if (!body.image && body.imageUrl && isOurPhoto(body.imageUrl)) {
-      imageUrl = body.imageUrl;
-      const res = await fetch(imageUrl);
-      const type = res.headers.get('content-type') || 'image/jpeg';
-      const buf = Buffer.from(await res.arrayBuffer());
-      body.image = `data:${type};base64,${buf.toString('base64')}`;
+    // Only photos from OUR store's shares/ folder are accepted (and later deleted)
+    if (!body.image && body.imageUrl) {
+      if (!isOurPhoto(body.imageUrl)) throw badRequest("I couldn't open that shared photo. Try sharing it again.");
+      imageUrl = new URL(body.imageUrl).href;
+      body.image = await fetchOurPhoto(imageUrl);
+    } else {
+      body.image = checkImageField(body.image);
     }
 
     const data = await analyze(body);
@@ -50,7 +42,7 @@ export async function POST(req) {
       { status: err?.status || 500 }
     );
   } finally {
-    // Privacy: delete the shared photo once we've checked it
-    if (imageUrl) await del(imageUrl).catch(() => {});
+    // Privacy: delete the shared photo once we've checked it (only ever our own shares/ photos)
+    if (imageUrl && isOurPhoto(imageUrl)) await del(imageUrl).catch(() => {});
   }
 }
