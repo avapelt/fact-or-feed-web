@@ -23,8 +23,10 @@ export async function POST(req) {
 
     const data = await analyze(body);
 
-    // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent
-    after(() =>
+    // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent.
+    // Skipped when the code forced "Can't confirm yet" (search down or too few sources),
+    // so an outage never gets remembered as a result.
+    if (!data.trace?.search?.forced) after(() =>
       bookkeep({
         model: 'anthropic/claude-haiku-4.5',
         claims: data.trace?.claims,

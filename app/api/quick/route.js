@@ -1,6 +1,6 @@
 // Used by the iPhone Shortcut: Share anything → Fact or Feed? → popup over the app you're in.
 import { analyze } from '../check/analyze';
-import { checkImageField, signPayload } from '../check/safety';
+import { checkImageField, signPayload, photoTooBig, sniffImageType, MAX_IMAGE_BYTES } from '../check/safety';
 
 export const maxDuration = 300;
 
@@ -12,12 +12,6 @@ const ICONS = {
   False: '❌',
   "Can't confirm yet": '❔',
 };
-
-function tooBig() {
-  const e = new Error('That photo is too big. Try a screenshot instead.');
-  e.status = 400;
-  return e;
-}
 
 function splitInput(raw) {
   const value = (raw || '').trim();
@@ -41,9 +35,10 @@ async function readRequest(req) {
     language = String(form.get('language') || language);
     const file = form.get('image');
     if (file && typeof file !== 'string' && file.size > 0) {
-      if (file.size > 4.5 * 1024 * 1024) throw tooBig();
+      if (file.size > MAX_IMAGE_BYTES) throw photoTooBig();
       const buf = Buffer.from(await file.arrayBuffer());
-      image = `data:${file.type || 'image/jpeg'};base64,${buf.toString('base64')}`;
+      // Use the real type from the file's first bytes (the Shortcut may not label it)
+      image = `data:${sniffImageType(buf) || file.type || 'image/jpeg'};base64,${buf.toString('base64')}`;
     }
   } else {
     const body = await req.json();

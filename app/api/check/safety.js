@@ -40,8 +40,9 @@ export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 export async function fetchOurPhoto(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw badRequest("I couldn't open that shared photo. Try sharing it again.");
-  const type = (res.headers.get('content-type') || 'image/jpeg').split(';')[0].trim().toLowerCase();
-  if (!IMAGE_TYPES.includes(type)) throw badRequest("That shared file doesn't look like a photo.");
+  // The iPhone Shortcut sometimes labels photos as application/octet-stream, so we check the bytes
+  const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  if (type && !IMAGE_TYPES.includes(type) && type !== 'application/octet-stream') throw badRequest("That shared file doesn't look like a photo.");
   if (Number(res.headers.get('content-length') || 0) > MAX_PHOTO_BYTES) throw badRequest('That photo is too big. Try a screenshot instead.');
   const chunks = [];
   let total = 0;
@@ -56,23 +57,55 @@ export async function fetchOurPhoto(url) {
     }
     chunks.push(value);
   }
-  return `data:${type};base64,${Buffer.concat(chunks).toString('base64')}`;
+  const buf = Buffer.concat(chunks);
+  const sniffed = sniffImageType(buf);
+  if (!sniffed) throw badRequest("That shared file doesn't look like a photo.");
+  return `data:${sniffed};base64,${buf.toString('base64')}`;
+}
+
+// Works out the real image type from the first bytes of the file (its "magic bytes")
+const HEIC_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'];
+export function sniffImageType(bytes) {
+  const b = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes || []);
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length >= 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (b.length >= 6 && /^GIF8[79]a$/.test(b.subarray(0, 6).toString('latin1'))) return 'image/gif';
+  if (b.length >= 12 && b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (b.length >= 12 && b.subarray(4, 8).toString('latin1') === 'ftyp' && HEIC_BRANDS.includes(b.subarray(8, 12).toString('latin1'))) return 'image/heic';
+  return null;
 }
 
 // ── Photos sent straight to the API ───────────────────────────
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic'];
-export const MAX_IMAGE_CHARS = 6 * 1024 * 1024;
+// One cap for both: a file up to MAX_IMAGE_BYTES always fits in MAX_IMAGE_CHARS once turned into base64
+export const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024;
+export const MAX_IMAGE_CHARS = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 100; // about 6MB of text
 const IMAGE_RE = /^data:image\/(jpeg|png|webp|gif|heic);base64,[A-Za-z0-9+/]+={0,2}$/;
+const OCTET_PREFIX = 'data:application/octet-stream;base64,';
+const TOO_BIG = 'That photo is too big. Try a screenshot instead.';
 
 export function isValidImageDataUrl(image) {
   return typeof image === 'string' && image.length <= MAX_IMAGE_CHARS && IMAGE_RE.test(image);
 }
 
-// Throws a friendly 400 if a photo was sent but isn't a normal image
+export function photoTooBig() {
+  return badRequest(TOO_BIG);
+}
+
+// Throws a friendly 400 if a photo was sent but isn't a normal image.
+// Returns the photo, relabeled with its real type if it came in as application/octet-stream.
 export function checkImageField(image) {
   if (image == null || image === '') return null;
-  if (!isValidImageDataUrl(image)) throw badRequest("I couldn't read that photo. Try a JPEG or PNG screenshot under 4MB.");
-  return image;
+  if (typeof image === 'string' && image.length > MAX_IMAGE_CHARS) throw photoTooBig();
+  if (isValidImageDataUrl(image)) return image;
+  if (typeof image === 'string' && image.startsWith(OCTET_PREFIX)) {
+    const data = image.slice(OCTET_PREFIX.length);
+    if (data && /^[A-Za-z0-9+/]+={0,2}$/.test(data)) {
+      const type = sniffImageType(Buffer.from(data.slice(0, 64), 'base64'));
+      if (type) return `data:${type};base64,${data}`;
+    }
+  }
+  throw badRequest("I couldn't read that photo. Try a JPEG or PNG screenshot under 4MB.");
 }
 
 export function badRequest(message) {
@@ -110,8 +143,14 @@ export function verifyPayload(payload, sig, env = process.env) {
 // ── Enough evidence? ──────────────────────────────────────────
 // A claim needs at least 3 sources from at least 2 different websites,
 // and the web searches must mostly have worked. Otherwise we never guess.
-export const NOT_ENOUGH_SOURCES =
-  "I couldn't reach enough news sources to check this right now. Please try again in a few minutes.";
+export const SEARCH_DOWN = "I couldn't reach enough news sources right now. Please try again in a few minutes.";
+export const THIN_SOURCES = "I couldn't find enough reliable sources on this yet, so I can't confirm it.";
+export const THIN_SOURCES_FACTS = "I couldn't find enough reliable sources to answer this right now.";
+
+function messageFor(reason, toolName) {
+  if (reason === 'search_down') return SEARCH_DOWN;
+  return toolName === 'facts' ? THIN_SOURCES_FACTS : THIN_SOURCES;
+}
 
 function domainOf(s) {
   if (s.domain) return String(s.domain).toLowerCase().replace(/^www\./, '');
@@ -122,35 +161,42 @@ function domainOf(s) {
   }
 }
 
-export function hasEnoughEvidence(sources, { claims = 0, searchesTried = 0, searchesFailed = 0 } = {}) {
-  if (!claims) return true; // nothing checkable: keep the normal behavior
-  if (searchesTried > 0 && searchesFailed * 2 >= searchesTried) return false; // search was down
+// null when there's enough evidence; otherwise why not: 'search_down' or 'thin'.
+// A failed search only matters when it left us short of sources: with enough good sources,
+// the real verdict ships.
+export function evidenceProblem(sources, { claims = 0, searchesFailed = 0 } = {}) {
+  if (!claims) return null; // nothing checkable: keep the normal behavior
   const list = Array.isArray(sources) ? sources : [];
   const domains = new Set(list.map(domainOf).filter(Boolean));
-  return list.length >= 3 && domains.size >= 2;
+  if (list.length >= 3 && domains.size >= 2) return null;
+  return searchesFailed > 0 ? 'search_down' : 'thin';
+}
+
+export function hasEnoughEvidence(sources, opts) {
+  return !evidenceProblem(sources, opts);
 }
 
 // Replaces a result that can't be trusted with an honest "Can't confirm yet"
-export function forceCantConfirm(story, toolName) {
-  const consensus = { level: 'None yet', explanation: NOT_ENOUGH_SOURCES };
+export function forceCantConfirm(story, toolName, reason = 'search_down') {
+  const msg = messageFor(reason, toolName);
+  const consensus = { level: 'None yet', explanation: msg };
   if (toolName === 'facts') {
     return {
       ...story,
-      answer: NOT_ENOUGH_SOURCES,
+      answer: msg,
       details: '',
       consensus,
       original_source: null,
-      breakdown: [],
+      reframed: null,
       disputed: [],
       key_source_ids: [],
       notebook_note: null,
-      warning: NOT_ENOUGH_SOURCES,
     };
   }
   return {
     ...story,
     verdict: "Can't confirm yet",
-    real_story: NOT_ENOUGH_SOURCES,
+    real_story: msg,
     consensus,
     right_and_wrong: [],
     disputed: [],
@@ -159,11 +205,48 @@ export function forceCantConfirm(story, toolName) {
     notebook_note: null,
     reply_draft: null,
     // Keep any scam or safety warning; it doesn't depend on the news search
-    warning: story?.warning ? `${NOT_ENOUGH_SOURCES} ${story.warning}` : NOT_ENOUGH_SOURCES,
+    warning: story?.warning ? `${msg} ${story.warning}` : msg,
   };
 }
 
+// ── Future outcomes (who will win, what will happen) ──────────
+// Vera never predicts. The code always opens with this sentence and removes any yes/no.
+export const FUTURE_OPENER = "Nobody can know who will win or how this will turn out yet. Here's what I can check right now:";
+
+export function stripPrediction(answer) {
+  let a = String(answer || '').trim();
+  if (a.startsWith(FUTURE_OPENER)) a = a.slice(FUTURE_OPENER.length).trim();
+  return a.replace(/^(yes|no|probably|probably not|likely|unlikely|maybe)\b[\s,.!:;—–-]*/i, '').trim();
+}
+
+// The final say on a "Find the facts" answer, after the Writer and Reviewer are done
+export function finalizeFacts(story, { questionType, problem } = {}) {
+  if (problem) return forceCantConfirm(story, 'facts', problem);
+  if (questionType === 'future_outcome') {
+    const rest = stripPrediction(story?.answer);
+    return { ...story, answer: rest ? `${FUTURE_OPENER} ${rest}` : FUTURE_OPENER };
+  }
+  return story;
+}
+
+// ── Wikipedia is never used as a source ───────────────────────
+export const EXCLUDED_DOMAINS = ['wikipedia.org', 'wikimedia.org', 'wikidata.org'];
+
+export function isBlockedSource(url) {
+  try {
+    const host = new URL(String(url || '')).hostname.toLowerCase().replace(/\.$/, '');
+    return EXCLUDED_DOMAINS.some((d) => host === d || host.endsWith('.' + d));
+  } catch {
+    return false;
+  }
+}
+
 // ── Today's date for every agent ──────────────────────────────
+// Most users are in Florida, so we use US Eastern time.
+export function todayEastern(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
 export function dateRule(now = new Date()) {
-  return `\n\nToday's date is ${now.toISOString().slice(0, 10)}. Your training data ends before today. Never call a claim false just because you don't remember it happening; rely on the dated sources.`;
+  return `\n\nToday's date is ${todayEastern(now)} (US Eastern time; dates may be up to a day off by timezone). Your training data ends before today. Never call a claim false just because you don't remember it happening; rely on the dated sources.`;
 }
