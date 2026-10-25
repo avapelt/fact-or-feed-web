@@ -91,7 +91,7 @@ const CSS = `
 .av{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);font-weight:700;font-size:16px;display:grid;place-items:center;flex-shrink:0}
 .av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end;background:var(--moss);color:#fff}
 .name{font-weight:800;font-size:24px;line-height:1;letter-spacing:-0.03em}
-.status{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.status{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-top:6px;font-weight:600;display:flex;align-items:center;gap:6px}
 .status i{width:6px;height:6px;border-radius:50%;background:var(--moss);display:inline-block}
 .prefs{margin-left:auto;display:flex;gap:6px}
 .prefs select{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:500;background:var(--paper);color:var(--ink);font-family:var(--sans);cursor:pointer}
