@@ -9,11 +9,11 @@ export const metadata = {
 };
 
 const LEANS = [
-  { name: 'Left', color: '#2f4a6d', text: '#efeadf' },
-  { name: 'Lean Left', color: '#8fa5c2', text: '#1c1a17' },
-  { name: 'Center', color: '#b3ad9c', text: '#1c1a17' },
-  { name: 'Lean Right', color: '#d29a86', text: '#1c1a17' },
-  { name: 'Right', color: '#8c2f1f', text: '#efeadf' },
+  { name: 'Left', color: '#3B5BA9', text: '#FFFFFF' },
+  { name: 'Lean Left', color: '#8EA6D9', text: '#1D1D1F' },
+  { name: 'Center', color: '#B9B6C2', text: '#1D1D1F' },
+  { name: 'Lean Right', color: '#E3A397', text: '#1D1D1F' },
+  { name: 'Right', color: '#B5402F', text: '#FFFFFF' },
 ];
 
 const STEPS = [
@@ -40,12 +40,12 @@ const STEPS = [
 ];
 
 const VERDICTS = [
-  ['Accurate', '#4f6b3a', 'The main claim is backed by reliable sources.'],
-  ['Missing context', '#9a9a2e', 'True, but leaves out something that changes the meaning.'],
-  ['Exaggerated', '#c08a2e', 'Starts from something real but blows it up.'],
-  ['Misleading', '#b0602f', 'Uses real facts to push a false impression.'],
-  ['False', '#8c2f1f', 'Reliable sources show the claim is wrong.'],
-  ["Can't confirm yet", '#6f6858', 'Not enough reliable coverage to say either way.'],
+  ['Accurate', '#2F8F5B', 'The main claim is backed by reliable sources.'],
+  ['Missing context', '#7FA83A', 'True, but leaves out something that changes the meaning.'],
+  ['Exaggerated', '#D99A2B', 'Starts from something real but blows it up.'],
+  ['Misleading', '#D9702F', 'Uses real facts to push a false impression.'],
+  ['False', '#C2413B', 'Reliable sources show the claim is wrong.'],
+  ["Can't confirm yet", '#6B6A73', 'Not enough reliable coverage to say either way.'],
 ];
 
 function byLean() {
@@ -55,27 +55,28 @@ function byLean() {
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 .hw{
-  --cream:#efeadf; --paper:#f7f4ec; --sand:#e4dccb; --line:#d6cdb8; --ink:#1c1a17; --muted:#6f6858;
-  --moss:#4f6b3a; --rust:#7a4426; --olive:#8f7f45; --research:#6b5a8e; --fact:#c9a03a;
-  --serif:'DM Serif Display',Georgia,serif; --caslon:'Libre Caslon Text',Georgia,serif;
-  --sans:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --cream:#FBFAF6; --paper:#FFFFFF; --sand:#F4F1FA; --line:#E7E4EC; --ink:#1D1D1F; --muted:#6B6A73;
+  --moss:#5B3FA6; --rust:#5B3FA6; --olive:#5B3FA6; --research:#5B3FA6; --fact:#D99A2B;
+  --serif:'Poppins',ui-sans-serif,system-ui,sans-serif; --caslon:'Poppins',ui-sans-serif,system-ui,sans-serif;
+  --sans:'Poppins',ui-sans-serif,system-ui,-apple-system,sans-serif;
   min-height:100dvh;background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.55
 }
 .hw *{box-sizing:border-box}
 .hw a{color:var(--rust);text-underline-offset:2px}
-.hw-top{border-bottom:1.5px solid var(--ink);padding:12px 16px}
+.hw-top{border-bottom:1px solid var(--line);padding:12px 16px}
 .hw-top-in{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:12px}
-.hw-av{width:40px;height:40px;border-radius:50%;background:var(--rust);color:var(--cream);font-family:var(--serif);font-size:16px;display:grid;place-items:center;text-decoration:none;flex-shrink:0}
-.hw-brand{white-space:nowrap;font-family:var(--serif);font-size:22px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink);text-decoration:none}
-.hw-back{margin-left:auto;border:1px solid var(--ink);padding:7px 12px;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;background:var(--moss);color:var(--cream) !important;text-decoration:none;white-space:nowrap}
+.hw-av{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-family:var(--serif);font-size:16px;display:grid;place-items:center;text-decoration:none;flex-shrink:0}
+.hw-brand{white-space:nowrap;font-family:var(--sans);font-weight:800;font-size:22px;letter-spacing:-0.03em;color:var(--ink);text-decoration:none}
+.hw-back{margin-left:auto;border:0;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--moss);color:#fff !important;text-decoration:none;white-space:nowrap}
+.hw a.hw-brand{color:var(--ink)}
 .hw-main{max-width:820px;margin:0 auto;padding:28px 16px 60px}
-.hw h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,7vw,52px);line-height:1.05;text-transform:uppercase;margin:0 0 12px}
+.hw h1{font-family:var(--sans);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,7vw,52px);line-height:1.05;margin:0 0 12px}
 .hw h1 em{font-family:var(--caslon);text-transform:none;font-size:.8em}
 .hw .lede{font-family:var(--caslon);font-size:18px;max-width:640px;margin:0}
 .hw section{margin-top:44px}
-.hw h2{font-family:var(--serif);font-weight:400;font-size:28px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;border-bottom:1.5px solid var(--ink);padding-bottom:6px}
+.hw h2{font-family:var(--sans);font-weight:700;font-size:26px;letter-spacing:-0.03em;margin:0 0 6px;border-bottom:1px solid var(--line);padding-bottom:8px}
 .hw .sub{color:var(--muted);margin:8px 0 16px}
 .steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .steps li{display:flex;gap:14px;background:var(--paper);border:1px solid var(--line);padding:14px 16px}
@@ -102,7 +103,7 @@ const CSS = `
 .callout b{font-family:var(--caslon)}
 .verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 .verdict{background:var(--paper);border:1px solid var(--line);padding:10px 12px;font-size:14px}
-.vtag{display:inline-block;color:var(--cream);font-family:var(--serif);text-transform:uppercase;font-size:15px;padding:2px 10px;margin-bottom:6px}
+.vtag{display:inline-block;color:#fff;font-family:var(--sans);font-weight:700;font-size:14px;padding:2px 12px;border-radius:999px;margin-bottom:6px}
 .rules{padding-left:20px;margin:0}
 .rules li{margin:6px 0}
 .hw-foot{text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:48px}
@@ -140,7 +141,7 @@ export default function HowItWorks() {
       <header className="hw-top">
         <div className="hw-top-in">
           <a className="hw-av" href="/">F?</a>
-          <a className="hw-brand" href="/">Fact or Feed?</a>
+          <a className="hw-brand" href="/">fact or feed<span style={{ color: 'var(--moss)' }}>?</span></a>
           <a className="hw-back" href="/">← Check something</a>
         </div>
       </header>
@@ -178,7 +179,7 @@ export default function HowItWorks() {
           <Tier
             rank="Tier 1"
             name="Published research"
-            badge={<Badge color="#6b5a8e" text="#efeadf">Research</Badge>}
+            badge={<Badge color="#5B3FA6" text="#FFFFFF">Research</Badge>}
           >
             <p>
               Journal articles found through <a href="https://openalex.org" target="_blank" rel="noreferrer">OpenAlex</a>,
@@ -191,7 +192,7 @@ export default function HowItWorks() {
             </p>
           </Tier>
 
-          <Tier rank="Tier 1" name="Official sources" badge={<Badge color="#4f6b3a" text="#efeadf">Official</Badge>}>
+          <Tier rank="Tier 1" name="Official sources" badge={<Badge color="#2F8F5B" text="#FFFFFF">Official</Badge>}>
             <p>
               Government agencies, schools, and emergency services. Any <b>.gov</b> site counts, plus these:
             </p>
@@ -205,7 +206,7 @@ export default function HowItWorks() {
             </p>
           </Tier>
 
-          <Tier rank="Tier 2" name="Fact-checkers" badge={<Badge color="#c9a03a" text="#1c1a17">Fact-check</Badge>}>
+          <Tier rank="Tier 2" name="Fact-checkers" badge={<Badge color="#D99A2B" text="#1D1D1F">Fact-check</Badge>}>
             <p>Organizations whose whole job is checking claims and showing their sources:</p>
             <div className="chips">
               {FACT_CHECKERS.map((d) => (
@@ -254,7 +255,7 @@ export default function HowItWorks() {
             </div>
           </Tier>
 
-          <Tier rank="Tier 4" name="Not rated" badge={<Badge color="#d9d2c1" text="#1c1a17">Not rated</Badge>}>
+          <Tier rank="Tier 4" name="Not rated" badge={<Badge color="#E2E0E6" text="#1D1D1F">Not rated</Badge>}>
             <p style={{ margin: 0 }}>
               Blogs, social media, small sites, and anything we don't have a rating for. These count the least. On
               their own they can't make a claim strongly supported. They need backing from a higher tier.
