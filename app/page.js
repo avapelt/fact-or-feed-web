@@ -6,6 +6,7 @@ const STEPS = [
   'Searching 30+ news sources across the spectrum…',
   'Checking official sources and published research…',
   'Spotting persuasion tactics…',
+  'Comparing photos with real ones online…',
   'Weighing the evidence…',
   'Writing you the real story…',
   'Having a second AI double-check it…',
@@ -131,6 +132,9 @@ const CSS = `
 .muted{color:var(--muted);font-size:13px}
 .warn{background:#FFF6E5;border-left:3px solid #E0A030;padding:8px 12px;margin:8px 0;border-radius:6px}
 .review{margin-top:10px;font-size:13.5px;border-left:3px solid var(--moss);padding:6px 0 6px 12px}
+.compare{margin-top:12px;padding-top:10px;border-top:1px solid #E2DCF2}
+.thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--line)}
 .mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
 .mini b{font-weight:600}
 .blk{margin-top:16px}
@@ -376,6 +380,30 @@ function ResultBubble({ data }) {
               ))}
             </ul>
           )}
+          {data.imageCheck.comparison && (
+            <div className="compare">
+              <div>
+                <b>🔍 Compared with real photos online</b>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                <span className="pill">{data.imageCheck.comparison.match}</span>
+                <span className="pill">{data.imageCheck.comparison.effect}</span>
+              </div>
+              {data.imageCheck.comparison.reused_old_photo && (
+                <div className="warn" style={{ marginTop: 6 }}>⚠️ This photo may be an older or unrelated photo being reposted.</div>
+              )}
+              <div style={{ marginTop: 6, fontSize: 14 }}>{data.imageCheck.comparison.comparison}</div>
+              {data.imageCheck.comparison.compared?.length > 0 && (
+                <div className="thumbs">
+                  {data.imageCheck.comparison.compared.map((c, i) => (
+                    <a key={i} href={c.url} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
+                      <img src={c.url} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="muted" style={{ marginTop: 6 }}>
             {data.imageCheck.checks > 1 && (
               <>
@@ -604,6 +632,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
+  const [checkingPhoto, setCheckingPhoto] = useState(false);
+  const steps = checkingPhoto ? STEPS : STEPS.filter((x) => !x.startsWith('Comparing photos'));
   const [showInstall, setShowInstall] = useState(false);
   const [platform, setPlatform] = useState('desktop');
   const [installEvent, setInstallEvent] = useState(null);
@@ -630,7 +660,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) return;
     setStep(0);
-    const t = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 8000);
+    const t = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), 8000);
     return () => clearInterval(t);
   }, [loading]);
 
@@ -673,6 +703,7 @@ export default function Home() {
     add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
     setDraft('');
     setImage(null);
+    setCheckingPhoto(!!(img || imageUrl));
     setLoading(true);
 
     try {
@@ -812,7 +843,7 @@ export default function Home() {
               <div className="av sm" aria-label="Vera">V</div>
               <div className="bub">
                 <span className="dots"><i /><i /><i /></span>
-                <span className="typing-step">{STEPS[step]}</span>
+                <span className="typing-step">{steps[step]}</span>
               </div>
             </div>
           )}

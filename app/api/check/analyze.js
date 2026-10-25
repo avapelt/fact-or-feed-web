@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT } from './prompts';
+import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
 import { categorize } from './bias';
 
 
@@ -25,6 +25,7 @@ const ReaderSchema = z.object({
   language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
   content_summary: z.string(),
   posted_by: z.string().nullable(),
+  photo_search_query: z.string().nullable(),
   claims: z.array(z.string()),
   topic_type: z.enum(['breaking_news', 'science_health', 'politics', 'scam', 'other']),
   news_queries: z.array(z.string()),
@@ -39,6 +40,13 @@ const ImageSchema = z.object({
   plausibility_reason: z.string(),
   signs: z.array(z.string()),
   note: z.string(),
+});
+
+const CompareSchema = z.object({
+  match: z.enum(['Same photo found', 'Similar real photos found', 'No similar real photos']),
+  reused_old_photo: z.boolean(),
+  effect: z.enum(['More likely real', 'No change', 'More likely fake']),
+  comparison: z.string(),
 });
 
 const ReviewSchema = z.object({
@@ -103,6 +111,76 @@ async function searchWeb(query, extra = {}) {
   } catch {
     return [];
   }
+}
+
+// Finds real photos online of the same scene, so the Comparison agent can compare
+async function searchPhotos(query) {
+  try {
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
+      },
+      body: JSON.stringify({ query, max_results: 5, include_images: true, include_image_descriptions: true }),
+    });
+    const data = await res.json();
+    return (data.images || [])
+      .map((img) => (typeof img === 'string' ? { url: img, description: '' } : img))
+      .filter((img) => img && img.url);
+  } catch {
+    return [];
+  }
+}
+
+// Downloads a found photo so the AI can look at it (skips anything slow, huge, or not an image)
+async function fetchImageAsDataUrl(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FactOrFeed/1.0)' },
+    });
+    const type = (res.headers.get('content-type') || '').split(';')[0];
+    if (!res.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 2000 || buf.length > 2_500_000) return null;
+    return `data:${type};base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function compareWithRealPhotos(image, query, model) {
+  const found = await searchPhotos(query);
+  const downloaded = await Promise.all(
+    found.slice(0, 8).map(async (img) => ({ ...img, dataUrl: await fetchImageAsDataUrl(img.url) }))
+  );
+  const picked = downloaded.filter((img) => img.dataUrl).slice(0, 4);
+  if (!picked.length) {
+    return { match: 'No similar real photos', reused_old_photo: false, effect: 'No change', comparison: "We couldn't find real photos online to compare with.", compared: [], query };
+  }
+  const { output } = await generateText({
+    model,
+    system: COMPARE_PROMPT,
+    temperature: 0.2,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: `Photo the user was sent:` },
+          { type: 'image', image },
+          { type: 'text', text: `${picked.length} photos found online by searching "${query}":` },
+          ...picked.map((p) => ({ type: 'image', image: p.dataUrl })),
+        ],
+      },
+    ],
+    output: Output.object({ schema: CompareSchema }),
+  });
+  return { ...output, compared: picked.map((p) => ({ url: p.url, description: p.description || '' })), query };
 }
 
 function rebuildAbstract(inverted) {
@@ -332,11 +410,34 @@ export async function analyze(input) {
       })
     : Promise.resolve(null);
 
-  const [searchResults, persuasion, imageCheck] = await Promise.all([
+  const comparePromise =
+    image && reader.photo_search_query
+      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL)
+          .then((r) => {
+            mark(`Compared the photo with ${r.compared.length} real photos found online`);
+            return r;
+          })
+          .catch((err) => {
+            console.error('Photo comparison failed', err);
+            return null;
+          })
+      : Promise.resolve(null);
+
+  const [searchResults, persuasion, rawImageCheck, photoComparison] = await Promise.all([
     searchesPromise,
     persuasionPromise,
     imagePromise,
+    comparePromise,
   ]);
+
+  // The comparison nudges the AI-chance score up or down
+  let imageCheck = rawImageCheck;
+  if (imageCheck && photoComparison) {
+    let score = imageCheck.score ?? 0;
+    if (photoComparison.effect === 'More likely fake') score = Math.min(10, score + 2);
+    if (photoComparison.effect === 'More likely real') score = Math.max(0, score - 2);
+    imageCheck = { ...imageCheck, score, level: levelFor(score), comparison: photoComparison };
+  }
 
   // Step 3: Remove duplicates and label each source
   const seen = new Set();
@@ -377,7 +478,7 @@ ${reader.claims.join('\n')}
 Persuasion analysis:
 ${persuasion}
 
-Image check: ${imageCheck ? JSON.stringify(imageCheck) : 'No image was sent'}
+Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : 'No image was sent'}
 
 Sources found (${sources.length}):
 ${sourceList || 'No sources were found.'}`,
