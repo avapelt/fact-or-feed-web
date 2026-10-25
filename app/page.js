@@ -11,26 +11,23 @@ const STEPS = [
 ];
 
 const COLORS = {
-  Left: '#1d4ed8',
-  'Lean Left': '#60a5fa',
-  Center: '#9ca3af',
-  'Lean Right': '#f87171',
-  Right: '#b91c1c',
-  Official: '#16a34a',
-  Research: '#7c3aed',
-  'Fact-check': '#f59e0b',
-  'Not rated': '#d1d5db',
+  Left: '#2f4a6d',
+  'Lean Left': '#8fa5c2',
+  Center: '#b3ad9c',
+  'Lean Right': '#d29a86',
+  Right: '#8c2f1f',
+  Official: '#4f6b3a',
+  Research: '#6b5a8e',
+  'Fact-check': '#c9a03a',
+  'Not rated': '#d9d2c1',
 };
 const ORDER = Object.keys(COLORS);
 const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
 
 const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
-const VERDICT_COLORS = ['#16a34a', '#84cc16', '#f59e0b', '#f97316', '#dc2626'];
+const VERDICT_COLORS = ['#4f6b3a', '#9a9a2e', '#c08a2e', '#b0602f', '#8c2f1f'];
 const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
-const AI_COLORS = ['#16a34a', '#f59e0b', '#dc2626'];
-
-// Paste the iCloud link of the Fact or Feed? Shortcut here (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
-const SHORTCUT_URL = '';
+const AI_COLORS = ['#4f6b3a', '#c08a2e', '#8c2f1f'];
 
 const WELCOME = {
   en: "Hey! 👋 I'm Fact or Feed. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
@@ -39,79 +36,98 @@ const WELCOME = {
 };
 
 const CSS = `
-.ff{height:100dvh;display:flex;flex-direction:column;background:#f4f1ec;color:#1b1b1f;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.5}
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+.ff{
+  --cream:#efeadf; --paper:#f7f4ec; --sand:#e4dccb; --line:#d6cdb8; --ink:#1c1a17; --muted:#6f6858;
+  --moss:#4f6b3a; --moss-dk:#3d5530; --sage:#a9b48f; --olive:#8f7f45; --rust:#7a4426;
+  --chartreuse:#c3c13d; --lavender:#d8d5ec;
+  --serif:'DM Serif Display',Georgia,serif; --caslon:'Libre Caslon Text',Georgia,serif;
+  --sans:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  height:100dvh;display:flex;flex-direction:column;background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.5
+}
 .ff *{box-sizing:border-box}
-.top{background:#fff;border-bottom:1px solid #e7e4dc;padding:10px 16px}
-.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px}
-.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#ec4899);color:#fff;font-weight:800;display:grid;place-items:center;flex-shrink:0}
-.av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end}
-.name{font-weight:700;font-size:16px;white-space:nowrap}
-.status{font-size:12px;color:#16a34a;white-space:nowrap}
+
+/* Header */
+.top{background:var(--cream);border-bottom:1.5px solid var(--ink);padding:12px 16px}
+.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.av{width:44px;height:44px;border-radius:50%;background:var(--rust);color:var(--cream);font-family:var(--serif);font-size:18px;display:grid;place-items:center;flex-shrink:0}
+.av.sm{width:30px;height:30px;font-size:13px;align-self:flex-end;background:var(--olive)}
+.name{font-family:var(--serif);font-size:26px;line-height:1;letter-spacing:.5px;text-transform:uppercase}
+.status{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--moss);margin-top:4px;font-weight:600}
 .prefs{margin-left:auto;display:flex;gap:6px}
-.prefs select{border:1px solid #e7e4dc;border-radius:999px;padding:6px 8px;font-size:13px;background:#f8f6f1}
-.thread{flex:1;overflow-y:auto;padding:16px}
-.thread-in{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.prefs select{border:1px solid var(--ink);border-radius:0;padding:6px 10px;font-size:12px;letter-spacing:1px;text-transform:uppercase;background:var(--cream);color:var(--ink);font-family:var(--sans);cursor:pointer}
+
+/* Scrolling ticker */
+.ticker{overflow:hidden;white-space:nowrap;border-bottom:1.5px solid var(--ink);background:var(--paper);padding:7px 0}
+.ticker-track{display:inline-block;animation:tick 30s linear infinite;font-size:12px;letter-spacing:1.5px;font-weight:600}
+.ticker-track em{font-family:var(--caslon);font-style:italic;font-weight:400;font-size:13px}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* Thread */
+.thread{flex:1;overflow-y:auto;padding:20px 16px}
+.thread-in{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .msg{display:flex;gap:8px;align-items:flex-end}
 .msg.me{justify-content:flex-end}
-.bub{max-width:80%;padding:10px 14px;border-radius:20px;background:#fff;border:1px solid #ebe7de;box-shadow:0 1px 1px rgba(0,0,0,.03);overflow-wrap:anywhere}
-.bot .bub{border-bottom-left-radius:6px}
-.me .bub{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:0;border-bottom-right-radius:6px}
-.me .bub a{color:#fff}
+.bub{max-width:80%;padding:12px 16px;border-radius:18px;background:var(--paper);border:1px solid var(--line);overflow-wrap:anywhere}
+.bot .bub{border-bottom-left-radius:4px}
+.me .bub{background:var(--moss);color:var(--cream);border:0;border-bottom-right-radius:4px}
+.me .bub a{color:var(--cream)}
 .bub.wide{max-width:88%;width:100%}
-.bub img.shot{max-width:220px;max-height:260px;border-radius:14px;display:block}
+.bub img.shot{max-width:220px;max-height:260px;border-radius:12px;display:block}
+
 .dots{display:inline-flex;gap:4px;margin-right:8px;vertical-align:middle}
-.dots i{width:7px;height:7px;border-radius:50%;background:#a5a3f0;animation:b 1.2s infinite}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--olive);animation:b 1.2s infinite}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 @keyframes b{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
-.typing-step{font-size:14px;color:#6b6b76}
-.vchip{display:inline-block;color:#fff;font-weight:800;padding:4px 12px;border-radius:999px;font-size:15px}
-.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:#eef2ff;color:#3730a3;margin-right:6px}
-.muted{color:#6b6b76;font-size:13px}
-.warn{background:#fff7e6;border:1px solid #f5d48a;border-radius:12px;padding:8px 12px;margin:8px 0}
-.mini{background:#f8f6f1;border-radius:12px;padding:10px 12px;margin-top:10px}
-.blk{margin-top:14px}
-.blk h4{margin:0 0 6px;font-size:14px}
-.more{margin-top:12px;border-top:1px solid #eee9df;padding-top:10px}
-.more summary{cursor:pointer;font-weight:700;color:#4f46e5;list-style:none}
+.typing-step{font-family:var(--caslon);font-style:italic;font-size:14px;color:var(--muted)}
+
+/* Result pieces */
+.vchip{display:inline-block;color:var(--cream);font-family:var(--serif);font-size:20px;letter-spacing:.5px;text-transform:uppercase;padding:4px 14px;border-radius:0}
+.pill{display:inline-block;padding:2px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700;background:var(--sage);color:var(--ink);margin-right:6px}
+.muted{color:var(--muted);font-size:13px}
+.warn{background:#f3e7c4;border-left:4px solid var(--chartreuse);padding:8px 12px;margin:8px 0}
+.mini{background:var(--sand);padding:12px 14px;margin-top:12px}
+.mini b{font-family:var(--caslon)}
+.blk{margin-top:16px}
+.blk h4{margin:0 0 6px;font-family:var(--caslon);font-size:16px;font-weight:700}
+.more{margin-top:14px;border-top:1px solid var(--ink);padding-top:10px}
+.more summary{cursor:pointer;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--moss);list-style:none}
 .more summary::-webkit-details-marker{display:none}
 .ff ul,.ff ol{padding-left:20px;margin:0}
 .ff li{margin:3px 0}
-.bot a{color:#4f46e5}
-.replybox{background:#eef2ff;border-radius:12px;padding:10px 12px;margin:8px 0}
-.btn{border:1px solid #e7e4dc;background:#fff;border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:14px}
-.err .bub{background:#fdecec;border-color:#f3b4b4;color:#9b1c1c}
-.composer{background:#fff;border-top:1px solid #e7e4dc;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.bot a{color:var(--rust);text-underline-offset:2px}
+.replybox{background:var(--lavender);padding:10px 14px;margin:8px 0;font-family:var(--caslon);font-style:italic}
+.btn{border:1px solid var(--ink);background:transparent;border-radius:0;padding:7px 16px;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;cursor:pointer;color:var(--ink)}
+.btn:hover{background:var(--ink);color:var(--cream)}
+.err .bub{background:#f2dcd3;border-color:#d7a896;color:#7a2a1a}
+
+/* Composer */
+.composer{background:var(--cream);border-top:1.5px solid var(--ink);padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
 .comp-in{max-width:760px;margin:0 auto}
 .preview{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.preview img{height:56px;border-radius:10px}
-.preview button{border:0;background:#eee;border-radius:999px;width:24px;height:24px;cursor:pointer}
+.preview img{height:56px;border-radius:8px}
+.preview button{border:0;background:var(--sand);border-radius:999px;width:24px;height:24px;cursor:pointer}
 .bar{display:flex;gap:8px;align-items:flex-end}
 .circle{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:20px;cursor:pointer}
-.attach{border:1px solid #e7e4dc;background:#fff}
-.send{border:0;color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed)}
-.send:disabled{opacity:.4;cursor:not-allowed}
-.input{flex:1;border:1px solid #e7e4dc;border-radius:22px;padding:11px 16px;font-size:16px;resize:none;max-height:140px;font-family:inherit;background:#f8f6f1}
-.input:focus{outline:2px solid #4f46e5;border-color:transparent}
-.foot{text-align:center;font-size:11px;color:#9a9aa3;margin-top:6px}
-.getapp{border:0;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#4f46e5,#ec4899);cursor:pointer;white-space:nowrap}
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-.sheet{background:#fff;width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));max-height:90dvh;overflow-y:auto}
-.sheet h2{margin:0 0 4px;font-size:20px}
-.sheet ol{padding-left:22px}
-.sheet li{margin:8px 0}
-.bigbtn{display:block;text-align:center;text-decoration:none;border:0;width:100%;border-radius:14px;padding:14px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed);cursor:pointer;margin:12px 0}
-.ghost{background:#f1efe8;color:#1b1b1f}
-.step-box{background:#f8f6f1;border-radius:14px;padding:12px 14px;margin-top:12px}
-@media (max-width:420px){.status{display:none}.av{width:36px;height:36px;font-size:14px}}
-@media (max-width:520px){.getapp{padding:6px 10px;font-size:12px}.prefs select{font-size:12px;padding:5px 6px}.bub.wide{max-width:100%}.name{font-size:15px}}
+.attach{border:1px solid var(--ink);background:var(--paper)}
+.send{border:0;color:var(--cream);background:var(--moss)}
+.send:hover:not(:disabled){background:var(--moss-dk)}
+.send:disabled{opacity:.35;cursor:not-allowed}
+.input{flex:1;border:1px solid var(--line);border-radius:22px;padding:11px 16px;font-size:16px;resize:none;max-height:140px;font-family:inherit;background:var(--paper);color:var(--ink)}
+.input::placeholder{color:var(--muted);font-family:var(--caslon);font-style:italic}
+.input:focus{outline:2px solid var(--moss);border-color:transparent}
+.foot{text-align:center;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+@media (max-width:520px){.prefs select{font-size:11px;padding:5px 6px}.bub.wide{max-width:100%}.name{font-size:20px}}
 `;
 
 function Badge({ category }) {
   return (
     <span
       style={{
-        background: COLORS[category] || '#d1d5db',
-        color: DARK.includes(category) ? '#111' : '#fff',
+        background: COLORS[category] || '#d9d2c1',
+        color: DARK.includes(category) ? '#1c1a17' : '#efeadf',
         fontSize: 11,
         padding: '2px 8px',
         borderRadius: 999,
@@ -182,7 +198,7 @@ function ResultBubble({ data }) {
   const r = data.result;
   const total = data.sources?.length || 0;
   const vIndex = VERDICTS.indexOf(r.verdict);
-  const vColor = vIndex >= 0 ? VERDICT_COLORS[vIndex] : '#6b7280';
+  const vColor = vIndex >= 0 ? VERDICT_COLORS[vIndex] : '#6f6858';
 
   return (
     <div className="bub wide">
@@ -366,104 +382,6 @@ function decodeResult(packed) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function InstallSheet({ platform, installEvent, onClose }) {
-  const [tab, setTab] = useState(platform === 'android' ? 'android' : 'ios');
-
-  async function installAndroid() {
-    if (!installEvent) return;
-    installEvent.prompt();
-    await installEvent.userChoice;
-    onClose();
-  }
-
-  return (
-    <div className="sheet-bg" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>📲 Put Fact or Feed? on your phone</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Then when you see a sketchy post anywhere, just tap <b>Share → Fact or Feed?</b>
-        </p>
-
-        <div className="tabs" style={{ display: 'flex', gap: 6, background: '#f1efe8', padding: 4, borderRadius: 12 }}>
-          {['ios', 'android'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                flex: 1,
-                border: 0,
-                padding: 8,
-                borderRadius: 9,
-                fontWeight: 700,
-                cursor: 'pointer',
-                background: tab === t ? '#fff' : 'transparent',
-                color: tab === t ? '#1b1b1f' : '#6b6b76',
-              }}
-            >
-              {t === 'ios' ? '📱 iPhone' : '🤖 Android'}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'ios' && (
-          <>
-            {SHORTCUT_URL ? (
-              <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
-                Add the Fact or Feed? shortcut
-              </a>
-            ) : (
-              <div className="bigbtn ghost">iPhone shortcut coming soon</div>
-            )}
-            <div className="step-box">
-              <b>How it works</b>
-              <ol>
-                <li>Tap the button above, then <b>Add Shortcut</b>.</li>
-                <li>On any post, screenshot, or article, tap <b>Share</b>.</li>
-                <li>Scroll down and tap <b>Fact or Feed?</b></li>
-              </ol>
-            </div>
-            <div className="step-box">
-              <b>Also add the app to your Home Screen</b>
-              <ol>
-                <li>Open this site in <b>Safari</b>.</li>
-                <li>Tap <b>Share</b> (the square with the arrow).</li>
-                <li>Tap <b>Add to Home Screen</b>.</li>
-              </ol>
-            </div>
-          </>
-        )}
-
-        {tab === 'android' && (
-          <>
-            {installEvent ? (
-              <button className="bigbtn" onClick={installAndroid}>Install Fact or Feed?</button>
-            ) : (
-              <div className="step-box">
-                <b>Install the app</b>
-                <ol>
-                  <li>Open this site in <b>Chrome</b>.</li>
-                  <li>Tap the <b>⋮</b> menu at the top right.</li>
-                  <li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li>
-                </ol>
-              </div>
-            )}
-            <div className="step-box">
-              <b>Then use it from any app</b>
-              <ol>
-                <li>On a post or article, tap <b>Share</b>.</li>
-                <li>Pick <b>Fact or Feed?</b> from the list.</li>
-                <li>It opens and starts checking right away.</li>
-              </ol>
-            </div>
-          </>
-        )}
-
-        <button className="bigbtn ghost" onClick={onClose}>Close</button>
-      </div>
-    </div>
-  );
-}
-
 let nextId = 1;
 
 export default function Home() {
@@ -475,22 +393,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
-  const [showInstall, setShowInstall] = useState(false);
-  const [platform, setPlatform] = useState('desktop');
-  const [installEvent, setInstallEvent] = useState(null);
-
-  useEffect(() => {
-    const ua = navigator.userAgent || '';
-    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform('ios');
-    else if (/Android/i.test(ua)) setPlatform('android');
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    const onPrompt = (e) => {
-      e.preventDefault();
-      setInstallEvent(e);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -521,10 +423,7 @@ export default function Home() {
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const q =
-      params.get('q') ||
-      [params.get('title'), params.get('text'), params.get('url')].filter(Boolean).join(' ');
+    const q = new URLSearchParams(window.location.search).get('q');
     if (!q) return;
     window.history.replaceState(null, '', window.location.pathname);
     send(q, null);
@@ -598,7 +497,6 @@ export default function Home() {
             <div className="status">{loading ? 'checking sources…' : '● your fact-checking friend'}</div>
           </div>
           <div className="prefs">
-            <button className="getapp" onClick={() => setShowInstall(true)}>📲 Get it</button>
             <select value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Who's asking">
               <option value="teen">Teen</option>
               <option value="adult">Adult</option>
@@ -612,6 +510,14 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span key={i}>IS THIS <em>FOR REAL?</em> &nbsp;•&nbsp; </span>
+          ))}
+        </div>
+      </div>
 
       <div className="thread">
         <div className="thread-in">
@@ -691,7 +597,7 @@ export default function Home() {
             <textarea
               className="input"
               rows={1}
-              placeholder="Paste a post or link…"
+              placeholder="Paste a post, a link, or add a screenshot…"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
@@ -703,10 +609,7 @@ export default function Home() {
           <div className="foot">Fact or Feed? uses AI and can make mistakes. Always check the sources.</div>
         </div>
       </footer>
-
-      {showInstall && (
-        <InstallSheet platform={platform} installEvent={installEvent} onClose={() => setShowInstall(false)} />
-      )}
     </div>
   );
 }
+
