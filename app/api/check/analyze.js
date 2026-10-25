@@ -349,7 +349,7 @@ export async function analyze(input) {
   const text = (input.text || '').slice(0, 6000);
   const url = (input.url || '').trim();
   const image = input.image || null;
-  const audience = input.audience || 'teen';
+  const audience = input.audience || 'everyone';
   const fast = !!input.fast;
   const quickModel = fast ? FAST_MODEL : MODEL;
   const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';

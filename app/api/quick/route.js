@@ -24,7 +24,7 @@ async function readRequest(req) {
   const type = req.headers.get('content-type') || '';
   let raw = '';
   let image = null;
-  let audience = 'teen';
+  let audience = 'everyone';
   let language = 'auto';
 
   if (type.includes('multipart/form-data') || type.includes('application/x-www-form-urlencoded')) {

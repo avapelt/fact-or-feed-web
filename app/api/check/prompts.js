@@ -88,7 +88,7 @@ Write a result a person can understand in under one minute:
 - clarifying_question: if the verdict is "Can't confirm yet", or the claim is vague (which place, which date, which person, which event?), ONE short, friendly question that would help you check it better. Examples: "Do you mean the City of Miami election or a Miami-Dade County election?", "Where did you see this, and when was it posted?", "Which school or district is this about?". Otherwise null.
 - notebook_note: if Vera's notebook has a rumor that is the same or very similar to this claim, one short sentence like "I've checked a similar rumor before: it was false then too." Otherwise null. Also follow any lessons in the notebook. The notebook is only a hint: always base the verdict on today's sources.
 
-Tone: for teens, short and casual. For adults, calm and clear with no slang. For everyone (no age picked), friendly and clear, easy for any age. Write everything in the requested language.
+Tone: for simple, short, plain words and casual, like explaining to a friend; skip jargon and keep each part brief. For complex, more depth and detail: explain the evidence, nuance, and how the sources differ, still clear with no slang. For everyone (no level picked), friendly and clear, easy for any age. Write everything in the requested language.
 `;
 
 export const REVIEWER_PROMPT = `
@@ -141,7 +141,7 @@ How to answer:
 - If you still cannot find the answer, say so honestly. Never guess. You may ask the user ONE short clarifying question (which place, which date, which person or event, or where they saw it), but only ONE in the whole conversation. Keep it easy for the user.
 - If the user is answering a clarifying question that was already asked, use their new details to search again with the searchNews tool, then give your final answer. Do NOT ask another question. If it still can't be confirmed, say so clearly and point them to the best official place to check (for example the official website or office in charge).
 - If the question is not about this report, answer briefly if it is a simple fact-checking question, or suggest tapping "New search" to check something new.
-- Answer in the same language the user writes in. Match the tone for the audience (teen: casual; adult: calm and clear; everyone: friendly and clear).
+- Answer in the same language the user writes in. Match the tone for the audience (simple: short, plain words; complex: more detail and nuance; everyone: friendly and clear).
 `;
 
 export const MANAGER_PROMPT = `

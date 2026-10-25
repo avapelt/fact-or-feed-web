@@ -943,10 +943,10 @@ export default function Home() {
               <span>Get it</span>
             </button>
             <a className="howlink" href="/how-it-works">How we check</a>
-            <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Your age group" title="Your age group">
-              <option value="everyone">Age</option>
-              <option value="teen">Teen</option>
-              <option value="adult">Adult</option>
+            <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="How detailed" title="How detailed">
+              <option value="everyone">Level</option>
+              <option value="simple">Simple</option>
+              <option value="complex">Complex</option>
             </select>
             <select className="lang" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Change language" title="Change language">
               {LANGUAGES.map(([code, label]) => (
