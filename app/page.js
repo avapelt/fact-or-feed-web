@@ -138,6 +138,21 @@ const CSS = `
 .more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
 .more summary{cursor:pointer;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--moss);list-style:none}
 .more summary::-webkit-details-marker{display:none}
+.sub{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.sub>summary{cursor:pointer;list-style:none;padding:10px 14px;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.sub>summary::after{content:'›';margin-left:auto;color:var(--moss);font-size:18px;transition:transform .15s}
+.sub[open]>summary::after{transform:rotate(90deg)}
+.sub summary::-webkit-details-marker,.group summary::-webkit-details-marker{display:none}
+.sub-in{padding:4px 14px 12px}
+.sub-label{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:6px 0 6px}
+.count{font-size:12px;font-weight:600;color:var(--muted);background:var(--sand);border-radius:999px;padding:1px 8px}
+.group{border-top:1px solid var(--line);padding:8px 0}
+.group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+.group>summary::after{content:'›';margin-left:auto;color:var(--soft);transition:transform .15s}
+.group[open]>summary::after{transform:rotate(90deg)}
+.more .sub>summary,.more .group>summary{text-transform:none;letter-spacing:normal;color:var(--ink)}
+.more .sub>summary{font-size:15px;font-weight:600}
+.more .group>summary{font-size:13px;font-weight:500}
 .ff ul,.ff ol{padding-left:20px;margin:0}
 .ff li{margin:3px 0}
 .bot a{color:var(--moss);text-underline-offset:2px}
@@ -398,27 +413,45 @@ function ResultBubble({ data }) {
           </Block>
         )}
 
-        {data.keySources?.length > 0 && (
-          <Block title="📚 Most important sources">
-            <ul style={{ fontSize: 14 }}>
-              {data.keySources.map((s) => (
-                <SourceItem key={s.id} s={s} />
-              ))}
-            </ul>
-          </Block>
-        )}
-
         {total > 0 && (
-          <Block title={`🗂️ All ${total} sources I read`}>
-            <ul style={{ fontSize: 14 }}>
-              {data.sources.map((s) => (
-                <SourceItem key={s.id} s={s} />
-              ))}
-            </ul>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Bias labels are approximate, based on published media bias ratings.
+          <details className="sub">
+            <summary>
+              📚 Sources <span className="count">{total}</span>
+            </summary>
+
+            {data.keySources?.length > 0 && (
+              <div className="sub-in">
+                <div className="sub-label">Most important</div>
+                <ul style={{ fontSize: 14 }}>
+                  {data.keySources.map((s) => (
+                    <SourceItem key={s.id} s={s} />
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="sub-in">
+              <div className="sub-label">Everything I read, by type</div>
+              {ORDER.filter((c) => data.sources.some((s) => s.category === c)).map((c) => {
+                const group = data.sources.filter((s) => s.category === c);
+                return (
+                  <details key={c} className="group">
+                    <summary>
+                      <Badge category={c} /> <span className="count">{group.length}</span>
+                    </summary>
+                    <ul style={{ fontSize: 14, marginTop: 6 }}>
+                      {group.map((s) => (
+                        <SourceItem key={s.id} s={s} />
+                      ))}
+                    </ul>
+                  </details>
+                );
+              })}
+              <div className="muted" style={{ marginTop: 8 }}>
+                Bias labels are approximate, based on published media bias ratings.
+              </div>
             </div>
-          </Block>
+          </details>
         )}
       </details>
     </div>
