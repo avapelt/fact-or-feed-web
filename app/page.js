@@ -790,7 +790,7 @@ export default function Home() {
       <div className="thread">
         <div className="thread-in">
           <div className="msg bot">
-            <div className="av sm">F?</div>
+            <div className="av sm" aria-label="Vera">V</div>
             <div className="bub" dir="auto">{welcome}</div>
           </div>
 
@@ -808,7 +808,7 @@ export default function Home() {
             if (m.kind === 'result') {
               return (
                 <div key={m.id} className="msg bot">
-                  <div className="av sm">F?</div>
+                  <div className="av sm" aria-label="Vera">V</div>
                   <ResultBubble data={m.data} />
                 </div>
               );
@@ -816,7 +816,7 @@ export default function Home() {
             if (m.kind === 'reply') {
               return (
                 <div key={m.id} className="msg bot">
-                  <div className="av sm">F?</div>
+                  <div className="av sm" aria-label="Vera">V</div>
                   <div className="bub">
                     Want to reply to whoever sent it? You could say:
                     <div className="replybox" dir="auto">{m.text}</div>
@@ -829,7 +829,7 @@ export default function Home() {
             }
             return (
               <div key={m.id} className="msg bot err">
-                <div className="av sm">F?</div>
+                <div className="av sm" aria-label="Vera">V</div>
                 <div className="bub">{m.text}</div>
               </div>
             );
@@ -837,7 +837,7 @@ export default function Home() {
 
           {loading && (
             <div className="msg bot">
-              <div className="av sm">F?</div>
+              <div className="av sm" aria-label="Vera">V</div>
               <div className="bub">
                 <span className="dots"><i /><i /><i /></span>
                 <span className="typing-step">{STEPS[step]}</span>
