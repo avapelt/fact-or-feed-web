@@ -39,7 +39,25 @@ const WELCOME = {
   en: "Hey! 👋 I'm Fact or Feed. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
   es: '¡Hola! 👋 Soy Fact or Feed. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real.',
   ht: 'Bonjou! 👋 Mwen se Fact or Feed. Voye ban mwen nenpòt bagay ou wè sou entènèt (yon post, yon lyen, oswa yon foto ekran) epi m ap tcheke plis pase 30 sous pou di w sa ki vre.',
+  zh: '你好！👋 我是 Fact or Feed。把你在网上看到的任何内容（帖子、链接或截图）发给我，我会查阅 30 多个来源，告诉你什么才是真的。',
+  hi: 'नमस्ते! 👋 मैं Fact or Feed हूँ। ऑनलाइन देखी कोई भी चीज़ (पोस्ट, लिंक या स्क्रीनशॉट) मुझे भेजें, और मैं 30 से ज़्यादा स्रोतों की जाँच करके बताऊँगा कि असल में क्या सच है।',
+  ar: 'مرحبًا! 👋 أنا Fact or Feed. أرسل لي أي شيء رأيته على الإنترنت (منشور أو رابط أو لقطة شاشة) وسأتحقق من أكثر من 30 مصدرًا لأخبرك بما هو حقيقي فعلًا.',
+  fr: "Salut ! 👋 Je suis Fact or Feed. Envoie-moi tout ce que tu as vu en ligne (une publication, un lien ou une capture d'écran) et je vérifie plus de 30 sources pour te dire ce qui est vraiment vrai.",
+  bn: 'হ্যালো! 👋 আমি Fact or Feed। অনলাইনে দেখা যেকোনো কিছু (পোস্ট, লিংক বা স্ক্রিনশট) আমাকে পাঠাও, আমি ৩০টিরও বেশি সূত্র যাচাই করে বলে দেব আসলে কোনটা সত্যি।',
 };
+
+// Shown in the language menu
+const LANGUAGES = [
+  ['auto', 'Auto'],
+  ['en', 'EN'],
+  ['es', 'ES'],
+  ['ht', 'HT'],
+  ['zh', '中文'],
+  ['hi', 'हिन्दी'],
+  ['ar', 'عربي'],
+  ['fr', 'FR'],
+  ['bn', 'বাংলা'],
+];
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
@@ -231,8 +249,8 @@ function ResultBubble({ data }) {
 
       {r.warning && <div className="warn">⚠️ {r.warning}</div>}
 
-      <p style={{ margin: '12px 0 8px' }}>{r.real_story}</p>
-      <p style={{ margin: 0, fontSize: 14 }}>
+      <p dir="auto" style={{ margin: '12px 0 8px' }}>{r.real_story}</p>
+      <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
         <span className="pill">Consensus: {r.consensus.level}</span>
         {r.consensus.explanation}
       </p>
@@ -635,10 +653,9 @@ export default function Home() {
               <option value="adult">Adult</option>
             </select>
             <select value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Language">
-              <option value="auto">Auto</option>
-              <option value="en">EN</option>
-              <option value="es">ES</option>
-              <option value="ht">HT</option>
+              {LANGUAGES.map(([code, label]) => (
+                <option key={code} value={code}>{label}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -656,7 +673,7 @@ export default function Home() {
         <div className="thread-in">
           <div className="msg bot">
             <div className="av sm">F?</div>
-            <div className="bub">{welcome}</div>
+            <div className="bub" dir="auto">{welcome}</div>
           </div>
 
           {messages.map((m) => {
@@ -665,7 +682,7 @@ export default function Home() {
                 <div key={m.id} className="msg me">
                   <div className="bub">
                     {m.image && <img className="shot" src={m.image} alt="What you sent" />}
-                    {m.text && <div style={{ marginTop: m.image ? 8 : 0 }}>{m.text}</div>}
+                    {m.text && <div dir="auto" style={{ marginTop: m.image ? 8 : 0 }}>{m.text}</div>}
                   </div>
                 </div>
               );
@@ -684,7 +701,7 @@ export default function Home() {
                   <div className="av sm">F?</div>
                   <div className="bub">
                     Want to reply to whoever sent it? You could say:
-                    <div className="replybox">{m.text}</div>
+                    <div className="replybox" dir="auto">{m.text}</div>
                     <button className="btn" onClick={() => copy(m.id, m.text)}>
                       {copiedId === m.id ? '✓ Copied!' : 'Copy message'}
                     </button>
@@ -731,6 +748,7 @@ export default function Home() {
               className="input"
               rows={1}
               placeholder="Paste a post or link…"
+              dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
@@ -739,7 +757,10 @@ export default function Home() {
               ↑
             </button>
           </div>
-          <div className="foot">Fact or Feed? uses AI and can make mistakes. Always check the sources.</div>
+          <div className="foot">
+            Fact or Feed? uses AI and can make mistakes. Always check the sources. ·{' '}
+            <a href="/how-it-works" style={{ color: 'var(--moss)', fontWeight: 700 }}>How we check</a>
+          </div>
         </div>
       </footer>
 

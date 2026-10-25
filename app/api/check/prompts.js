@@ -15,7 +15,7 @@ export const RULES = `
 export const READER_PROMPT = `
 You are the Reader and Search Planner for "Fact or Feed?". You receive content someone was sent: text, an article, or an image.
 1. content_summary: describe what the content says and shows. Note the outlet and date if visible.
-2. language: en, es, or ht (Haitian Creole).
+2. language: the language the content is written in: en (English), es (Spanish), ht (Haitian Creole), zh (Chinese), hi (Hindi), ar (Arabic), fr (French), or bn (Bengali). If it is none of these, use en.
 3. claims: the 1 to 3 most important checkable claims, main claim first. Skip opinions.
 4. topic_type: breaking_news, science_health, politics, scam, or other.
 5. Plan the searches:
