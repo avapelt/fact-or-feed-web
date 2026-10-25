@@ -134,4 +134,72 @@ export default function Home() {
           {r.disputed.length > 0 && (
             <div style={box}>
               <h3 style={{ marginTop: 0 }}>Sources disagree on</h3>
-              <ul>{r.disputed.map((d, i) => <li
+              <ul>
+                {r.disputed.map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {r.unknown.length > 0 && (
+            <div style={box}>
+              <h3 style={{ marginTop: 0 }}>Still unknown</h3>
+              <ul>
+                {r.unknown.map((u, i) => (
+                  <li key={i}>{u}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {r.persuasion_tactics.length > 0 && (
+            <div style={box}>
+              <h3 style={{ marginTop: 0 }}>How it tries to persuade you</h3>
+              <ul>
+                {r.persuasion_tactics.map((t, i) => (
+                  <li key={i}>
+                    <b>{t.tactic}</b> ({t.where}): {t.explanation}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div style={box}>
+            <h3 style={{ marginTop: 0 }}>How we figured this out</h3>
+            <ol>
+              {r.how_we_figured_it_out.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+          </div>
+
+          <div style={box}>
+            <h3 style={{ marginTop: 0 }}>Send this back</h3>
+            <p style={{ background: '#eef3ff', padding: 12, borderRadius: 8 }}>{r.reply_draft}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(r.reply_draft)}
+              style={{ padding: '6px 14px' }}
+            >
+              Copy reply
+            </button>
+          </div>
+
+          <div style={box}>
+            <h3 style={{ marginTop: 0 }}>Sources</h3>
+            <ul>
+              {r.sources.map((s, i) => (
+                <li key={i}>
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    {s.outlet}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </main>
+  );
+}
