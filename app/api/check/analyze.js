@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT } from './prompts';
+import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT } from './prompts';
 import { categorize } from './bias';
 
 
@@ -38,6 +38,17 @@ const ImageSchema = z.object({
   plausibility_reason: z.string(),
   signs: z.array(z.string()),
   note: z.string(),
+});
+
+const ReviewSchema = z.object({
+  approved: z.boolean(),
+  confidence: z.enum(['High', 'Medium', 'Low']),
+  issues: z.array(z.string()),
+  corrected_verdict: z
+    .enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"])
+    .nullable(),
+  corrected_real_story: z.string().nullable(),
+  review_note: z.string(),
 });
 
 const StorySchema = z.object({
@@ -334,12 +345,46 @@ ${sourceList || 'No sources were found.'}`,
   });
   mark('Weighed the evidence and wrote the real story');
 
+  // Step 5: A separate Reviewer agent double-checks the draft against the sources
+  let review = null;
+  try {
+    const { output } = await generateText({
+      model: quickModel,
+      system: `${REVIEWER_PROMPT}\n\nRules the result must follow:\n${RULES}`,
+      prompt: `Claims being checked:
+${reader.claims.join('\n')}
+
+Vera's draft result:
+${JSON.stringify({
+  verdict: story.verdict,
+  real_story: story.real_story,
+  consensus: story.consensus,
+  right_and_wrong: story.right_and_wrong,
+  key_source_ids: story.key_source_ids,
+})}
+
+Sources she had (${sources.length}):
+${sourceList || 'No sources were found.'}`,
+      output: Output.object({ schema: ReviewSchema }),
+    });
+    review = output;
+    if (review && !review.approved) {
+      if (review.corrected_verdict) story.verdict = review.corrected_verdict;
+      if (review.corrected_real_story) story.real_story = review.corrected_real_story;
+    }
+    mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
+  } catch (err) {
+    // If the double-check fails, still show Vera's answer rather than nothing
+    console.error('Reviewer failed', err);
+  }
+
   const keySources = (story.key_source_ids || [])
     .map((id) => sources.find((s) => s.id === id))
     .filter(Boolean);
 
   return {
     result: story,
+    review,
     keySources,
     sources: sources.map(({ snippet, ...rest }) => rest),
     stats,

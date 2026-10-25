@@ -8,6 +8,7 @@ const STEPS = [
   'Spotting persuasion tactics…',
   'Weighing the evidence…',
   'Writing you the real story…',
+  'Having a second AI double-check it…',
 ];
 
 const COLORS = {
@@ -129,6 +130,7 @@ const CSS = `
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;background:var(--sage);color:var(--moss);margin-right:6px}
 .muted{color:var(--muted);font-size:13px}
 .warn{background:#FFF6E5;border-left:3px solid #E0A030;padding:8px 12px;margin:8px 0;border-radius:6px}
+.review{margin-top:10px;font-size:13.5px;border-left:3px solid var(--moss);padding:6px 0 6px 12px}
 .mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
 .mini b{font-weight:600}
 .blk{margin-top:16px}
@@ -326,6 +328,23 @@ function ResultBubble({ data }) {
         <span className="pill">Consensus: {r.consensus.level}</span>
         {r.consensus.explanation}
       </p>
+
+      {data.review && (
+        <div className="review">
+          <div>
+            <b>{data.review.approved ? '✅ Double-checked' : '🔧 Double-checked & corrected'}</b>
+            <span className="pill" style={{ marginLeft: 8 }}>Confidence: {data.review.confidence}</span>
+          </div>
+          <div style={{ marginTop: 4 }}>{data.review.review_note}</div>
+          {!data.review.approved && data.review.issues.length > 0 && (
+            <ul style={{ marginTop: 6 }}>
+              {data.review.issues.map((x, i) => (
+                <li key={i}>{x}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {r.who_posted && (
         <div className="mini">

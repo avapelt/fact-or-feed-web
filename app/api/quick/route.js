@@ -60,6 +60,7 @@ export async function POST(req) {
     lines.push(`${ICONS[r.verdict] || '❔'} ${r.verdict.toUpperCase()}`, '');
     lines.push(r.real_story, '');
     lines.push(`Consensus: ${r.consensus.level}${total ? ` · checked ${total} sources` : ''}`);
+    if (data.review) lines.push(`✅ Double-checked by a second AI (confidence: ${data.review.confidence})`);
     if (r.who_posted) {
       lines.push(`✍️ Posted by: ${r.who_posted.name || 'unknown'} (${r.who_posted.type})`);
     }
