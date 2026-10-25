@@ -84,7 +84,8 @@ export async function POST(req) {
             ? err.message
             : "Sorry, I couldn't check that one. Try sharing a screenshot instead.",
         verdict: null,
-        link: '',
+        // Always send a real link so the Shortcut's "Open URLs" step never breaks
+        link: new URL(req.url).origin,
       },
       // Always 200 so the iPhone Shortcut still shows the message in its popup
       { status: 200 }
