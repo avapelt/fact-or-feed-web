@@ -794,10 +794,7 @@ export default function Home() {
       try {
         const data = decodeResult(hash.slice(3));
         add({ from: 'me', text: '📲 Shared from my phone' });
-        add({ from: 'bot', kind: 'result', data });
-        add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
-        add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
-        setReport(data);
+        presentReport(data);
       } catch {
         add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
       }
@@ -814,6 +811,17 @@ export default function Home() {
     send(q, null, sharedPhoto);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Shows a finished report, then either invites questions or asks a clarifying question
+  function presentReport(data) {
+    add({ from: 'bot', kind: 'result', data });
+    add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
+    const q = data.result.clarifying_question;
+    if (q) add({ from: 'bot', kind: 'text', text: `🤔 Help me dig deeper: ${q} Just type your answer below.` });
+    else add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
+    setReport(data);
+    setAskHistory(q ? [{ role: 'assistant', content: `Clarifying question I asked: ${q}` }] : []);
+  }
 
   function add(msg) {
     setMessages((m) => [...m, { id: nextId++, ...msg }]);
@@ -841,11 +849,7 @@ export default function Home() {
       if (data.error || !data.result) {
         add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
       } else {
-        add({ from: 'bot', kind: 'result', data });
-        add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
-        add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
-        setReport(data);
-        setAskHistory([]);
+        presentReport(data);
       }
     } catch {
       add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });

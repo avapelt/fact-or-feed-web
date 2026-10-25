@@ -75,6 +75,7 @@ const ReviewSchema = z.object({
 const StorySchema = z.object({
   warning: z.string().nullable(),
   notebook_note: z.string().nullable(),
+  clarifying_question: z.string().nullable(),
   who_posted: z.object({
     name: z.string().nullable(),
     type: z.enum([
