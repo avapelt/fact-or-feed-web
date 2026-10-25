@@ -81,13 +81,13 @@ const CSS = `
 .kicker i{width:7px;height:7px;border-radius:50%;background:var(--moss);display:inline-block;flex-shrink:0}
 
 /* Header */
-.top{background:var(--cream);border-bottom:1px solid var(--line);padding:14px 16px}
+.top{background:#EFEAFA;border-bottom:1px solid #DCD4F0;padding:14px 16px}
 .top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .top .wordmark{font-size:40px}
 .top-in{flex-wrap:wrap}
 .prefs{align-items:center}
 .howlink{font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;padding:6px 10px;border-radius:999px;white-space:nowrap}
-.howlink:hover{background:var(--sand);color:var(--moss)}
+.howlink:hover{background:#FFFFFF;color:var(--moss)}
 .av{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);font-weight:700;font-size:16px;display:grid;place-items:center;flex-shrink:0}
 .av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end;background:var(--moss);color:#fff}
 .name{font-weight:800;font-size:24px;line-height:1;letter-spacing:-0.03em}
@@ -795,8 +795,7 @@ export default function Home() {
             </button>
           </div>
           <div className="foot">
-            Fact or Feed? uses AI and can make mistakes. Always check the sources. ·{' '}
-            <a href="/how-it-works" style={{ color: 'var(--moss)', fontWeight: 700 }}>How we check</a>
+            Fact or Feed? uses AI and can make mistakes. Always check the sources.
           </div>
         </div>
       </footer>
