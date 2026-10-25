@@ -32,6 +32,9 @@ const AI_COLORS = ['#4f6b3a', '#c08a2e', '#8c2f1f'];
 // iCloud link of the Fact or Feed? Shortcut (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
 const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c96143b1500';
 
+// iCloud link of the "Fact or Feed? (photo)" Shortcut, for sharing screenshots and photos
+const PHOTO_SHORTCUT_URL = '';
+
 const WELCOME = {
   en: "Hey! 👋 I'm Fact or Feed. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
   es: '¡Hola! 👋 Soy Fact or Feed. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real.',
@@ -431,13 +434,20 @@ function InstallSheet({ platform, installEvent, onClose }) {
             <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
               Add the Fact or Feed? shortcut
             </a>
+            {PHOTO_SHORTCUT_URL && (
+              <a className="bigbtn ghost" href={PHOTO_SHORTCUT_URL} target="_blank" rel="noreferrer" style={{ marginTop: -4 }}>
+                Add the photo &amp; screenshot shortcut
+              </a>
+            )}
             <div className="step-box">
               <b>How it works</b>
               <ol>
                 <li>Tap the button above, then <b>Add Shortcut</b>.</li>
                 <li>On any post, link, or article, tap <b>Share</b>.</li>
                 <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
-                <li>For a screenshot or photo, open Fact or Feed? and tap <b>📎</b>.</li>
+                <li>
+                  For a screenshot or photo, share it to <b>Fact or Feed? (photo)</b>, or open Fact or Feed? and tap <b>📎</b>.
+                </li>
               </ol>
             </div>
             <div className="step-box">
@@ -543,9 +553,10 @@ export default function Home() {
     const q =
       params.get('q') ||
       [params.get('title'), params.get('text'), params.get('url')].filter(Boolean).join(' ');
-    if (!q) return;
+    const sharedPhoto = params.get('img');
+    if (!q && !sharedPhoto) return;
     window.history.replaceState(null, '', window.location.pathname);
-    send(q, null);
+    send(q, null, sharedPhoto);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -553,12 +564,12 @@ export default function Home() {
     setMessages((m) => [...m, { id: nextId++, ...msg }]);
   }
 
-  async function send(rawText, img) {
+  async function send(rawText, img, imageUrl = null) {
     const { text, url } = splitInput(rawText);
-    if (!text && !url && !img) return;
+    if (!text && !url && !img && !imageUrl) return;
     if (loading) return;
 
-    add({ from: 'me', text: (rawText || '').trim(), image: img });
+    add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
     setDraft('');
     setImage(null);
     setLoading(true);
@@ -567,7 +578,7 @@ export default function Home() {
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, url, image: img, audience, language }),
+        body: JSON.stringify({ text, url, image: img, imageUrl, audience, language }),
       });
       const data = await res.json();
       if (data.error || !data.result) {

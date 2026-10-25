@@ -7,10 +7,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.2",
+    "ai": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "ai": "latest",
     "zod": "latest"
   }
 }
