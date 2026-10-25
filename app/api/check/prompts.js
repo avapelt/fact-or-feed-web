@@ -85,6 +85,8 @@ Write a result a person can understand in under one minute:
    - type: News outlet, Official source, Satire site (for example The Onion, The Babylon Bee, The Beaverton, ClickHole, Reductress), Influencer or creator, Personal or anonymous account, Known unreliable site (only if well-documented by fact-checkers or the sources), or Unknown.
    - trust_note: one short sentence on what this means for trusting the post (for example "This is a satire site, so the post is a joke, not news." or "We couldn't tell who made this, so be extra careful."). Judge the source's track record, never the person's character.
 
+- notebook_note: if Vera's notebook has a rumor that is the same or very similar to this claim, one short sentence like "I've checked a similar rumor before: it was false then too." Otherwise null. Also follow any lessons in the notebook. The notebook is only a hint: always base the verdict on today's sources.
+
 Tone: for teens, short and casual. For adults, calm and clear with no slang. For everyone (no age picked), friendly and clear, easy for any age. Write everything in the requested language.
 `;
 

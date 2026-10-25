@@ -138,6 +138,9 @@ const CSS = `
 .newrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .newsearch{border:1px solid var(--moss);background:var(--paper);color:var(--moss);border-radius:999px;height:32px;padding:0 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;white-space:nowrap;-webkit-appearance:none;appearance:none}
 .newsearch:hover{background:var(--moss);color:#fff}
+.notebook{margin-top:10px;font-size:13.5px;background:#FFF8E6;border-radius:10px;padding:8px 12px}
+.feedback{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.feedback .btn{padding:5px 12px}
 .mini{background:var(--sand);padding:12px 14px;margin-top:12px;border-radius:12px}
 .mini b{font-weight:600}
 .blk{margin-top:16px}
@@ -317,6 +320,61 @@ function SpectrumBar({ stats, total }) {
   );
 }
 
+function Feedback({ data }) {
+  const [state, setState] = useState('ask'); // ask | why | sending | done
+  const [note, setNote] = useState('');
+  const [lesson, setLesson] = useState(null);
+
+  async function sendFeedback(correct, why = '') {
+    setState('sending');
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claims: data.trace?.claims || [data.result.real_story],
+          verdict: data.result.verdict,
+          realStory: data.result.real_story,
+          correct,
+          note: why,
+        }),
+      });
+      const out = await res.json();
+      setLesson(out.lesson || null);
+    } catch {}
+    setState('done');
+  }
+
+  if (state === 'done') {
+    return (
+      <div className="feedback muted">
+        📒 Thanks! I wrote that in my notebook so I'll do better next time.
+        {lesson && <div style={{ marginTop: 4 }}>Lesson learned: "{lesson.replace(/[.!]+$/, '')}."</div>}
+      </div>
+    );
+  }
+  if (state === 'sending') return <div className="feedback muted">Writing it in my notebook…</div>;
+  if (state === 'why') {
+    return (
+      <div className="feedback">
+        <div className="muted" style={{ marginBottom: 6 }}>What was wrong? (optional, please don't include names or personal info)</div>
+        <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          <button className="btn" onClick={() => sendFeedback(false, note)}>Send</button>
+          <button className="btn" onClick={() => setState('ask')}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="feedback">
+      <span className="muted">Was this right?</span>
+      <button className="btn" onClick={() => sendFeedback(true)} aria-label="Yes, this was right">👍</button>
+      <button className="btn" onClick={() => setState('why')} aria-label="No, this was wrong">👎</button>
+    </div>
+  );
+}
+
 function ResultBubble({ data }) {
   const r = data.result;
   const total = data.sources?.length || 0;
@@ -351,6 +409,10 @@ function ResultBubble({ data }) {
             </ul>
           )}
         </div>
+      )}
+
+      {r.notebook_note && (
+        <div className="notebook">📒 <b>From my notebook:</b> {r.notebook_note}</div>
       )}
 
       {r.who_posted && (
@@ -553,6 +615,8 @@ function ResultBubble({ data }) {
           </details>
         )}
       </details>
+
+      <Feedback data={data} />
     </div>
   );
 }

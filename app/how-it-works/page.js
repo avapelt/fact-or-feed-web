@@ -49,6 +49,10 @@ const STEPS = [
     title: 'Answer your questions',
     body: 'After the report, you can ask Vera anything about it. The Follow-up agent answers using the sources already found and cites them. If they don’t cover your question, it decides on its own to search again.',
   },
+  {
+    title: 'Learn from it',
+    body: 'The Bookkeeper agent keeps Vera’s notebook: short, anonymous notes about rumors she has checked and lessons from her mistakes (when the Reviewer corrects her, or you tap 👎). Vera reads it before every check, so she recognizes repeat rumors and gets better over time. It never saves names, accounts, contact info, your own words, or photos.',
+  },
 ];
 
 const VERDICTS = [
@@ -350,6 +354,7 @@ export default function HowItWorks() {
             <li>No personal medical, legal, or money advice.</li>
             <li>We never post or send anything for you. The reply we write is just a suggestion.</li>
             <li>Photos you share are deleted once the check finishes.</li>
+            <li>Vera's notebook only keeps anonymous, general notes, never personal information.</li>
           </ul>
           <div className="callout" style={{ borderLeftColor: 'var(--rust)' }}>
             <b>Our limits.</b> Fact or Feed? uses AI, and AI can make mistakes. Some social media posts are hidden behind

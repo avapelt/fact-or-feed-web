@@ -1,5 +1,7 @@
 import { del } from '@vercel/blob';
+import { after } from 'next/server';
 import { analyze } from './analyze';
+import { bookkeep } from './notebook';
 
 export const maxDuration = 300;
 
@@ -27,7 +29,20 @@ export async function POST(req) {
       body.image = `data:${type};base64,${buf.toString('base64')}`;
     }
 
-    return Response.json(await analyze(body));
+    const data = await analyze(body);
+
+    // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent
+    after(() =>
+      bookkeep({
+        model: 'anthropic/claude-haiku-4.5',
+        claims: data.trace?.claims,
+        verdict: data.result?.verdict,
+        realStory: data.result?.real_story,
+        review: data.review,
+      })
+    );
+
+    return Response.json(data);
   } catch (err) {
     console.error(err);
     return Response.json(

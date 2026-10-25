@@ -2,6 +2,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT } from './prompts';
 import { categorize } from './bias';
+import { loadNotebook, notebookForPrompt } from './notebook';
 
 
 // Paste your Opus model ID inside the quotes
@@ -62,6 +63,7 @@ const ReviewSchema = z.object({
 
 const StorySchema = z.object({
   warning: z.string().nullable(),
+  notebook_note: z.string().nullable(),
   who_posted: z.object({
     name: z.string().nullable(),
     type: z.enum([
@@ -350,6 +352,9 @@ export async function analyze(input) {
     throw e;
   }
 
+  // Vera's notebook (anonymous notes from past checks) loads while she reads the post
+  const notebookPromise = loadNotebook();
+
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
     model: quickModel,
@@ -462,6 +467,10 @@ export async function analyze(input) {
     )
     .join('\n\n');
 
+  const notebook = await notebookPromise;
+  const notebookText = notebookForPrompt(notebook);
+  mark(`Checked Vera's notebook (${notebook.rumors.length} past rumors, ${notebook.lessons.length} lessons)`);
+
   // Step 4: Weigh the evidence and write the real story
   const { output: story } = await generateText({
     model: quickModel,
@@ -477,6 +486,9 @@ ${reader.claims.join('\n')}
 
 Persuasion analysis:
 ${persuasion}
+
+Vera's notebook (use only as hints; today's sources always win):
+${notebookText}
 
 Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : 'No image was sent'}
 
