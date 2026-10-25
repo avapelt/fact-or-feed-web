@@ -29,6 +29,9 @@ const VERDICT_COLORS = ['#4f6b3a', '#9a9a2e', '#c08a2e', '#b0602f', '#8c2f1f'];
 const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
 const AI_COLORS = ['#4f6b3a', '#c08a2e', '#8c2f1f'];
 
+// iCloud link of the Fact or Feed? Shortcut (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
+const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c96143b1500';
+
 const WELCOME = {
   en: "Hey! 👋 I'm Fact or Feed. Send me anything you saw online (a post, a link, or a screenshot) and I'll check 30+ sources and tell you what's actually real.",
   es: '¡Hola! 👋 Soy Fact or Feed. Mándame cualquier cosa que viste en internet (una publicación, un enlace o una captura) y reviso más de 30 fuentes para decirte qué es real.',
@@ -119,7 +122,25 @@ const CSS = `
 .input:focus{outline:2px solid var(--moss);border-color:transparent}
 .foot{text-align:center;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:8px}
 
-@media (max-width:520px){.prefs select{font-size:11px;padding:5px 6px}.bub.wide{max-width:100%}.name{font-size:20px}}
+/* Install ("Get it") button + sheet */
+.getapp{border:1px solid var(--ink);border-radius:0;padding:6px 10px;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;background:var(--moss);color:var(--cream);font-family:var(--sans);cursor:pointer;white-space:nowrap}
+.getapp:hover{background:var(--moss-dk)}
+.sheet-bg{position:fixed;inset:0;background:rgba(28,26,23,.5);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{background:var(--paper);width:100%;max-width:520px;border-top:1.5px solid var(--ink);padding:22px 20px calc(22px + env(safe-area-inset-bottom));max-height:90dvh;overflow-y:auto}
+.sheet h2{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:26px;text-transform:uppercase;letter-spacing:.5px}
+.sheet ol{padding-left:22px}
+.sheet li{margin:8px 0}
+.stabs{display:flex;border:1px solid var(--ink)}
+.stab{flex:1;border:0;padding:9px;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);font-family:var(--sans)}
+.stab.on{background:var(--ink);color:var(--cream)}
+.bigbtn{display:block;text-align:center;text-decoration:none;border:1px solid var(--ink);width:100%;padding:14px;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--cream);background:var(--moss);cursor:pointer;margin:14px 0;font-family:var(--sans)}
+.bigbtn:hover{background:var(--moss-dk)}
+.bigbtn.ghost{background:transparent;color:var(--ink)}
+.step-box{background:var(--sand);padding:12px 14px;margin-top:12px}
+.step-box b:first-child{font-family:var(--caslon)}
+.name,.status{white-space:nowrap}
+@media (max-width:540px){.status{display:none}.av{width:36px;height:36px;font-size:15px}.name{font-size:17px !important}.top-in{gap:8px}.getapp .lbl{display:none}.prefs{gap:4px}.prefs select{padding:5px 4px !important;font-size:10.5px !important;letter-spacing:.5px}}
+@media (max-width:520px){.getapp{padding:5px 8px;font-size:11px}.prefs select{font-size:11px;padding:5px 6px}.bub.wide{max-width:100%}.name{font-size:20px}}
 `;
 
 function Badge({ category }) {
@@ -382,6 +403,85 @@ function decodeResult(packed) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+function InstallSheet({ platform, installEvent, onClose }) {
+  const [tab, setTab] = useState(platform === 'android' ? 'android' : 'ios');
+
+  async function installAndroid() {
+    if (!installEvent) return;
+    installEvent.prompt();
+    await installEvent.userChoice;
+    onClose();
+  }
+
+  return (
+    <div className="sheet-bg" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <h2>Put it on your phone</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
+        </p>
+
+        <div className="stabs">
+          <button className={`stab ${tab === 'ios' ? 'on' : ''}`} onClick={() => setTab('ios')}>📱 iPhone</button>
+          <button className={`stab ${tab === 'android' ? 'on' : ''}`} onClick={() => setTab('android')}>🤖 Android</button>
+        </div>
+
+        {tab === 'ios' && (
+          <>
+            <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
+              Add the Fact or Feed? shortcut
+            </a>
+            <div className="step-box">
+              <b>How it works</b>
+              <ol>
+                <li>Tap the button above, then <b>Add Shortcut</b>.</li>
+                <li>On any post, link, or article, tap <b>Share</b>.</li>
+                <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
+                <li>For a screenshot or photo, open Fact or Feed? and tap <b>📎</b>.</li>
+              </ol>
+            </div>
+            <div className="step-box">
+              <b>Add the app to your Home Screen</b>
+              <ol>
+                <li>Open this site in <b>Safari</b>.</li>
+                <li>Tap <b>Share</b> (the square with the arrow).</li>
+                <li>Tap <b>Add to Home Screen</b>.</li>
+              </ol>
+            </div>
+          </>
+        )}
+
+        {tab === 'android' && (
+          <>
+            {installEvent ? (
+              <button className="bigbtn" onClick={installAndroid}>Install Fact or Feed?</button>
+            ) : (
+              <div className="step-box">
+                <b>Install the app</b>
+                <ol>
+                  <li>Open this site in <b>Chrome</b>.</li>
+                  <li>Tap the <b>⋮</b> menu at the top right.</li>
+                  <li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li>
+                </ol>
+              </div>
+            )}
+            <div className="step-box">
+              <b>Then use it from any app</b>
+              <ol>
+                <li>On a post or article, tap <b>Share</b>.</li>
+                <li>Pick <b>Fact or Feed?</b> from the list.</li>
+                <li>It opens and starts checking right away.</li>
+              </ol>
+            </div>
+          </>
+        )}
+
+        <button className="bigbtn ghost" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
 let nextId = 1;
 
 export default function Home() {
@@ -393,6 +493,22 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [platform, setPlatform] = useState('desktop');
+  const [installEvent, setInstallEvent] = useState(null);
+
+  useEffect(() => {
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform('ios');
+    else if (/Android/i.test(ua)) setPlatform('android');
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const onPrompt = (e) => {
+      e.preventDefault();
+      setInstallEvent(e);
+    };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -423,7 +539,10 @@ export default function Home() {
       return;
     }
 
-    const q = new URLSearchParams(window.location.search).get('q');
+    const params = new URLSearchParams(window.location.search);
+    const q =
+      params.get('q') ||
+      [params.get('title'), params.get('text'), params.get('url')].filter(Boolean).join(' ');
     if (!q) return;
     window.history.replaceState(null, '', window.location.pathname);
     send(q, null);
@@ -497,6 +616,9 @@ export default function Home() {
             <div className="status">{loading ? 'checking sources…' : '● your fact-checking friend'}</div>
           </div>
           <div className="prefs">
+            <button className="getapp" onClick={() => setShowInstall(true)} aria-label="Get it on your phone">
+              📲<span className="lbl"> Get it</span>
+            </button>
             <select value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="Who's asking">
               <option value="teen">Teen</option>
               <option value="adult">Adult</option>
@@ -597,7 +719,7 @@ export default function Home() {
             <textarea
               className="input"
               rows={1}
-              placeholder="Paste a post, a link, or add a screenshot…"
+              placeholder="Paste a post or link…"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
@@ -609,6 +731,10 @@ export default function Home() {
           <div className="foot">Fact or Feed? uses AI and can make mistakes. Always check the sources.</div>
         </div>
       </footer>
+
+      {showInstall && (
+        <InstallSheet platform={platform} installEvent={installEvent} onClose={() => setShowInstall(false)} />
+      )}
     </div>
   );
 }
