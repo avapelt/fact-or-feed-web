@@ -47,16 +47,17 @@ const WELCOME = {
 };
 
 // Shown in the language menu
+// The 🌐 globe shows people they can tap here to change the language
 const LANGUAGES = [
-  ['auto', 'Auto'],
-  ['en', 'EN'],
-  ['es', 'ES'],
-  ['ht', 'HT'],
-  ['zh', '中文'],
-  ['hi', 'हिन्दी'],
-  ['ar', 'عربي'],
-  ['fr', 'FR'],
-  ['bn', 'বাংলা'],
+  ['auto', '🌐'],
+  ['en', '🌐 EN'],
+  ['es', '🌐 ES'],
+  ['ht', '🌐 HT'],
+  ['zh', '🌐 中文'],
+  ['hi', '🌐 हिन्दी'],
+  ['ar', '🌐 عربي'],
+  ['fr', '🌐 FR'],
+  ['bn', '🌐 বাংলা'],
 ];
 
 const CSS = `
@@ -143,6 +144,9 @@ const CSS = `
 .input:focus{outline:2px solid var(--moss);border-color:transparent}
 .foot{text-align:center;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:8px}
 
+.prefs select.lang{width:84px}
+@media (max-width:540px){.prefs select.lang{width:66px}}
+@media (max-width:400px){.prefs select.lang{width:56px}.prefs select{max-width:60px}}
 /* Install ("Get it") button + sheet */
 .getapp{border:1px solid var(--ink);border-radius:0;padding:6px 10px;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;background:var(--moss);color:var(--cream);font-family:var(--sans);cursor:pointer;white-space:nowrap}
 .getapp:hover{background:var(--moss-dk)}
@@ -658,7 +662,7 @@ export default function Home() {
               <option value="teen">Teen</option>
               <option value="adult">Adult</option>
             </select>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Language">
+            <select className="lang" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Change language" title="Change language">
               {LANGUAGES.map(([code, label]) => (
                 <option key={code} value={code}>{label}</option>
               ))}
