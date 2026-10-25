@@ -6,7 +6,7 @@ import { categorize } from './bias';
 export const maxDuration = 300;
 
 // Paste your Opus model ID inside the quotes
-const MODEL = 'PASTE-YOUR-OPUS-MODEL-ID';
+const MODEL = 'anthropic/claude-sonnet-4.5';
 
 const ReaderSchema = z.object({
   language: z.enum(['en', 'es', 'ht']),
