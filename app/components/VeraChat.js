@@ -53,20 +53,20 @@ export const TOOLS = {
   facts: {
     icon: '🔎',
     href: '/facts',
-    short: { en: 'Find facts', es: 'Hechos', ht: 'Verite', zh: '查事实', hi: 'तथ्य', ar: 'الحقائق', fr: 'Les faits', bn: 'তথ্য' },
-    name: { en: 'Find the facts', es: 'Encuentra los hechos', ht: 'Jwenn verite a', zh: '查找事实', hi: 'तथ्य खोजें', ar: 'ابحث عن الحقائق', fr: 'Trouver les faits', bn: 'তথ্য খুঁজুন' },
+    short: { en: 'Find facts', es: 'Hechos', ht: 'Verite', zh: '查事实', hi: 'तथ्य', ar: 'الحقائق', fr: 'Les faits', bn: 'তথ্য', it: 'Fatti' },
+    name: { en: 'Find the facts', es: 'Encuentra los hechos', ht: 'Jwenn verite a', zh: '查找事实', hi: 'तथ्य खोजें', ar: 'ابحث عن الحقائق', fr: 'Trouver les faits', bn: 'তথ্য খুঁজুন', it: 'Trova i fatti' },
   },
   credible: {
     icon: '📰',
     href: '/credible',
-    short: { en: 'Credible?', es: '¿Creíble?', ht: 'Serye?', zh: '可信吗？', hi: 'भरोसेमंद?', ar: 'موثوق؟', fr: 'Crédible ?', bn: 'বিশ্বাসযোগ্য?' },
-    name: { en: 'Is this news credible?', es: '¿Es creíble esta noticia?', ht: 'Èske nouvèl sa a serye?', zh: '这条新闻可信吗？', hi: 'क्या यह खबर भरोसेमंद है?', ar: 'هل هذا الخبر موثوق؟', fr: 'Cette info est-elle crédible ?', bn: 'এই খবর কি বিশ্বাসযোগ্য?' },
+    short: { en: 'Credible?', es: '¿Creíble?', ht: 'Serye?', zh: '可信吗？', hi: 'भरोसेमंद?', ar: 'موثوق؟', fr: 'Crédible ?', bn: 'বিশ্বাসযোগ্য?', it: 'Credibile?' },
+    name: { en: 'Is this news credible?', es: '¿Es creíble esta noticia?', ht: 'Èske nouvèl sa a serye?', zh: '这条新闻可信吗？', hi: 'क्या यह खबर भरोसेमंद है?', ar: 'هل هذا الخبر موثوق؟', fr: 'Cette info est-elle crédible ?', bn: 'এই খবর কি বিশ্বাসযোগ্য?', it: 'Questa notizia è credibile?' },
   },
   photo: {
     icon: '🤖',
     href: '/photo',
-    short: { en: 'AI photo?', es: '¿Foto IA?', ht: 'Foto IA?', zh: 'AI照片？', hi: 'AI फ़ोटो?', ar: 'صورة AI؟', fr: 'Photo IA ?', bn: 'AI ছবি?' },
-    name: { en: 'Is this photo AI?', es: '¿Esta foto es IA?', ht: 'Èske foto sa a se IA?', zh: '这张照片是AI做的吗？', hi: 'क्या यह फ़ोटो AI है?', ar: 'هل هذه الصورة ذكاء اصطناعي؟', fr: 'Cette photo est-elle IA ?', bn: 'এই ছবি কি AI?' },
+    short: { en: 'AI photo?', es: '¿Foto IA?', ht: 'Foto IA?', zh: 'AI照片？', hi: 'AI फ़ोटो?', ar: 'صورة AI؟', fr: 'Photo IA ?', bn: 'AI ছবি?', it: 'Foto IA?' },
+    name: { en: 'Is this photo AI?', es: '¿Esta foto es IA?', ht: 'Èske foto sa a se IA?', zh: '这张照片是AI做的吗？', hi: 'क्या यह फ़ोटो AI है?', ar: 'هل هذه الصورة ذكاء اصطناعي؟', fr: 'Cette photo est-elle IA ?', bn: 'এই ছবি কি AI?', it: 'Questa foto è IA?' },
   },
 };
 export const TOOL_ORDER = ['facts', 'credible', 'photo'];
@@ -98,6 +98,7 @@ const WELCOME = {
     ar: 'مرحبًا! 👋 أنا فيرا. اسألني عن أي شيء تريد معرفة حقيقته، مثل "متى الانتخابات القادمة في ميامي؟". سأذهب مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو أتحقق من مصادر إخبارية من مختلف التوجهات، وأريك المصادر التي استخدمتها.',
     fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai des sources d\'info de tout le spectre, et je te montrerai les sources que j\'ai utilisées.',
     bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো সব মতের খবরের সূত্র দেখব, আর দেখাব আমি কোন কোন সূত্র ব্যবহার করেছি।',
+    it: "Ciao! 👋 Sono Vera. Chiedimi qualsiasi cosa di cui vuoi conoscere i fatti, per esempio \"Quando sono le prossime elezioni a Miami?\". Andrò direttamente alla fonte originale quando è la cosa migliore, oppure controllerò fonti di notizie di ogni orientamento, e ti mostrerò le fonti che ho usato.",
   },
   credible: {
     en: "Hey! 👋 I'm Vera. Paste a news link or a post, or add a screenshot with 📎, and I'll show you how credible it is: who published it and how they lean, the persuasion tactics it uses, and whether the facts hold up. Remember: leaning left or right doesn't make something false.",
@@ -108,6 +109,7 @@ const WELCOME = {
     ar: 'مرحبًا! 👋 أنا فيرا. الصق رابط خبر أو منشورًا، أو أضف لقطة شاشة عبر 📎، وسأريك مدى مصداقيته: من نشره وإلى أي اتجاه يميل، وأساليب الإقناع التي يستخدمها، وهل الحقائق صحيحة. تذكّر: الميل إلى اليسار أو اليمين لا يجعل الخبر كاذبًا.',
     fr: 'Salut ! 👋 Je suis Vera. Colle un lien d\'actualité ou une publication, ou ajoute une capture avec 📎, et je te montre à quel point c\'est crédible : qui l\'a publié et de quel côté il penche, les techniques de persuasion utilisées, et si les faits tiennent. Rappel : pencher à gauche ou à droite ne rend pas une info fausse.',
     bn: 'হ্যালো! 👋 আমি ভেরা। একটা খবরের লিংক বা পোস্ট পেস্ট করো, বা 📎 দিয়ে স্ক্রিনশট দাও, আমি দেখাব এটা কতটা বিশ্বাসযোগ্য: কে প্রকাশ করেছে ও তাদের ঝোঁক কোন দিকে, কী কী প্রভাবিত করার কৌশল আছে, আর তথ্যগুলো ঠিক কি না। মনে রেখো: বাম বা ডান দিকে ঝোঁক থাকলেই কিছু মিথ্যা হয়ে যায় না।',
+    it: "Ciao! 👋 Sono Vera. Incolla un link a una notizia o un post, oppure aggiungi uno screenshot con 📎, e ti mostrerò quanto è credibile: chi l'ha pubblicato e da che parte pende, le tecniche di persuasione che usa e se i fatti reggono. Ricorda: pendere a sinistra o a destra non rende falsa una notizia.",
   },
   photo: {
     en: "Hey! 👋 I'm Vera. Tap 📎 to add a photo and I'll check the chance it's AI-made: warning signs, how believable the scene is, and how it compares with real photos online.",
@@ -118,6 +120,7 @@ const WELCOME = {
     ar: 'مرحبًا! 👋 أنا فيرا. اضغط 📎 لإضافة صورة وسأتحقق من احتمال أن تكون مصنوعة بالذكاء الاصطناعي: علامات التحذير، ومدى واقعية المشهد، ومقارنتها بصور حقيقية على الإنترنت.',
     fr: 'Salut ! 👋 Je suis Vera. Appuie sur 📎 pour ajouter une photo et je vérifie la probabilité qu\'elle soit faite par IA : signes d\'alerte, crédibilité de la scène et comparaison avec de vraies photos en ligne.',
     bn: 'হ্যালো! 👋 আমি ভেরা। 📎 চেপে একটা ছবি দাও, আমি দেখব এটা AI দিয়ে বানানোর সম্ভাবনা কতটা: সতর্কতার চিহ্ন, দৃশ্যটা কতটা বিশ্বাসযোগ্য, আর অনলাইনের আসল ছবির সাথে তুলনা।',
+    it: "Ciao! 👋 Sono Vera. Tocca 📎 per aggiungere una foto e controllerò la probabilità che sia fatta con l'IA: segnali d'allarme, quanto è credibile la scena e il confronto con foto reali online.",
   },
 };
 
@@ -133,6 +136,7 @@ export const LANGUAGES = [
   ['ar', 'عربي'],
   ['fr', 'Français'],
   ['bn', 'বাংলা'],
+  ['it', 'Italiano'],
 ];
 
 // Small bits of the screen in every language (the rest of the site is translated in a later batch)
