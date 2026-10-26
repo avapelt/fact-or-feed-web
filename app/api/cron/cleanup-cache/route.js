@@ -8,8 +8,8 @@ import { blobsOlderThan, isCronAuthorized, CACHE_TTL_MS } from '../../check/safe
 export const maxDuration = 60;
 
 // `list` is an "advanced operation" on the free plan, so each folder gets at most a few pages
-// (1,000 files each). Deleting is free.
-const MAX_PAGES = 3;
+// (1,000 files each, so up to 10,000 per run). Deleting is free.
+const MAX_PAGES = 10;
 
 async function cleanFolder(prefix, maxAgeMs) {
   let cursor;

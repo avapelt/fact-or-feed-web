@@ -29,7 +29,7 @@ export async function POST(req) {
     if (saved) return Response.json(saved);
 
     const data = await analyze(body);
-    after(() => saveCached(key, data));
+    after(() => saveCached(key, data, body));
 
     // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent.
     // Skipped when the code forced "Can't confirm yet" (search down or too few sources),

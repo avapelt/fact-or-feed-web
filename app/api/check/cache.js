@@ -44,11 +44,12 @@ export async function readCached(key, kind, input = {}) {
   }
 }
 
-// Saves a good, complete result, without the user's own words
-export async function saveCached(key, data) {
+// Saves a short summary of a good, complete result: only what the page needs, with personal
+// details and the user's own words removed. `input` is what the user sent (to cut copied phrases).
+export async function saveCached(key, data, input = {}) {
   if (!key || !isCacheable(data)) return false;
   try {
-    await put(pathFor(key), JSON.stringify({ v: 1, saved_at: Date.now(), ttl_ms: cacheTtlMs(data), data: stripForCache(data) }), {
+    await put(pathFor(key), JSON.stringify({ v: 1, saved_at: Date.now(), ttl_ms: cacheTtlMs(data), data: stripForCache(data, { userText: [input.text, input.url].filter(Boolean).map(String) }) }), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,

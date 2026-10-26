@@ -24,7 +24,7 @@ export async function POST(req) {
     const saved = await readCached(key, 'photo', body);
     if (saved) return Response.json(saved);
     const data = await checkPhoto(body);
-    after(() => saveCached(key, data));
+    after(() => saveCached(key, data, body));
     return Response.json(data);
   } catch (err) {
     console.error(err);

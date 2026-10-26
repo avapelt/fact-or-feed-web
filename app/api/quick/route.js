@@ -61,7 +61,7 @@ export async function POST(req) {
     const key = cacheKeyFor('check', { ...input, fast: true });
     const saved = await readCached(key, 'check', input);
     const data = saved || (await analyze({ ...input, fast: true }));
-    if (!saved) after(() => saveCached(key, data));
+    if (!saved) after(() => saveCached(key, data, input));
     const r = data.result;
     const total = data.sources?.length || 0;
 
