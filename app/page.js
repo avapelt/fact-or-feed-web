@@ -84,6 +84,16 @@ const TEXT = {
     photo: 'একটা ছবি দাও। ভেরা AI-এর সতর্কতার চিহ্ন খোঁজে, দৃশ্যটা কতটা বিশ্বাসযোগ্য দেখে, আর অনলাইনের আসল ছবির সাথে তুলনা করে।',
     note: 'বাম বা ডান দিকে ঝোঁক থাকলেই কিছু মিথ্যা হয়ে যায় না। আমরা তথ্য আলাদাভাবে যাচাই করি।',
   },
+  it: {
+    slogan: "Non nutrire le bugie. Trova i fatti.",
+    intro: "Hai visto qualcosa online e non sai se è vero? Vera e la sua squadra di agenti IA lo controllano per te, ti mostrano le fonti che hanno usato e non ti dicono mai cosa pensare.",
+    pick: "Scegli uno strumento",
+    open: "Apri",
+    facts: "Fai una domanda. Vera va direttamente alla fonte originale quando è la cosa migliore, oppure controlla fonti di notizie di ogni orientamento, e ti mostra le fonti che ha usato.",
+    credible: "Incolla un link, un post o uno screenshot. Scopri chi l'ha pubblicato e da che parte pende, le tecniche di persuasione che usa e se i fatti reggono.",
+    photo: "Aggiungi una foto. Vera cerca i segnali di IA, valuta quanto è credibile la scena e la confronta con foto reali online.",
+    note: "Pendere a sinistra o a destra non rende falsa una notizia. I fatti li valutiamo a parte.",
+  },
 };
 
 const HOME_CSS = `
@@ -92,7 +102,7 @@ const HOME_CSS = `
 .home-hero-in{max-width:760px;margin:0 auto}
 .home-top{display:flex;justify-content:flex-end}
 .home .wordmark.big{font-size:clamp(56px,15vw,104px);display:block;text-align:center;margin-top:18px}
-.home .status{justify-content:center;margin-top:12px}
+.home .slogan{font-family:var(--sans);font-weight:800;letter-spacing:-0.02em;line-height:1.15;font-size:clamp(24px,6vw,40px);text-align:center;color:var(--ink);margin:16px auto 0;max-width:720px;text-wrap:balance}
 .home .intro{font-size:17px;text-align:center;max-width:560px;margin:18px auto 0;color:var(--ink)}
 .home-main{max-width:760px;margin:0 auto;padding:22px 16px 40px}
 .home .pick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:0 0 12px}
@@ -160,9 +170,7 @@ export default function Home() {
           <h1 className="wordmark big" style={{ margin: '18px 0 0' }}>
             fact or feed<span>?</span>
           </h1>
-          <div className="status" dir="auto">
-            <i /> {t.slogan}
-          </div>
+          <p className="slogan" dir="auto">{t.slogan}</p>
           <p className="intro" dir="auto">{t.intro}</p>
         </div>
       </header>

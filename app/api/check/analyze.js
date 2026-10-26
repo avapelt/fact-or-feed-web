@@ -28,6 +28,7 @@ const LANGUAGE_NAMES = {
   ar: 'Arabic',
   fr: 'French',
   bn: 'Bengali',
+  it: 'Italian',
 };
 
 const ManagerSchema = z.object({
@@ -49,7 +50,7 @@ const ManagerSchema = z.object({
 const ReaderSchema = z.object({
   user_question: z.string().nullable(),
   question_type: z.enum(['fact', 'future_outcome', 'opinion']),
-  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
+  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn', 'it']),
   content_summary: z.string(),
   posted_by: z.string().nullable(),
   photo_search_query: z.string().nullable(),
@@ -861,7 +862,7 @@ ${sourceList || 'No sources were found.'}`,
 const DescribeSchema = z.object({
   description: z.string(),
   photo_search_query: z.string().nullable(),
-  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn']),
+  language: z.enum(['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn', 'it']),
 });
 
 const PhotoSummarySchema = z.object({
