@@ -490,3 +490,85 @@ export function isFreshEntry(entry, now = Date.now()) {
   const age = now - saved;
   return age >= -60 * 1000 && age < ttl;
 }
+
+// ── Saved results never keep the user's own words ─────────────
+// Before saving, everything that holds what the user sent (their question, the post's text or
+// claims, who posted it, the link, words quoted from the photo or post) is removed.
+// Only Vera's own verdict, explanation, sources, and scores are kept.
+export function stripForCache(data) {
+  const d = JSON.parse(JSON.stringify(data || {}));
+  delete d.cached;
+  delete d.checked_at;
+  d.outlet = null; // rebuilt from the current request's link
+  const r = d.result;
+  if (r && typeof r === 'object') {
+    if (r.who_posted) r.who_posted = { ...r.who_posted, name: null };
+    if (Array.isArray(r.right_and_wrong)) r.right_and_wrong = [];
+    if (Array.isArray(r.persuasion_tactics)) r.persuasion_tactics = r.persuasion_tactics.map((t) => ({ ...t, where: '' }));
+    if ('reply_draft' in r) r.reply_draft = null;
+    if ('clarifying_question' in r) r.clarifying_question = null;
+    if ('reframed' in r) r.reframed = null;
+  }
+  if (d.review && Array.isArray(d.review.issues)) d.review = { ...d.review, issues: [] };
+  for (const check of [d.imageCheck, d.photo]) {
+    if (!check || typeof check !== 'object') continue;
+    if ('description' in check) check.description = null;
+    if (check.comparison) delete check.comparison.query;
+  }
+  if (d.trace) {
+    const t = d.trace;
+    const plan = t.plan
+      ? {
+          analysis: '',
+          reasons: [],
+          original_source: null,
+          news_search: t.plan.news_search,
+          official_sources: !!t.plan.official_sources,
+          research_papers: !!t.plan.research_papers,
+          persuasion: !!t.plan.persuasion,
+          photo_comparison: !!t.plan.photo_comparison,
+          emergency_mode: !!t.plan.emergency_mode,
+          go_to_original: !!t.plan.go_to_original,
+          is_recent: !!t.plan.is_recent,
+        }
+      : undefined;
+    d.trace = {
+      plan,
+      topic: t.topic,
+      question_type: t.question_type,
+      recent: t.recent,
+      search: t.search,
+      complete: t.complete,
+      // The Manager's step label quotes its analysis of the post, so only its first words are kept
+      timings: (t.timings || []).map((x) => ({ seconds: x.seconds, label: String(x.label || '').startsWith('Manager made a game plan') ? 'Manager made a game plan' : x.label })),
+    };
+  }
+  return d;
+}
+
+// Puts back only what we can rebuild from the CURRENT request (the cache key proves it's the same input)
+export function restoreCached(saved, { question = null, outlet = null, savedAt } = {}) {
+  const d = { ...saved, cached: true, checked_at: new Date(savedAt).toISOString() };
+  if (d.tool !== 'photo') {
+    d.outlet = outlet;
+    if (d.trace) d.trace = { ...d.trace, question: d.tool === 'facts' ? question : null };
+  }
+  return d;
+}
+
+// ── Daily cleanup: which stored files are old enough to delete ─
+export function blobsOlderThan(blobs, maxAgeMs, now = Date.now()) {
+  return (Array.isArray(blobs) ? blobs : []).filter((b) => {
+    const at = new Date(b?.uploadedAt).getTime();
+    return b?.url && Number.isFinite(at) && now - at > maxAgeMs;
+  });
+}
+
+// The standard Vercel Cron check: "Authorization: Bearer <CRON_SECRET>". No secret set means no access.
+export function isCronAuthorized(header, env = process.env) {
+  const secret = env.CRON_SECRET;
+  if (!secret || typeof header !== 'string') return false;
+  const a = Buffer.from(`Bearer ${secret}`);
+  const b = Buffer.from(header);
+  return a.length === b.length && timingSafeEqual(a, b);
+}

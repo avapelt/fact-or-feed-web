@@ -377,7 +377,14 @@ export default function HowItWorks() {
             <li>We warn you when a post asks for money or personal information.</li>
             <li>No personal medical, legal, or money advice.</li>
             <li>We never post or send anything for you. The reply we write is just a suggestion.</li>
-            <li>Photos you share are deleted once the check finishes.</li>
+            <li>Photos you share are deleted once the check finishes. Any shared photo that was never checked is deleted within a day.</li>
+            <li>
+              To save money, Vera keeps a copy of each finished result for up to 6 hours (1 hour for breaking news), so the
+              same check isn't run twice. The copy holds only Vera's own verdict, explanation, scores, and the sources she
+              found: never your question, the post's words, who posted it, your link, or your photo (only a scrambled
+              code made from them). It is never reused after 6 hours, and a daily cleanup deletes old copies, so none is
+              kept longer than about a day and a half.
+            </li>
             <li>Vera's notebook only keeps anonymous, general notes, never personal information.</li>
           </ul>
           <div className="callout" style={{ borderLeftColor: 'var(--rust)' }}>

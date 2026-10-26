@@ -669,7 +669,7 @@ function PlanBlock({ data }) {
   if (!plan) return null;
   return (
     <Block title="🧭 The Manager's game plan">
-      <p style={{ margin: '0 0 6px', fontSize: 14 }}>{plan.analysis}</p>
+      {plan.analysis && <p style={{ margin: '0 0 6px', fontSize: 14 }}>{plan.analysis}</p>}
       <div className="chips" style={{ marginBottom: 6 }}>
         {[
           [`Went to the original source${plan.original_source ? `: ${plan.original_source}` : ''}`, plan.go_to_original],
@@ -687,7 +687,7 @@ function PlanBlock({ data }) {
           ))}
       </div>
       <ul style={{ fontSize: 13.5 }}>
-        {plan.reasons.map((x, i) => (
+        {(plan.reasons || []).map((x, i) => (
           <li key={i}>{x}</li>
         ))}
       </ul>
@@ -879,7 +879,7 @@ function ResultBubble({ data, image, onPhotoCheck }) {
           <ul style={{ marginTop: 6, fontSize: 14 }}>
             {r.persuasion_tactics.map((t, i) => (
               <li key={i}>
-                <b>{t.tactic}</b> ({t.where}): {t.explanation}
+                <b>{t.tactic}</b>{t.where ? ` (${t.where})` : ''}: {t.explanation}
               </li>
             ))}
           </ul>

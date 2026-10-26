@@ -25,7 +25,7 @@ export async function POST(req) {
     // 💾 The same check in the last few hours? Answer from the saved result (no AI calls, no searches).
     // No Bookkeeper either: the notebook already learned from the first check.
     const key = cacheKeyFor('check', body);
-    const saved = await readCached(key);
+    const saved = await readCached(key, 'check', body);
     if (saved) return Response.json(saved);
 
     const data = await analyze(body);

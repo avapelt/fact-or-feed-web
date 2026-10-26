@@ -375,29 +375,37 @@ function levelFor(score) {
   return 'Low chance of AI';
 }
 
-// One image check (it used to run 3 times; the scoring works the same with one answer)
+// One image check (it used to run 3 times; the scoring works the same with one answer).
+// If the AI call fails, it tries once more before giving up.
 async function runImageCheck(image, system, prompt) {
-  try {
-    const { output } = await generateText({
-      model: MODEL,
-      system,
-      ...withTemperature(MODEL, 0),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image', image },
-          ],
-        },
-      ],
-      output: Output.object({ schema: ImageSchema }),
-    });
-    return combineImageChecks(output ? [output] : []);
-  } catch (err) {
-    console.error('Image check failed', err);
-    return null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const result = await imageCheckOnce(image, system, prompt);
+      if (result) return result;
+    } catch (err) {
+      console.error(`Image check failed (try ${attempt} of 2)`, err);
+    }
   }
+  return null;
+}
+
+async function imageCheckOnce(image, system, prompt) {
+  const { output } = await generateText({
+    model: MODEL,
+    system,
+    ...withTemperature(MODEL, 0),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image', image },
+        ],
+      },
+    ],
+    output: Output.object({ schema: ImageSchema }),
+  });
+  return combineImageChecks(output ? [output] : []);
 }
 
 function combineImageChecks(runs) {

@@ -21,7 +21,7 @@ export async function POST(req) {
     }
     // 💾 The same photo (same bytes, note, language, and level) in the last 6 hours: reuse the result
     const key = cacheKeyFor('photo', body);
-    const saved = await readCached(key);
+    const saved = await readCached(key, 'photo', body);
     if (saved) return Response.json(saved);
     const data = await checkPhoto(body);
     after(() => saveCached(key, data));
