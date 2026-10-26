@@ -1,5 +1,6 @@
 // Used by the iPhone Shortcut: Share anything → Fact or Feed? → popup over the app you're in.
 import { analyze } from '../check/analyze';
+import { checkImageField, signPayload, photoTooBig, sniffImageType, MAX_IMAGE_BYTES } from '../check/safety';
 
 export const maxDuration = 300;
 
@@ -34,18 +35,21 @@ async function readRequest(req) {
     language = String(form.get('language') || language);
     const file = form.get('image');
     if (file && typeof file !== 'string' && file.size > 0) {
+      if (file.size > MAX_IMAGE_BYTES) throw photoTooBig();
       const buf = Buffer.from(await file.arrayBuffer());
-      image = `data:${file.type || 'image/jpeg'};base64,${buf.toString('base64')}`;
+      // Use the real type from the file's first bytes (the Shortcut may not label it)
+      image = `data:${sniffImageType(buf) || file.type || 'image/jpeg'};base64,${buf.toString('base64')}`;
     }
   } else {
     const body = await req.json();
     raw = body.text || body.url || '';
     image = body.image || null;
-    audience = body.audience || audience;
-    language = body.language || language;
+    audience = String(body.audience || audience).slice(0, 20);
+    language = String(body.language || language).slice(0, 10);
   }
 
-  return { ...splitInput(raw), image, audience, language };
+  // Only normal photos (JPEG, PNG, WebP, GIF, HEIC) of a reasonable size
+  return { ...splitInput(raw.slice(0, 7000)), image: checkImageField(image), audience, language };
 }
 
 export async function POST(req) {
@@ -71,15 +75,18 @@ export async function POST(req) {
     lines.push('', 'Tap OK for the full breakdown.');
 
     // The full result rides along in the link's #hash, so the website can show it
-    // without running the check again. The hash never gets sent to the server.
+    // without running the check again. It is signed, so nobody can make a fake result link:
+    // the website asks /api/verify-result before showing it.
     const origin = new URL(req.url).origin;
     const packed = Buffer.from(JSON.stringify(data)).toString('base64url');
+    const sig = signPayload(packed);
 
     return Response.json({
       title: 'Fact or Feed?',
       message: lines.join('\n'),
       verdict: r.verdict,
-      link: `${origin}/#r=${packed}`,
+      // If the result is too big to verify (or can't be signed), just open the site
+      link: sig && packed.length <= 200 * 1024 ? `${origin}/#r=${packed}.${sig}` : origin,
     });
   } catch (err) {
     console.error(err);
