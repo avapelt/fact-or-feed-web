@@ -258,14 +258,26 @@ function rebuildAbstract(inverted) {
   return words.join(' ');
 }
 
-async function searchResearch(query) {
+// Searches published research with OpenAlex. Withdrawn (retracted) papers are never used.
+// The OPENALEX_API_KEY gives the site its own daily allowance; without it, the free one is shared
+// with everyone on the same server and can run out. Failures are counted in `track`, like news searches.
+async function searchResearch(query, track = null) {
+  if (track) track.tried = (track.tried || 0) + 1;
+  const failed = (why) => {
+    if (track) track.failed = (track.failed || 0) + 1;
+    console.error('Research search failed:', why);
+    return [];
+  };
   try {
+    const key = process.env.OPENALEX_API_KEY ? `&api_key=${encodeURIComponent(process.env.OPENALEX_API_KEY)}` : '';
     const res = await fetch(
-      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=6`,
+      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&filter=is_retracted:false&per-page=6${key}`,
       { signal: AbortSignal.timeout(15000) }
     );
+    if (!res.ok) return failed(`status ${res.status}`);
     const data = await res.json();
-    return (data.results || [])
+    if (!data || !Array.isArray(data.results)) return failed('no results list');
+    return data.results
       .filter((w) => w.type === 'article')
       .map((w) => ({
         title: w.display_name,
@@ -275,8 +287,8 @@ async function searchResearch(query) {
         journal: w.primary_location?.source?.display_name || null,
         research: true,
       }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failed(err?.name || 'error');
   }
 }
 
@@ -581,13 +593,19 @@ export async function analyze(input) {
 
   // Step 2: Search, analyze persuasion, and check the image, all at the same time
   const searchTrack = { tried: 0, failed: 0 };
+  // Research searches are counted on their own, so a research outage never blocks a verdict or a saved result
+  const researchTrack = { tried: 0, failed: 0 };
   const searchesPromise = Promise.all([
     ...originalQ.map((q) => searchWeb(q, { max_results: 5 }, searchTrack).then((list) => list.map((x) => ({ ...x, original: true })))),
     ...newsQ.map((q, i) => searchWeb(q, recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }, searchTrack)),
     ...officialQ.map((q) => searchWeb(q, {}, searchTrack)),
-    ...researchQ.map((q) => searchResearch(q)),
+    ...researchQ.map((q) => searchResearch(q, researchTrack)),
   ]).then((results) => {
-    mark('Searched news, official sources, and published research');
+    mark(
+      researchTrack.failed
+        ? `Searched news and official sources (${researchTrack.failed} of ${researchTrack.tried} research searches failed)`
+        : 'Searched news, official sources, and published research'
+    );
     return results;
   });
 
@@ -807,7 +825,7 @@ ${sourceList || 'No sources were found.'}`,
       claims: reader.claims,
       queries: { original: originalQ, news: newsQ, official: officialQ, research: researchQ },
       recent,
-      search: { ...searchTrack, photo: photoTrack, enough: !problem, forced: problem || null },
+      search: { ...searchTrack, photo: photoTrack, research: researchTrack, enough: !problem, forced: problem || null },
       // false when a step failed (the double-check, or the photo comparison), so it isn't saved for reuse
       complete: !reviewFailed && !compareFailed && !(photoChecks && !imageCheck),
       timings,
