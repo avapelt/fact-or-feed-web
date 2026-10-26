@@ -8,7 +8,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { get, put } from '@vercel/blob';
 import { APPROVED_LESSONS } from './approved-lessons';
-import { withTemperature, scrubPersonal } from './safety';
+import { withTemperature } from './safety';
 
 const PATH = 'notebook/vera-notebook.json';
 const PENDING_PATH = 'notebook/pending-lessons.json';
@@ -48,7 +48,13 @@ export function approvedLessonCount() {
 
 // Second safety net: strip anything that looks personal, even if the AI missed it
 export function scrub(text) {
-  return scrubPersonal(String(text || '').replace(/\+?\d[\d\s().-]{7,}\d/g, '[number]')).slice(0, 300).trim();
+  return String(text || '')
+    .replace(/https?:\/\/\S+/gi, '[link]')
+    .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[email]')
+    .replace(/@[A-Za-z0-9_.]{2,}/g, '[account]')
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, '[number]')
+    .slice(0, 300)
+    .trim();
 }
 
 export async function loadNotebook() {

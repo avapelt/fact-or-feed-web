@@ -864,13 +864,7 @@ function ResultBubble({ data, image, onPhotoCheck }) {
             <span className="pill">{r.who_posted.type}</span>
           </div>
           <div style={{ marginTop: 6, fontSize: 14 }}>
-            {r.who_posted.name ? (
-              <b>{r.who_posted.name}</b>
-            ) : data.cached ? (
-              <span className="muted">{r.who_posted.type} (names aren't kept in saved results)</span>
-            ) : (
-              <span className="muted">We couldn't tell who made this.</span>
-            )}
+            {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">We couldn't tell who made this.</span>}
           </div>
           {r.who_posted.trust_note && <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>}
         </div>

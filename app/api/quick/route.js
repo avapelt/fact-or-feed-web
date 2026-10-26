@@ -59,9 +59,9 @@ export async function POST(req) {
     const input = await readRequest(req);
     // 💾 The same check in the last few hours: reuse the saved result instead of paying again
     const key = cacheKeyFor('check', { ...input, fast: true });
-    const saved = await readCached(key, 'check', input);
+    const saved = await readCached(key);
     const data = saved || (await analyze({ ...input, fast: true }));
-    if (!saved) after(() => saveCached(key, data, input));
+    if (!saved) after(() => saveCached(key, data));
     const r = data.result;
     const total = data.sources?.length || 0;
 

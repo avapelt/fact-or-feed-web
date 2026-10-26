@@ -2,58 +2,54 @@
 // Vera answers from storage instead of paying for a whole new check.
 // A miss costs one cheap read (a "simple operation") plus one save (an "advanced operation").
 // Checks never use `list` (only the daily cleanup does). The photo is never stored, only a
-// fingerprint inside the key, and the user's own words are removed before saving (stripForCache).
-// Our Blob store is a public one (private blobs need a separate private store), so the file names
-// are unguessable secret-keyed codes, and the daily cleanup deletes them after 6 hours.
+// fingerprint inside the keys.
+// 🔒 Each saved result is locked (AES-256-GCM) with a key made from the exact input, so it can only
+// be found and opened by someone who sends that same post, link, or photo again.
 import { get, put } from '@vercel/blob';
-import { cacheInput, cacheKey, isCacheable, cacheTtlMs, isFreshEntry, stripForCache, restoreCached } from './safety';
-import { categorize } from './bias';
+import { cacheInput, cacheKeys, isCacheable, cacheTtlMs, isFreshEntry, encryptEntry, decryptEntry, restoreCached } from './safety';
 
 // Set to false to turn saved results off (for example if Blob's free-plan limits get tight)
 export const RESULT_CACHE_ENABLED = true;
 
-const pathFor = (key) => `cache/${key}.json`;
+const pathFor = (id) => `cache/${id}.txt`;
 
 // kind: 'check' (Find the facts, Is this news credible?, the iPhone popup) or 'photo'
+// Returns { id, encKey }, or null when saved results are off
 export function cacheKeyFor(kind, input) {
   if (!RESULT_CACHE_ENABLED || !process.env.BLOB_READ_WRITE_TOKEN) return null;
   try {
-    return cacheKey(cacheInput(kind, input));
+    return cacheKeys(cacheInput(kind, input));
   } catch {
     return null;
   }
 }
 
-// The saved result, or null if there isn't one or it's too old (old ones are simply overwritten later).
-// `input` is the CURRENT request: the user's own question and link are put back from it.
-export async function readCached(key, kind, input = {}) {
-  if (!key) return null;
+// The saved result, or null if there isn't one, it can't be opened, or it's too old
+// (old ones are simply overwritten later, and the daily cleanup deletes them)
+export async function readCached(keys) {
+  if (!keys) return null;
   try {
-    const res = await get(pathFor(key), { access: 'public', useCache: false, abortSignal: AbortSignal.timeout(3000) });
+    const res = await get(pathFor(keys.id), { access: 'public', useCache: false, abortSignal: AbortSignal.timeout(3000) });
     if (!res || res.statusCode !== 200) return null;
-    const entry = JSON.parse(await new Response(res.stream).text());
+    const entry = decryptEntry(await new Response(res.stream).text(), keys.encKey);
     if (!isFreshEntry(entry)) return null;
-    const url = String(input.url || '').trim();
-    return restoreCached(entry.data, {
-      question: kind === 'check' && input.tool === 'facts' ? String(input.text || '').slice(0, 1000) || null : null,
-      outlet: url ? categorize({ url }) : null,
-      savedAt: entry.saved_at,
-    });
+    return restoreCached(entry.data, entry.saved_at);
   } catch {
     return null;
   }
 }
 
-// Saves a short summary of a good, complete result: only what the page needs, with personal
-// details and the user's own words removed. `input` is what the user sent (to cut copied phrases).
-export async function saveCached(key, data, input = {}) {
-  if (!key || !isCacheable(data)) return false;
+// Saves a good, complete result, locked with the input's own key
+export async function saveCached(keys, data) {
+  if (!keys || !isCacheable(data)) return false;
   try {
-    await put(pathFor(key), JSON.stringify({ v: 1, saved_at: Date.now(), ttl_ms: cacheTtlMs(data), data: stripForCache(data, { userText: [input.text, input.url].filter(Boolean).map(String) }) }), {
+    const { cached, checked_at, ...result } = data;
+    const entry = { v: 1, saved_at: Date.now(), ttl_ms: cacheTtlMs(data), data: result };
+    await put(pathFor(keys.id), encryptEntry(entry, keys.encKey), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
-      contentType: 'application/json',
+      contentType: 'text/plain',
       cacheControlMaxAge: 60,
     });
     return true;

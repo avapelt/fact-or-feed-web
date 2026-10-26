@@ -1,6 +1,6 @@
 // 🛡️ Small safety helpers shared by the API routes.
 // They are plain functions with no outside services, so they are easy to test.
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual, createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 // ── Our own photo storage ─────────────────────────────────────
 // The Blob token looks like vercel_blob_rw_<storeId>_<secret>, and our public files live at
@@ -451,13 +451,39 @@ export function cacheInput(kind, input = {}) {
   };
 }
 
-// Keyed with the same secret as the signed result links, so nobody can guess a key
-export function cacheKey(parts, env = process.env) {
+// Two secrets made from the same input, keyed with the same secret as the signed result links:
+// `id` names the saved file, and `encKey` locks it. Only someone who sends exactly the same input
+// can find or open a saved result, so it tells them nothing they didn't already have.
+export function cacheKeys(parts, env = process.env) {
   const key = resultKey(env);
   if (!key) return null;
   const p = parts || {};
   const canonical = JSON.stringify(['v1', p.tool, p.mode || '', !!p.fast, p.language, p.audience, p.text || '', p.url || '', p.image || '']);
-  return createHmac('sha256', key).update('fact-or-feed-cache-v1:' + canonical).digest('hex');
+  return {
+    id: createHmac('sha256', key).update('id:' + canonical).digest('hex'),
+    encKey: createHmac('sha256', key).update('enc:' + canonical).digest(),
+  };
+}
+
+// AES-256-GCM: a random 12-byte IV, then the 16-byte auth tag, then the ciphertext, as base64
+export function encryptEntry(entry, encKey) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', encKey, iv);
+  const ct = Buffer.concat([cipher.update(JSON.stringify(entry), 'utf8'), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), ct]).toString('base64');
+}
+
+// The saved entry, or null if it was made with a different input or was changed in any way
+export function decryptEntry(text, encKey) {
+  try {
+    const buf = Buffer.from(String(text || ''), 'base64');
+    if (buf.length < 29) return null;
+    const decipher = createDecipheriv('aes-256-gcm', encKey, buf.subarray(0, 12));
+    decipher.setAuthTag(buf.subarray(12, 28));
+    return JSON.parse(Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]).toString('utf8'));
+  } catch {
+    return null;
+  }
 }
 
 // Only good, complete results are saved: never a forced "Can't confirm yet",
@@ -491,172 +517,9 @@ export function isFreshEntry(entry, now = Date.now()) {
   return age >= -60 * 1000 && age < ttl;
 }
 
-// ── Personal details are removed before anything is kept ─────
-// Links, emails, @accounts, phone numbers, street addresses, and "Mr./Ms./Dr. Name" become placeholders.
-// `names` (for example the person who posted) and any 5-word run copied from `phrases`
-// (the user's own question, post, or claims) are removed too.
-const PHONE_RE = /(?:\+\d{1,3}[\s.-]?)?\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b|\+\d[\d\s().-]{7,}\d/g;
-const ADDRESS_RE = /\b\d{1,6}\s+(?:[A-Z0-9][\w'-]*\s+){0,3}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Way|Pl|Place|Ter|Terrace|Hwy|Highway|Pkwy|Parkway|Cir|Circle)\b\.?(?:,?\s*(?:Apt|Unit|Suite|#)\s*\w+)?|\bP\.?\s?O\.?\s+Box\s+\d+/g;
-const HONORIFIC_RE = /\b(?:Mr|Mrs|Ms|Mx|Miss|Dr)\.?\s+[A-Z][\p{L}'-]+(?:\s+[A-Z][\p{L}'-]+)?/gu;
-const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const textWords = (x) => String(x || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-
-export function scrubPersonal(text, { names = [], phrases = [] } = {}) {
-  let out = String(text || '')
-    .replace(/https?:\/\/\S+|\bwww\.\S+/gi, '[link]')
-    .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[email]')
-    .replace(/(^|[^\w])@[A-Za-z0-9_.]{2,}/g, '$1[account]')
-    .replace(PHONE_RE, '[number]')
-    .replace(ADDRESS_RE, '[address]')
-    .replace(HONORIFIC_RE, '[name]');
-  // The poster's name, in full and each part of it (3+ letters, as a whole word)
-  const parts = new Set();
-  for (const n of names) {
-    const name = String(n || '').replace(/^@/, '').trim();
-    if (name.length < 3) continue;
-    parts.add(name);
-    for (const p of name.split(/[\s_.-]+/)) if (p.length >= 3) parts.add(p);
-  }
-  for (const p of [...parts].sort((a, b) => b.length - a.length)) {
-    out = out.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(p)}(?![\\p{L}\\p{N}])`, 'giu'), '[name]');
-  }
-  // Any run of 5 or more words copied from the user's own text is cut out
-  const grams = new Set();
-  for (const ph of phrases) {
-    const w = textWords(ph);
-    for (let i = 0; i + 5 <= w.length; i++) grams.add(w.slice(i, i + 5).join(' '));
-  }
-  if (grams.size) {
-    const tokens = [...out.matchAll(/[\p{L}\p{N}]+/gu)];
-    const lower = tokens.map((m) => m[0].normalize('NFKC').toLowerCase());
-    const cut = new Array(tokens.length).fill(false);
-    for (let i = 0; i + 5 <= tokens.length; i++) {
-      if (grams.has(lower.slice(i, i + 5).join(' '))) for (let j = i; j < i + 5; j++) cut[j] = true;
-    }
-    let result = '';
-    let pos = 0;
-    for (let i = 0; i < tokens.length; i++) {
-      if (!cut[i]) continue;
-      let j = i;
-      while (j + 1 < tokens.length && cut[j + 1]) j++;
-      result += out.slice(pos, tokens[i].index) + '…';
-      pos = tokens[j].index + tokens[j][0].length;
-      i = j;
-    }
-    out = result + out.slice(pos);
-  }
-  return out.trim();
-}
-
-// ── Saved results keep only what's needed to show them again ──
-// An ALLOWLIST: a brand-new object with just the fields the page needs, then every remaining
-// string (except public source titles, links, and domains) goes through scrubPersonal.
-// Dropped entirely: the user's question, claims, the post's words, who posted it (only the kind
-// of account is kept), the link they sent, the reply draft, the clarifying question, the
-// origin timeline, trust notes, review notes, the Manager's notes, search queries, and the photo description.
-const arr = (x) => (Array.isArray(x) ? x : []);
-const str = (x) => (typeof x === 'string' ? x : null);
-
-function keepSource(s) {
-  if (!s || typeof s !== 'object') return null;
-  return { id: s.id, title: str(s.title), url: str(s.url), domain: str(s.domain), category: str(s.category), date: str(s.date), journal: str(s.journal), research: !!s.research, original: !!s.original, snippet: str(s.snippet) };
-}
-
-function keepImageCheck(c) {
-  if (!c || typeof c !== 'object') return null;
-  const cmp = c.comparison;
-  return {
-    level: str(c.level), score: typeof c.score === 'number' ? c.score : null, plausibility: str(c.plausibility), plausibility_reason: str(c.plausibility_reason),
-    signs: arr(c.signs).filter((x) => typeof x === 'string'), note: str(c.note), checks: c.checks, agree: c.agree,
-    comparison: cmp && typeof cmp === 'object'
-      ? { match: str(cmp.match), reused_old_photo: !!cmp.reused_old_photo, effect: str(cmp.effect), comparison: str(cmp.comparison), compared: arr(cmp.compared).map((x) => ({ url: str(x?.url), description: str(x?.description) })) }
-      : null,
-  };
-}
-
-const KEEP_RAW = new Set(['url', 'domain', 'title', 'category', 'date', 'journal', 'level', 'verdict', 'type', 'match', 'effect', 'plausibility', 'confidence', 'news_search', 'topic', 'question_type', 'lang', 'tool', 'forced']);
-
-function scrubDeep(value, opts, key = '') {
-  if (typeof value === 'string') return KEEP_RAW.has(key) ? value : scrubPersonal(value, opts);
-  if (Array.isArray(value)) return value.map((v) => scrubDeep(v, opts, key));
-  if (value && typeof value === 'object') {
-    const out = {};
-    for (const [k, v] of Object.entries(value)) out[k] = scrubDeep(v, opts, k);
-    return out;
-  }
-  return value;
-}
-
-// `userText`: what the user sent in this request (their text and link), so copied phrases can be cut
-export function stripForCache(data, { userText = [] } = {}) {
-  const d = data || {};
-  const r = d.result || {};
-  const t = d.trace || {};
-  // The poster's name is removed everywhere, unless it's a news outlet, official source, or known site
-  const PUBLIC_TYPES = ['News outlet', 'Official source', 'Satire site', 'Known unreliable site'];
-  const names = r.who_posted?.name && !PUBLIC_TYPES.includes(r.who_posted.type) ? [r.who_posted.name] : [];
-  const phrases = [...arr(userText), t.question, ...arr(t.claims), ...arr(r.right_and_wrong).map((x) => x?.post_says)].filter((x) => typeof x === 'string');
-  const out = { tool: d.tool, lang: d.lang };
-
-  if (d.photo) {
-    const p = keepImageCheck(d.photo);
-    out.photo = { ...p, headline: str(d.photo.headline), explanation: str(d.photo.explanation), tip: str(d.photo.tip), description: null };
-  } else {
-    const consensus = { level: str(r.consensus?.level), explanation: str(r.consensus?.explanation) || '' };
-    const common = { consensus, disputed: arr(r.disputed), unknown: arr(r.unknown), how_we_figured_it_out: arr(r.how_we_figured_it_out), key_source_ids: arr(r.key_source_ids).filter((x) => typeof x === 'number'), notebook_note: str(r.notebook_note), clarifying_question: null };
-    out.result =
-      d.tool === 'facts'
-        ? {
-            ...common,
-            answer: str(r.answer) || '',
-            details: str(r.details) || '',
-            reframed: null,
-            original_source: r.original_source ? { name: str(r.original_source.name) || '', what_it_says: str(r.original_source.what_it_says) || '', source_id: typeof r.original_source.source_id === 'number' ? r.original_source.source_id : null } : null,
-          }
-        : {
-            ...common,
-            verdict: str(r.verdict),
-            real_story: str(r.real_story) || '',
-            warning: str(r.warning),
-            bias_note: str(r.bias_note),
-            who_posted: r.who_posted ? { name: null, type: str(r.who_posted.type) || 'Unknown', trust_note: '' } : null,
-            right_and_wrong: [],
-            origin_timeline: [],
-            persuasion_tactics: arr(r.persuasion_tactics).map((x) => ({ tactic: str(x?.tactic) || '', where: '', explanation: str(x?.explanation) || '' })),
-            reply_draft: null,
-          };
-    out.review = d.review ? { approved: !!d.review.approved, confidence: str(d.review.confidence), issues: [], review_note: '' } : null;
-    out.outlet = null; // rebuilt from the current request's link
-    out.keySources = arr(d.keySources).map(keepSource).filter(Boolean);
-    out.sources = arr(d.sources).map(keepSource).filter(Boolean);
-    out.stats = Object.fromEntries(Object.entries(d.stats || {}).filter(([, v]) => typeof v === 'number'));
-    out.imageCheck = keepImageCheck(d.imageCheck);
-  }
-
-  const plan = t.plan
-    ? { analysis: '', reasons: [], original_source: null, news_search: str(t.plan.news_search), official_sources: !!t.plan.official_sources, research_papers: !!t.plan.research_papers, persuasion: !!t.plan.persuasion, photo_comparison: !!t.plan.photo_comparison, emergency_mode: !!t.plan.emergency_mode, go_to_original: !!t.plan.go_to_original, is_recent: !!t.plan.is_recent }
-    : undefined;
-  out.trace = {
-    plan,
-    topic: str(t.topic),
-    question_type: str(t.question_type),
-    recent: !!t.recent,
-    search: t.search ? { tried: t.search.tried || 0, failed: t.search.failed || 0, photo: t.search.photo ? { tried: t.search.photo.tried || 0, failed: t.search.photo.failed || 0 } : undefined, enough: t.search.enough, forced: t.search.forced || null } : undefined,
-    complete: t.complete,
-    // The Manager's step label quotes its notes on the post, so only its first words are kept
-    timings: arr(t.timings).map((x) => ({ seconds: x?.seconds, label: String(x?.label || '').startsWith('Manager made a game plan') ? 'Manager made a game plan' : String(x?.label || '') })),
-  };
-  return scrubDeep(JSON.parse(JSON.stringify(out)), { names, phrases });
-}
-
-// Puts back only what we can rebuild from the CURRENT request (the cache key proves it's the same input)
-export function restoreCached(saved, { question = null, outlet = null, savedAt } = {}) {
-  const d = { ...saved, cached: true, checked_at: new Date(savedAt).toISOString() };
-  if (d.tool !== 'photo') {
-    d.outlet = outlet;
-    if (d.trace) d.trace = { ...d.trace, question: d.tool === 'facts' ? question : null };
-  }
-  return d;
+// A saved result, marked as saved, with when it was first checked
+export function restoreCached(saved, savedAt) {
+  return { ...saved, cached: true, checked_at: new Date(savedAt).toISOString() };
 }
 
 // ── Daily cleanup: which stored files are old enough to delete ─

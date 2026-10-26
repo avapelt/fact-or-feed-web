@@ -379,10 +379,9 @@ export default function HowItWorks() {
             <li>We never post or send anything for you. The reply we write is just a suggestion.</li>
             <li>Photos you share are deleted once the check finishes. Any shared photo that was never checked is deleted within a day.</li>
             <li>
-              To save money, we keep a short summary of a result for up to 6 hours so the same post doesn't have to be
-              checked twice. It never includes your question, the post's words, your link, or your photo. Personal
-              details like names, phone numbers, and emails are removed, and every saved summary is deleted within
-              about a day and a half.
+              To save money, if someone checks the exact same post, link or photo within 6 hours, we reuse the earlier
+              result. Saved results are locked (encrypted) so they can only be opened by someone who sends that exact
+              same thing, and every saved result is deleted within about a day and a half.
             </li>
             <li>Vera's notebook only keeps anonymous, general notes, never personal information.</li>
           </ul>
