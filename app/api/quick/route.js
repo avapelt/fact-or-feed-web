@@ -62,6 +62,10 @@ export async function POST(req) {
     const saved = await readCached(key);
     const data = saved || (await analyze({ ...input, fast: true }));
     if (!saved) after(() => saveCached(key, data));
+    // A hello, or something Vera won't look up: show her short reply in the popup
+    if (data.chat) {
+      return Response.json({ title: 'Fact or Feed?', message: data.chat.reply, verdict: null, link: new URL(req.url).origin });
+    }
     const r = data.result;
     const total = data.sources?.length || 0;
 

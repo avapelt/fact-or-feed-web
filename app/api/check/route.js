@@ -34,7 +34,7 @@ export async function POST(req) {
     // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent.
     // Skipped when the code forced "Can't confirm yet" (search down or too few sources),
     // so an outage never gets remembered as a result.
-    if (!data.trace?.search?.forced) after(() =>
+    if (!data.chat && !data.trace?.search?.forced) after(() =>
       bookkeep({
         model: FAST_MODEL,
         claims: data.trace?.claims,
