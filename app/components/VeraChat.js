@@ -7,7 +7,7 @@ const STEPS = {
     'Reading what you sent…',
     'Checking who published it and how they lean…',
     'Spotting persuasion tactics…',
-    'Searching 30+ sources across the spectrum…',
+    'Searching news sources across the spectrum…',
     'Checking official sources and published research…',
     'Weighing the evidence…',
     'Having a second AI double-check it…',
@@ -36,7 +36,7 @@ const COLORS = {
   Center: '#B9B6C2',
   'Lean Right': '#E3A397',
   Right: '#B5402F',
-  Official: '#2F8F5B',
+  Official: '#237A4B',
   Research: '#5B3FA6',
   'Fact-check': '#D99A2B',
   'Not rated': '#E2E0E6',
@@ -45,7 +45,9 @@ const ORDER = Object.keys(COLORS);
 const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
 
 const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
-const VERDICT_COLORS = ['#2F8F5B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
+const VERDICT_COLORS = ['#237A4B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
+// Text on each verdict chip: dark ink on the light chips, white on the dark ones (all at least 4.5:1)
+const VERDICT_TEXT = ['#FFFFFF', '#1D1D1F', '#1D1D1F', '#1D1D1F', '#FFFFFF'];
 // The three tools: icon, link, and name in each language
 export const TOOLS = {
   facts: {
@@ -79,7 +81,8 @@ const PLACEHOLDERS = {
 };
 
 const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
-const AI_COLORS = ['#2F8F5B', '#D99A2B', '#C2413B'];
+const AI_COLORS = ['#237A4B', '#D99A2B', '#C2413B'];
+const AI_TEXT = ['#FFFFFF', '#1D1D1F', '#FFFFFF'];
 
 // iCloud link of the Fact or Feed? Shortcut (Shortcuts app → hold the shortcut → Share → Copy iCloud Link)
 const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c96143b1500';
@@ -87,14 +90,14 @@ const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/b8d2bacab3a542ffb17e0c961
 
 const WELCOME = {
   facts: {
-    en: "Hey! 👋 I'm Vera. Ask me anything you want the facts on, like \"When is the next Miami election?\" I'll go straight to the original source when that's best, or check 30+ sources, and show you the sources I used.",
-    es: '¡Hola! 👋 Soy Vera. Pregúntame lo que quieras saber, como "¿Cuándo es la próxima elección en Miami?". Iré directo a la fuente original cuando sea lo mejor, o revisaré más de 30 fuentes, y te mostraré las fuentes que usé.',
-    ht: 'Bonjou! 👋 Mwen se Vera. Mande m nenpòt bagay ou vle konnen verite a, tankou "Kilè pwochen eleksyon Miami a ye?". M ap ale dirèkteman nan sous orijinal la lè sa pi bon, oswa tcheke plis pase 30 sous, epi m ap montre w sous mwen itilize yo.',
-    zh: '你好！👋 我是 Vera。问我任何你想了解事实的问题，比如"迈阿密下一次选举是什么时候？"。在最合适的时候我会直接去找原始来源，或者查阅 30 多个来源，并告诉你我用了哪些来源。',
-    hi: 'नमस्ते! 👋 मैं वेरा हूँ। मुझसे कुछ भी पूछें जिसके तथ्य आप जानना चाहते हैं, जैसे "मियामी का अगला चुनाव कब है?" जब सबसे अच्छा हो, मैं सीधे मूल स्रोत पर जाऊँगी, या 30 से ज़्यादा स्रोत देखूँगी, और आपको वे स्रोत दिखाऊँगी जिनका मैंने इस्तेमाल किया।',
-    ar: 'مرحبًا! 👋 أنا فيرا. اسألني عن أي شيء تريد معرفة حقيقته، مثل "متى الانتخابات القادمة في ميامي؟". سأذهب مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو أتحقق من أكثر من 30 مصدرًا، وأريك المصادر التي استخدمتها.',
-    fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai plus de 30 sources, et je te montrerai les sources que j\'ai utilisées.',
-    bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো ৩০টিরও বেশি সূত্র দেখব, আর দেখাব আমি কোন কোন সূত্র ব্যবহার করেছি।',
+    en: "Hey! 👋 I'm Vera. Ask me anything you want the facts on, like \"When is the next Miami election?\" I'll go straight to the original source when that's best, or check news sources across the spectrum, and show you the sources I used.",
+    es: '¡Hola! 👋 Soy Vera. Pregúntame lo que quieras saber, como "¿Cuándo es la próxima elección en Miami?". Iré directo a la fuente original cuando sea lo mejor, o revisaré fuentes de noticias de todo el espectro, y te mostraré las fuentes que usé.',
+    ht: 'Bonjou! 👋 Mwen se Vera. Mande m nenpòt bagay ou vle konnen verite a, tankou "Kilè pwochen eleksyon Miami a ye?". M ap ale dirèkteman nan sous orijinal la lè sa pi bon, oswa tcheke sous nouvèl sou tout bò yo, epi m ap montre w sous mwen itilize yo.',
+    zh: '你好！👋 我是 Vera。问我任何你想了解事实的问题，比如"迈阿密下一次选举是什么时候？"。在最合适的时候我会直接去找原始来源，或者查阅不同立场的新闻来源，并告诉你我用了哪些来源。',
+    hi: 'नमस्ते! 👋 मैं वेरा हूँ। मुझसे कुछ भी पूछें जिसके तथ्य आप जानना चाहते हैं, जैसे "मियामी का अगला चुनाव कब है?" जब सबसे अच्छा हो, मैं सीधे मूल स्रोत पर जाऊँगी, या हर विचारधारा के समाचार स्रोत देखूँगी, और आपको वे स्रोत दिखाऊँगी जिनका मैंने इस्तेमाल किया।',
+    ar: 'مرحبًا! 👋 أنا فيرا. اسألني عن أي شيء تريد معرفة حقيقته، مثل "متى الانتخابات القادمة في ميامي؟". سأذهب مباشرة إلى المصدر الأصلي عندما يكون ذلك الأفضل، أو أتحقق من مصادر إخبارية من مختلف التوجهات، وأريك المصادر التي استخدمتها.',
+    fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai des sources d\'info de tout le spectre, et je te montrerai les sources que j\'ai utilisées.',
+    bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো সব মতের খবরের সূত্র দেখব, আর দেখাব আমি কোন কোন সূত্র ব্যবহার করেছি।',
   },
   credible: {
     en: "Hey! 👋 I'm Vera. Paste a news link or a post, or add a screenshot with 📎, and I'll show you how credible it is: who published it and how they lean, the persuasion tactics it uses, and whether the facts hold up. Remember: leaning left or right doesn't make something false.",
@@ -132,6 +135,280 @@ export const LANGUAGES = [
   ['bn', 'বাংলা'],
 ];
 
+// Small bits of the screen in every language (the rest of the site is translated in a later batch)
+// {n} is a number of seconds
+export const UI = {
+  en: {
+    messageLabel: 'Message to Vera',
+    getApp: 'Get the app',
+    installApp: 'Install app',
+    waitNote: 'This can take 1–3 minutes.',
+    elapsed: '{n} seconds so far',
+    stillWorking: 'Still working, almost there…',
+    resultReady: 'Result ready',
+    tryAgain: 'Try again',
+    errTimeout: 'This took too long, so I stopped waiting. Please try again.',
+    errBusy: 'The check ran out of time on our server. Please try again. A shorter post or link can help.',
+    errServer: 'Something went wrong on our side. Please try again in a minute.',
+    errNetwork: "I couldn't reach the server. Check your connection and try again.",
+    photoUnreadable: "I couldn't read that photo. Try another photo, or a screenshot of it.",
+    copyFailed: "Couldn't copy. Press and hold the text to copy it.",
+    androidIntro: 'Install Fact or Feed? on your Android phone. Then you can share posts and links straight to it.',
+    androidStepsTitle: 'Add it to your Home screen',
+    a1: 'Open this site in Chrome.',
+    a2: 'Tap the ⋮ menu in the top corner.',
+    a3: 'Tap Install app or Add to Home screen.',
+    androidShareTitle: 'Check posts from any app',
+    as1: 'On any post or link, tap Share.',
+    as2: 'Pick Fact or Feed? from the list. It opens and starts checking.',
+  },
+  es: {
+    messageLabel: 'Mensaje para Vera',
+    getApp: 'Obtén la app',
+    installApp: 'Instalar app',
+    waitNote: 'Esto puede tardar de 1 a 3 minutos.',
+    elapsed: '{n} segundos hasta ahora',
+    stillWorking: 'Sigo trabajando, ya casi está…',
+    resultReady: 'Resultado listo',
+    tryAgain: 'Intentar de nuevo',
+    errTimeout: 'Esto tardó demasiado, así que dejé de esperar. Inténtalo de nuevo.',
+    errBusy: 'La revisión se quedó sin tiempo en nuestro servidor. Inténtalo de nuevo. Una publicación o un enlace más corto puede ayudar.',
+    errServer: 'Algo salió mal de nuestro lado. Inténtalo de nuevo en un minuto.',
+    errNetwork: 'No pude conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    photoUnreadable: 'No pude leer esa foto. Prueba con otra foto o con una captura de pantalla de ella.',
+    copyFailed: 'No se pudo copiar. Mantén pulsado el texto para copiarlo.',
+    androidIntro: 'Instala Fact or Feed? en tu teléfono Android. Así podrás compartir publicaciones y enlaces directamente.',
+    androidStepsTitle: 'Agrégala a tu pantalla de inicio',
+    a1: 'Abre este sitio en Chrome.',
+    a2: 'Toca el menú ⋮ en la esquina superior.',
+    a3: 'Toca Instalar app o Agregar a la pantalla de inicio.',
+    androidShareTitle: 'Revisa publicaciones desde cualquier app',
+    as1: 'En cualquier publicación o enlace, toca Compartir.',
+    as2: 'Elige Fact or Feed? en la lista. Se abre y empieza a revisar.',
+  },
+  ht: {
+    messageLabel: 'Mesaj pou Vera',
+    getApp: 'Jwenn aplikasyon an',
+    installApp: 'Enstale aplikasyon an',
+    waitNote: 'Sa ka pran 1 a 3 minit.',
+    elapsed: '{n} segonn deja',
+    stillWorking: 'M toujou ap travay, prèske fini…',
+    resultReady: 'Rezilta a pare',
+    tryAgain: 'Eseye ankò',
+    errTimeout: 'Sa te pran twòp tan, kidonk m sispann tann. Tanpri eseye ankò.',
+    errBusy: 'Verifikasyon an pa t gen ase tan sou sèvè nou an. Tanpri eseye ankò. Yon post oswa yon lyen ki pi kout ka ede.',
+    errServer: 'Gen yon bagay ki pa mache bò kote nou. Tanpri eseye ankò nan yon minit.',
+    errNetwork: 'M pa t ka konekte ak sèvè a. Tcheke koneksyon ou epi eseye ankò.',
+    photoUnreadable: 'M pa t ka li foto sa a. Eseye yon lòt foto, oswa yon foto ekran li.',
+    copyFailed: 'M pa t ka kopye l. Kenbe peze tèks la pou w kopye l.',
+    androidIntro: 'Enstale Fact or Feed? sou telefòn Android ou. Apre sa ou ka pataje post ak lyen dirèkteman ba li.',
+    androidStepsTitle: 'Mete l sou ekran akèy ou',
+    a1: 'Louvri sit sa a nan Chrome.',
+    a2: 'Peze meni ⋮ nan kwen anlè a.',
+    a3: 'Peze Install app oswa Add to Home screen.',
+    androidShareTitle: 'Tcheke post nan nenpòt aplikasyon',
+    as1: 'Sou nenpòt post oswa lyen, peze Pataje (Share).',
+    as2: 'Chwazi Fact or Feed? nan lis la. Li louvri epi li kòmanse tcheke.',
+  },
+  zh: {
+    messageLabel: '发给 Vera 的消息',
+    getApp: '获取应用',
+    installApp: '安装应用',
+    waitNote: '这可能需要 1 到 3 分钟。',
+    elapsed: '已用 {n} 秒',
+    stillWorking: '还在处理，快好了…',
+    resultReady: '结果已出来',
+    tryAgain: '再试一次',
+    errTimeout: '等待时间太长，所以我停止了。请再试一次。',
+    errBusy: '核查在我们的服务器上超时了。请再试一次。较短的帖子或链接可能会有帮助。',
+    errServer: '我们这边出了点问题。请过一分钟再试。',
+    errNetwork: '我无法连接到服务器。请检查网络连接后再试。',
+    photoUnreadable: '我无法读取这张照片。请换一张照片，或者用它的截图。',
+    copyFailed: '无法复制。请长按文字进行复制。',
+    androidIntro: '在你的安卓手机上安装 Fact or Feed?。之后你就可以直接把帖子和链接分享给它。',
+    androidStepsTitle: '添加到主屏幕',
+    a1: '用 Chrome 打开这个网站。',
+    a2: '点右上角的 ⋮ 菜单。',
+    a3: '点“安装应用”或“添加到主屏幕”。',
+    androidShareTitle: '在任何应用中核查帖子',
+    as1: '在任何帖子或链接上，点“分享”。',
+    as2: '在列表中选择 Fact or Feed?。它会打开并马上开始核查。',
+  },
+  hi: {
+    messageLabel: 'वेरा के लिए संदेश',
+    getApp: 'ऐप पाएँ',
+    installApp: 'ऐप इंस्टॉल करें',
+    waitNote: 'इसमें 1–3 मिनट लग सकते हैं।',
+    elapsed: 'अब तक {n} सेकंड',
+    stillWorking: 'अभी भी काम चल रहा है, बस होने ही वाला है…',
+    resultReady: 'नतीजा तैयार है',
+    tryAgain: 'फिर से कोशिश करें',
+    errTimeout: 'इसमें बहुत ज़्यादा समय लगा, इसलिए मैंने इंतज़ार बंद कर दिया। कृपया फिर से कोशिश करें।',
+    errBusy: 'हमारे सर्वर पर जाँच का समय खत्म हो गया। कृपया फिर से कोशिश करें। छोटी पोस्ट या लिंक से मदद मिल सकती है।',
+    errServer: 'हमारी तरफ़ कुछ गड़बड़ हो गई। कृपया एक मिनट बाद फिर से कोशिश करें।',
+    errNetwork: 'मैं सर्वर तक नहीं पहुँच पाई। अपना कनेक्शन जाँचें और फिर से कोशिश करें।',
+    photoUnreadable: 'मैं यह फ़ोटो नहीं पढ़ पाई। कोई दूसरी फ़ोटो या उसका स्क्रीनशॉट आज़माएँ।',
+    copyFailed: 'कॉपी नहीं हो सका। कॉपी करने के लिए टेक्स्ट को दबाकर रखें।',
+    androidIntro: 'अपने Android फ़ोन पर Fact or Feed? इंस्टॉल करें। फिर आप पोस्ट और लिंक सीधे इसमें शेयर कर सकते हैं।',
+    androidStepsTitle: 'इसे अपनी होम स्क्रीन पर जोड़ें',
+    a1: 'यह साइट Chrome में खोलें।',
+    a2: 'ऊपर कोने में ⋮ मेन्यू दबाएँ।',
+    a3: '“ऐप इंस्टॉल करें” या “होम स्क्रीन पर जोड़ें” दबाएँ।',
+    androidShareTitle: 'किसी भी ऐप से पोस्ट जाँचें',
+    as1: 'किसी भी पोस्ट या लिंक पर “शेयर करें” दबाएँ।',
+    as2: 'सूची में से Fact or Feed? चुनें। यह खुलकर तुरंत जाँच शुरू कर देगा।',
+  },
+  ar: {
+    messageLabel: 'رسالة إلى فيرا',
+    getApp: 'احصل على التطبيق',
+    installApp: 'ثبّت التطبيق',
+    waitNote: 'قد يستغرق هذا من دقيقة إلى 3 دقائق.',
+    elapsed: '{n} ثانية حتى الآن',
+    stillWorking: 'ما زلت أعمل، اقتربت من الانتهاء…',
+    resultReady: 'النتيجة جاهزة',
+    tryAgain: 'حاول مرة أخرى',
+    errTimeout: 'استغرق هذا وقتًا طويلًا جدًا، لذلك توقفت عن الانتظار. يُرجى المحاولة مرة أخرى.',
+    errBusy: 'انتهى وقت التحقق على خادمنا. يُرجى المحاولة مرة أخرى. قد يساعد منشور أو رابط أقصر.',
+    errServer: 'حدث خطأ من جهتنا. يُرجى المحاولة مرة أخرى بعد دقيقة.',
+    errNetwork: 'لم أتمكن من الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.',
+    photoUnreadable: 'لم أتمكن من قراءة هذه الصورة. جرّب صورة أخرى، أو لقطة شاشة لها.',
+    copyFailed: 'تعذّر النسخ. اضغط مطولًا على النص لنسخه.',
+    androidIntro: 'ثبّت Fact or Feed? على هاتف Android. بعدها يمكنك مشاركة المنشورات والروابط معه مباشرة.',
+    androidStepsTitle: 'أضفه إلى الشاشة الرئيسية',
+    a1: 'افتح هذا الموقع في Chrome.',
+    a2: 'اضغط على القائمة ⋮ في الزاوية العلوية.',
+    a3: 'اضغط «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».',
+    androidShareTitle: 'تحقق من المنشورات من أي تطبيق',
+    as1: 'على أي منشور أو رابط، اضغط «مشاركة».',
+    as2: 'اختر Fact or Feed? من القائمة. سيفتح ويبدأ التحقق فورًا.',
+  },
+  fr: {
+    messageLabel: 'Message pour Vera',
+    getApp: "Obtenir l'appli",
+    installApp: "Installer l'appli",
+    waitNote: 'Cela peut prendre de 1 à 3 minutes.',
+    elapsed: '{n} secondes écoulées',
+    stillWorking: "Je travaille encore, c'est presque fini…",
+    resultReady: 'Résultat prêt',
+    tryAgain: 'Réessayer',
+    errTimeout: "C'était trop long, alors j'ai arrêté d'attendre. Réessaie.",
+    errBusy: 'La vérification a manqué de temps sur notre serveur. Réessaie. Une publication ou un lien plus court peut aider.',
+    errServer: 'Un problème est survenu de notre côté. Réessaie dans une minute.',
+    errNetwork: "Je n'ai pas pu joindre le serveur. Vérifie ta connexion et réessaie.",
+    photoUnreadable: "Je n'ai pas pu lire cette photo. Essaie une autre photo, ou une capture d'écran de celle-ci.",
+    copyFailed: 'Impossible de copier. Appuie longuement sur le texte pour le copier.',
+    androidIntro: 'Installe Fact or Feed? sur ton téléphone Android. Tu pourras ensuite y partager directement des publications et des liens.',
+    androidStepsTitle: "Ajoute-la à ton écran d'accueil",
+    a1: 'Ouvre ce site dans Chrome.',
+    a2: 'Appuie sur le menu ⋮ en haut.',
+    a3: "Appuie sur Installer l'application ou Ajouter à l'écran d'accueil.",
+    androidShareTitle: "Vérifie des publications depuis n'importe quelle appli",
+    as1: "Sur n'importe quelle publication ou lien, appuie sur Partager.",
+    as2: 'Choisis Fact or Feed? dans la liste. Elle s’ouvre et commence à vérifier.',
+  },
+  bn: {
+    messageLabel: 'ভেরার জন্য বার্তা',
+    getApp: 'অ্যাপটি নাও',
+    installApp: 'অ্যাপ ইনস্টল করো',
+    waitNote: 'এতে ১–৩ মিনিট লাগতে পারে।',
+    elapsed: 'এ পর্যন্ত {n} সেকেন্ড',
+    stillWorking: 'এখনো কাজ করছি, প্রায় হয়ে এসেছে…',
+    resultReady: 'ফলাফল তৈরি',
+    tryAgain: 'আবার চেষ্টা করো',
+    errTimeout: 'অনেক বেশি সময় লাগছিল, তাই অপেক্ষা থামিয়েছি। আবার চেষ্টা করো।',
+    errBusy: 'আমাদের সার্ভারে যাচাইয়ের সময় শেষ হয়ে গেছে। আবার চেষ্টা করো। ছোট পোস্ট বা লিংক দিলে সুবিধা হতে পারে।',
+    errServer: 'আমাদের দিকে কিছু একটা সমস্যা হয়েছে। এক মিনিট পরে আবার চেষ্টা করো।',
+    errNetwork: 'সার্ভারে পৌঁছাতে পারিনি। তোমার সংযোগ দেখে আবার চেষ্টা করো।',
+    photoUnreadable: 'ছবিটা পড়তে পারিনি। অন্য একটা ছবি, বা এর স্ক্রিনশট দিয়ে চেষ্টা করো।',
+    copyFailed: 'কপি করা গেল না। কপি করতে লেখাটা চেপে ধরে রাখো।',
+    androidIntro: 'তোমার Android ফোনে Fact or Feed? ইনস্টল করো। তারপর পোস্ট আর লিংক সরাসরি এতে শেয়ার করতে পারবে।',
+    androidStepsTitle: 'হোম স্ক্রিনে যোগ করো',
+    a1: 'এই সাইটটা Chrome-এ খোলো।',
+    a2: 'ওপরের কোণে ⋮ মেনুতে চাপো।',
+    a3: '“অ্যাপ ইনস্টল করুন” বা “হোম স্ক্রিনে যোগ করুন” চাপো।',
+    androidShareTitle: 'যেকোনো অ্যাপ থেকে পোস্ট যাচাই করো',
+    as1: 'যেকোনো পোস্ট বা লিংকে “শেয়ার” চাপো।',
+    as2: 'তালিকা থেকে Fact or Feed? বেছে নাও। এটা খুলে সাথে সাথে যাচাই শুরু করবে।',
+  },
+  it: {
+    messageLabel: 'Messaggio per Vera',
+    getApp: "Scarica l'app",
+    installApp: "Installa l'app",
+    waitNote: 'Può richiedere da 1 a 3 minuti.',
+    elapsed: '{n} secondi finora',
+    stillWorking: 'Sto ancora lavorando, ci siamo quasi…',
+    resultReady: 'Risultato pronto',
+    tryAgain: 'Riprova',
+    errTimeout: 'Ci voleva troppo tempo, quindi ho smesso di aspettare. Riprova.',
+    errBusy: 'Il controllo ha superato il tempo massimo sul nostro server. Riprova. Un post o un link più breve può aiutare.',
+    errServer: 'Qualcosa è andato storto da parte nostra. Riprova tra un minuto.',
+    errNetwork: 'Non sono riuscita a raggiungere il server. Controlla la connessione e riprova.',
+    photoUnreadable: 'Non sono riuscita a leggere questa foto. Prova con un’altra foto o con uno screenshot.',
+    copyFailed: 'Impossibile copiare. Tieni premuto il testo per copiarlo.',
+    androidIntro: 'Installa Fact or Feed? sul tuo telefono Android. Poi potrai condividere post e link direttamente con l’app.',
+    androidStepsTitle: 'Aggiungila alla schermata Home',
+    a1: 'Apri questo sito in Chrome.',
+    a2: 'Tocca il menu ⋮ in alto.',
+    a3: 'Tocca Installa app o Aggiungi a schermata Home.',
+    androidShareTitle: 'Controlla i post da qualsiasi app',
+    as1: 'Su qualsiasi post o link, tocca Condividi.',
+    as2: 'Scegli Fact or Feed? dall’elenco. Si apre e inizia subito il controllo.',
+  },
+};
+export const ui = (lang) => UI[lang] || UI.en;
+
+const RTL = ['ar'];
+const UI_LANGS = LANGUAGES.map(([code]) => code).filter((c) => c !== 'auto');
+
+// The language the screen is shown in: the one picked, or for "auto" the phone's language if we have it
+export function useUiLanguage(language) {
+  const [browserLang, setBrowserLang] = useState('en');
+  useEffect(() => {
+    const list = navigator.languages?.length ? navigator.languages : [navigator.language || 'en'];
+    const hit = list.map((l) => String(l).toLowerCase().split('-')[0]).find((l) => UI_LANGS.includes(l));
+    if (hit) setBrowserLang(hit);
+  }, []);
+  const uiLang = language && language !== 'auto' ? language : browserLang;
+  // <html lang> and dir follow it, so screen readers use the right voice and Arabic reads right to left
+  useEffect(() => {
+    document.documentElement.lang = uiLang;
+    document.documentElement.dir = RTL.includes(uiLang) ? 'rtl' : 'ltr';
+  }, [uiLang]);
+  return uiLang;
+}
+
+// Which phone this is, and Android's "install this app" prompt when the browser offers it
+export function useInstall() {
+  const [platform, setPlatform] = useState('desktop');
+  const [installEvent, setInstallEvent] = useState(null);
+  useEffect(() => {
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform('ios');
+    else if (/Android/i.test(ua)) setPlatform('android');
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const onPrompt = (e) => {
+      e.preventDefault();
+      setInstallEvent(e);
+    };
+    const onInstalled = () => setInstallEvent(null);
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+  async function promptInstall() {
+    if (!installEvent) return;
+    try {
+      installEvent.prompt();
+      await installEvent.userChoice;
+    } catch {}
+    setInstallEvent(null); // the browser only lets us ask once
+  }
+  return { platform, canInstall: !!installEvent, promptInstall };
+}
+
 export const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
@@ -139,7 +416,7 @@ export const CSS = `
 .ff{
   --cream:#FBFAF6; --paper:#FFFFFF; --sand:#F4F1FA; --line:#E7E4EC; --ink:#1D1D1F; --muted:#6B6A73;
   --moss:#5B3FA6; --moss-dk:#4A3189; --sage:#E9E4F5; --olive:#5B3FA6; --rust:#1D1D1F;
-  --chartreuse:#CFC6EA; --lavender:#E9E4F5; --soft:#8C8A94;
+  --chartreuse:#CFC6EA; --lavender:#E9E4F5; --soft:#6B6A73;
   --serif:'Poppins',ui-sans-serif,system-ui,sans-serif; --caslon:'Poppins',ui-sans-serif,system-ui,sans-serif;
   --sans:'Poppins',ui-sans-serif,system-ui,-apple-system,sans-serif;
   height:100dvh;display:flex;flex-direction:column;background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.55
@@ -149,7 +426,7 @@ export const CSS = `
 /* Logo: lowercase wordmark with a purple question mark */
 .wordmark{font-family:var(--sans);font-weight:800;letter-spacing:-0.035em;line-height:1;color:var(--ink);white-space:nowrap}
 .wordmark span{color:var(--moss)}
-.kicker{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;color:var(--ink)}
+.kicker{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;color:var(--ink)}
 .kicker i{width:7px;height:7px;border-radius:50%;background:var(--moss);display:inline-block;flex-shrink:0}
 
 /* Header */
@@ -163,21 +440,21 @@ export const CSS = `
 .av{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--cream);font-weight:700;font-size:16px;display:grid;place-items:center;flex-shrink:0}
 .av.sm{width:30px;height:30px;font-size:12px;align-self:flex-end;background:var(--moss);color:#fff}
 .name{font-weight:800;font-size:24px;line-height:1;letter-spacing:-0.03em}
-.status{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-top:6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.status{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-top:6px;font-weight:600;display:flex;align-items:center;gap:6px}
 .status i{width:6px;height:6px;border-radius:50%;background:var(--moss);display:inline-block}
-.prefs{margin-left:auto;display:flex;gap:6px}
+.prefs{margin-inline-start:auto;display:flex;gap:6px}
 .prefs select{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:500;background:var(--paper);color:var(--ink);font-family:var(--sans);cursor:pointer}
 
 /* Scrolling ticker (quiet) */
-.ticker{overflow:hidden;white-space:nowrap;border-bottom:1px solid var(--line);background:var(--cream);padding:6px 0}
-.ticker-track{display:inline-block;animation:tick 40s linear infinite;font-size:10.5px;letter-spacing:.22em;font-weight:600;color:var(--soft)}
+.ticker{direction:ltr;overflow:hidden;white-space:nowrap;border-bottom:1px solid var(--line);background:var(--cream);padding:6px 0}
+.ticker-track{display:inline-block;animation:tick 40s linear infinite;font-size:12px;letter-spacing:.22em;font-weight:600;color:var(--soft)}
 .ticker-track em{font-style:normal;color:var(--moss)}
 @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 /* Front page logo */
 .hero{padding:28px 4px 18px}
 .hero .wordmark{font-size:clamp(52px,13vw,96px)}
-.hero .kicker{margin:18px 0 0 6px}
+.hero .kicker{margin:18px 0 0;margin-inline-start:6px}
 .hero .rule{height:1px;background:var(--line);width:min(320px,70%);margin:18px 0 0 6px}
 
 /* Thread */
@@ -186,8 +463,8 @@ export const CSS = `
 .msg{display:flex;gap:8px;align-items:flex-end}
 .msg.me{justify-content:flex-end}
 .bub{max-width:80%;padding:12px 16px;border-radius:18px;background:var(--paper);border:1px solid var(--line);overflow-wrap:anywhere}
-.bot .bub{border-bottom-left-radius:6px}
-.me .bub{background:var(--moss);color:#fff;border:0;border-bottom-right-radius:6px}
+.bot .bub{border-end-start-radius:6px}
+.me .bub{background:var(--moss);color:#fff;border:0;border-end-end-radius:6px}
 .me .bub a{color:#fff}
 .bub.wide{max-width:88%;width:100%}
 .bub img.shot{max-width:220px;max-height:260px;border-radius:12px;display:block}
@@ -200,10 +477,10 @@ export const CSS = `
 
 /* Result pieces */
 .vchip{display:inline-block;color:#fff;font-weight:700;font-size:18px;letter-spacing:-0.01em;padding:4px 14px;border-radius:999px}
-.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;background:var(--sage);color:var(--moss);margin-right:6px}
-.muted{color:var(--muted);font-size:13px}
-.warn{background:#FFF6E5;border-left:3px solid #E0A030;padding:8px 12px;margin:8px 0;border-radius:6px}
-.review{margin-top:10px;font-size:13.5px;border-left:3px solid var(--moss);padding:6px 0 6px 12px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;background:var(--sage);color:var(--moss);margin-inline-end:6px}
+.muted{color:var(--muted);font-size:14px}
+.warn{background:#FFF6E5;border-inline-start:3px solid #E0A030;padding:8px 12px;margin:8px 0;border-radius:6px}
+.review{margin-top:10px;font-size:14px;border-inline-start:3px solid var(--moss);padding-block:6px;padding-inline:12px 0}
 .compare{margin-top:12px;padding-top:10px;border-top:1px solid #E2DCF2}
 .thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
 .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--line)}
@@ -215,11 +492,12 @@ export const CSS = `
 @media (max-width:640px){.tn-long{display:none}.tn-short{display:inline}.toolnav a{min-width:0;padding:0 8px}}
 .toolnav a.on{background:var(--moss);border-color:var(--moss);color:#fff}
 a.wordmark{text-decoration:none;display:inline-block}
-.lean{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
+/* Left always sits on the left, even when the page is right to left (Arabic) */
+.lean{display:flex;direction:ltr;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
 .lean div{flex:1}
-.lean-labels{display:flex;font-size:10.5px;margin-top:3px}
+.lean-labels{display:flex;direction:ltr;font-size:12px;margin-top:3px}
 .lean-labels span{flex:1;text-align:center}
-.agree{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:6px;white-space:nowrap}
+.agree{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;margin-inline-start:6px;white-space:nowrap}
 .origin{margin-top:12px;border:1px solid #CFE6D9;background:#EFF8F2;border-radius:12px;padding:10px 14px;font-size:14px}
 .answer{font-size:18px;font-weight:600;line-height:1.4;margin:4px 0 8px}
 .choose{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -227,9 +505,9 @@ a.wordmark{text-decoration:none;display:inline-block}
 .newrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .newsearch{border:1px solid var(--moss);background:var(--paper);color:var(--moss);border-radius:999px;height:32px;padding:0 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;white-space:nowrap;-webkit-appearance:none;appearance:none}
 .newsearch:hover{background:var(--moss);color:#fff}
-.notebook{margin-top:10px;font-size:13.5px;background:#FFF8E6;border-radius:10px;padding:8px 12px}
-.feedback{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
-.feedback .btn{padding:5px 12px}
+.notebook{margin-top:10px;font-size:14px;background:#FFF8E6;border-radius:10px;padding:8px 12px}
+.feedback{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
+.feedback .btn{padding:5px 14px;min-height:40px;min-width:44px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;font-size:12.5px;font-family:var(--sans);cursor:pointer;color:var(--ink)}
 .chip.on{background:var(--moss);border-color:var(--moss);color:#fff}
@@ -238,7 +516,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 .blk{margin-top:16px}
 .blk h4{margin:0 0 6px;font-size:15px;font-weight:600}
 .more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
-.more summary{cursor:pointer;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--moss);list-style:none}
+.more summary{cursor:pointer;font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--moss);list-style:none}
 .more summary::-webkit-details-marker{display:none}
 .sub{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
 .sub>summary{cursor:pointer;list-style:none;padding:10px 14px;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
@@ -246,7 +524,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 .sub[open]>summary::after{transform:rotate(90deg)}
 .sub summary::-webkit-details-marker,.group summary::-webkit-details-marker{display:none}
 .sub-in{padding:4px 14px 12px}
-.sub-label{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:6px 0 6px}
+.sub-label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:6px 0 6px}
 .count{font-size:12px;font-weight:600;color:var(--muted);background:var(--sand);border-radius:999px;padding:1px 8px}
 .group{border-top:1px solid var(--line);padding:8px 0}
 .group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
@@ -255,7 +533,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 .more .sub>summary,.more .group>summary{text-transform:none;letter-spacing:normal;color:var(--ink)}
 .more .sub>summary{font-size:15px;font-weight:600}
 .more .group>summary{font-size:13px;font-weight:500}
-.ff ul,.ff ol{padding-left:20px;margin:0}
+.ff ul,.ff ol{padding-inline-start:20px;margin:0}
 .ff li{margin:3px 0}
 .bot a{color:var(--moss);text-underline-offset:2px}
 .replybox{background:var(--lavender);padding:10px 14px;margin:8px 0;border-radius:12px}
@@ -278,7 +556,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 .input{flex:1;border:1px solid var(--line);border-radius:22px;padding:11px 16px;font-size:16px;resize:none;max-height:140px;font-family:inherit;background:var(--paper);color:var(--ink)}
 .input::placeholder{color:var(--soft)}
 .input:focus{outline:2px solid var(--moss);border-color:transparent}
-.foot{text-align:center;font-size:10.5px;color:var(--soft);margin-top:8px}
+.foot{text-align:center;font-size:14px;color:var(--muted);margin-top:8px}
 
 
 /* Install ("Get it") button + sheet */
@@ -287,7 +565,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 .sheet-bg{position:fixed;inset:0;background:rgba(29,29,31,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
 .sheet{background:var(--cream);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:24px 20px calc(22px + env(safe-area-inset-bottom));max-height:90dvh;overflow-y:auto}
 .sheet h2{margin:0 0 6px;font-weight:800;font-size:26px;letter-spacing:-0.03em}
-.sheet ol{padding-left:22px}
+.sheet ol{padding-inline-start:22px}
 .sheet li{margin:8px 0}
 .stabs{display:flex;background:var(--sand);border-radius:999px;padding:4px}
 .stab{flex:1;border:0;padding:8px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:var(--sans)}
@@ -328,7 +606,7 @@ a.wordmark{text-decoration:none;display:inline-block}
   .prefs select.age{width:78px}
 }
 @media (max-width:370px){
-  .prefs .getapp,.prefs .howlink,.prefs select{font-size:11.5px;padding:0 8px}
+  .prefs .getapp,.prefs .howlink,.prefs select{font-size:12px;padding:0 8px}
   .prefs select{padding:0 20px 0 8px;background-position:right 7px center}
   .prefs select.age{width:64px}
 }
@@ -338,6 +616,28 @@ a.wordmark{text-decoration:none;display:inline-block}
   .prefs select{padding:0 22px 0 10px;background-position:right 8px center}
   .prefs select.age{width:74px}
 }
+/* Screen-reader-only text */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.rh:focus{outline:none}
+.wait{display:block;font-size:14px;color:var(--muted);margin-top:4px}
+.err .btn{margin-top:8px}
+
+/* Brand name and English-only labels keep their own direction inside Arabic */
+.wordmark,.hw-brand{direction:ltr;unicode-bidi:isolate}
+[dir=rtl] .sub>summary::after,[dir=rtl] .group>summary::after{content:'‹'}
+[dir=rtl] .sub[open]>summary::after,[dir=rtl] .group[open]>summary::after{transform:rotate(-90deg)}
+[dir=rtl] .prefs select{padding:0 14px 0 30px;background-position:left 12px center;text-align:right}
+@media (max-width:540px){[dir=rtl] .prefs select{padding:0 12px 0 26px;background-position:left 10px center}}
+
+/* Phones: hide the ticker to free up space */
+@media (max-width:479px){.ticker{display:none}}
+
+/* People who asked for less motion get no ticker or bouncing */
+@media (prefers-reduced-motion:reduce){
+  .ticker-track{animation:none}
+  .dots i{animation:none;opacity:.7}
+  .ff *{transition:none !important;scroll-behavior:auto !important}
+}
 `;
 
 function Badge({ category }) {
@@ -346,7 +646,7 @@ function Badge({ category }) {
       style={{
         background: COLORS[category] || '#E2E0E6',
         color: DARK.includes(category) ? '#1D1D1F' : '#FFFFFF',
-        fontSize: 11,
+        fontSize: 12,
         padding: '2px 8px',
         borderRadius: 999,
         whiteSpace: 'nowrap',
@@ -362,7 +662,7 @@ function Meter({ labels, colors, active }) {
   return (
     <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
       {labels.map((label, i) => (
-        <div key={label} style={{ flex: 1, textAlign: 'center', fontSize: 10.5, lineHeight: 1.2 }}>
+        <div key={label} style={{ flex: 1, textAlign: 'center', fontSize: 12, lineHeight: 1.2 }}>
           <div style={{ height: 8, borderRadius: 4, background: colors[i], opacity: i === active ? 1 : 0.18 }} />
           <div style={{ fontWeight: i === active ? 700 : 400, marginTop: 3 }}>{label}</div>
         </div>
@@ -406,7 +706,7 @@ function SpectrumBar({ stats, total }) {
   const used = ORDER.filter((c) => stats[c]);
   return (
     <>
-      <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
+      <div style={{ display: 'flex', direction: 'ltr', height: 12, borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
         {used.map((c) => (
           <div key={c} title={`${c}: ${stats[c]}`} style={{ width: `${(stats[c] / total) * 100}%`, background: COLORS[c] }} />
         ))}
@@ -472,7 +772,7 @@ function Feedback({ claims, verdict, realStory, areas = [] }) {
           </>
         )}
         <div className="muted" style={{ margin: '8px 0 6px' }}>Tell me more (optional, no names or personal info):</div>
-        <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
+        <textarea className="input" rows={2} aria-label="Tell me more (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <button className="btn" onClick={() => sendFeedback(false, area, note)}>Send</button>
           <button className="btn" onClick={() => setState('ask')}>Cancel</button>
@@ -543,14 +843,15 @@ function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
   );
 }
 
-function PhotoResultBubble({ data, image, onFactCheck }) {
+function PhotoResultBubble({ data, image, onFactCheck, headingId }) {
   const p = data.photo;
-  const color = AI_COLORS[AI_LEVELS.indexOf(p.level)] || '#6f6858';
+  const li = AI_LEVELS.indexOf(p.level);
+  const color = AI_COLORS[li] || '#6f6858';
   return (
     <div className="bub wide">
       <CachedNote data={data} />
-      <span className="vchip" style={{ background: color }}>{p.level}</span>
-      <p dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600 }}>{p.headline}</p>
+      <span className="vchip" style={{ background: color, color: AI_TEXT[li] || '#FFFFFF' }}>{p.level}</span>
+      <h2 id={headingId} tabIndex={-1} className="rh" dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600, fontSize: 16 }}>{p.headline}</h2>
       <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
       {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>📷 What I see: {p.description}</p>}
       <PhotoCheck check={p} title="🔎 The details" />
@@ -686,7 +987,7 @@ function PlanBlock({ data }) {
             </span>
           ))}
       </div>
-      <ul style={{ fontSize: 13.5 }}>
+      <ul style={{ fontSize: 14 }}>
         {(plan.reasons || []).map((x, i) => (
           <li key={i}>{x}</li>
         ))}
@@ -759,7 +1060,7 @@ function CachedNote({ data }) {
 }
 
 // 🔎 Find the facts: the answer, the consensus, and the sources it used
-function FactsBubble({ data }) {
+function FactsBubble({ data, headingId }) {
   const r = data.result;
   const total = data.sources?.length || 0;
   const byId = (id) => data.sources?.find((s) => s.id === id);
@@ -769,7 +1070,7 @@ function FactsBubble({ data }) {
     <div className="bub wide">
       <CachedNote data={data} />
       {r.reframed && <div className="muted" dir="auto" style={{ marginBottom: 6 }}>ℹ️ {r.reframed}</div>}
-      <div className="answer" dir="auto">{r.answer}</div>
+      <h2 id={headingId} tabIndex={-1} className="answer rh" dir="auto">{r.answer}</h2>
       {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>}
       {total === 0 && <div className="warn" dir="auto">⚠️ {NO_SOURCES[data.lang] || NO_SOURCES.en}</div>}
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
@@ -830,7 +1131,7 @@ function FactsBubble({ data }) {
   );
 }
 
-function ResultBubble({ data, image, onPhotoCheck }) {
+function ResultBubble({ data, image, onPhotoCheck, headingId }) {
   const r = data.result;
   const total = data.sources?.length || 0;
   const vIndex = VERDICTS.indexOf(r.verdict);
@@ -839,8 +1140,8 @@ function ResultBubble({ data, image, onPhotoCheck }) {
   return (
     <div className="bub wide">
       <CachedNote data={data} />
-      <div className="sub-label" style={{ marginTop: 0 }}>Are the facts accurate?</div>
-      <span className="vchip" style={{ background: vColor }}>{r.verdict}</span>
+      <h2 id={headingId} tabIndex={-1} className="sub-label rh" style={{ marginTop: 0 }}>Are the facts accurate? <span className="sr-only">{r.verdict}</span></h2>
+      <span className="vchip" style={{ background: vColor, color: vIndex >= 0 ? VERDICT_TEXT[vIndex] : '#FFFFFF' }} aria-hidden="true">{r.verdict}</span>
       {vIndex >= 0 && <Meter labels={VERDICTS} colors={VERDICT_COLORS} active={vIndex} />}
 
       {r.warning && <div className="warn">⚠️ {r.warning}</div>}
@@ -972,19 +1273,32 @@ function ResultBubble({ data, image, onPhotoCheck }) {
   );
 }
 
+// Shrinks a photo before sending it. Fails (instead of hanging) when the browser can't read the file.
 function compressImage(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    const src = URL.createObjectURL(file);
     img.onload = () => {
-      const max = 1600;
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      try {
+        const max = 1600;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        if (!canvas.width || !canvas.height) throw new Error('empty image');
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      } catch (err) {
+        reject(err);
+      } finally {
+        URL.revokeObjectURL(src);
+      }
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(src);
+      reject(new Error('unreadable image'));
+    };
+    img.src = src;
   });
 }
 
@@ -1003,35 +1317,116 @@ function decodeResult(packed) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-export function InstallSheet({ onClose }) {
+// The "Get the app" sheet: a real dialog (focus moves in and stays in, Escape closes, focus goes back)
+export function InstallSheet({ onClose, language = 'en', platform = 'desktop', canInstall = false, onInstall }) {
+  const t = ui(language);
+  const [tab, setTab] = useState(platform === 'android' ? 'android' : 'ios');
+  const sheetRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    const opener = document.activeElement;
+    const sheet = sheetRef.current;
+    const focusables = () =>
+      Array.from(sheet?.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])') || []);
+    (focusables()[0] || sheet)?.focus();
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !sheet.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !sheet.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener && typeof opener.focus === 'function') opener.focus();
+    };
+  }, []);
+
   return (
     <div className="sheet-bg" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>Put it on your iPhone</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
-        </p>
+      <div
+        className="sheet"
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="install-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="install-title" dir="auto">{t.getApp}</h2>
 
-        <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
-          Add the Fact or Feed? shortcut
-        </a>
-        <div className="step-box">
-          <b>How it works</b>
-          <ol>
-            <li>Tap the button above, then <b>Add Shortcut</b>.</li>
-            <li>On any post, link, article, or screenshot, tap <b>Share</b>.</li>
-            <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
-            <li>You can also open Fact or Feed? and tap <b>📎</b> to add a photo.</li>
-          </ol>
+        <div className="stabs" style={{ marginTop: 10 }}>
+          {[['ios', 'iPhone'], ['android', 'Android']].map(([key, label]) => (
+            <button key={key} aria-pressed={tab === key} className={`stab ${tab === key ? 'on' : ''}`} onClick={() => setTab(key)}>
+              {label}
+            </button>
+          ))}
         </div>
-        <div className="step-box">
-          <b>Add the app to your Home Screen</b>
-          <ol>
-            <li>Open this site in <b>Safari</b>.</li>
-            <li>Tap <b>Share</b> (the square with the arrow).</li>
-            <li>Tap <b>Add to Home Screen</b>.</li>
-          </ol>
-        </div>
+
+        {tab === 'ios' ? (
+          <div>
+            <p className="muted" style={{ marginTop: 14 }}>
+              See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
+            </p>
+            <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
+              Add the Fact or Feed? shortcut
+            </a>
+            <div className="step-box">
+              <b>How it works</b>
+              <ol>
+                <li>Tap the button above, then <b>Add Shortcut</b>.</li>
+                <li>On any post, link, article, or screenshot, tap <b>Share</b>.</li>
+                <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
+                <li>You can also open Fact or Feed? and tap <b>📎</b> to add a photo.</li>
+              </ol>
+            </div>
+            <div className="step-box">
+              <b>Add the app to your Home Screen</b>
+              <ol>
+                <li>Open this site in <b>Safari</b>.</li>
+                <li>Tap <b>Share</b> (the square with the arrow).</li>
+                <li>Tap <b>Add to Home Screen</b>.</li>
+              </ol>
+            </div>
+          </div>
+        ) : (
+          <div dir="auto">
+            <p className="muted" style={{ marginTop: 14 }}>{t.androidIntro}</p>
+            {canInstall && (
+              <button className="bigbtn" onClick={onInstall}>📲 {t.installApp}</button>
+            )}
+            <div className="step-box">
+              <b>{t.androidStepsTitle}</b>
+              <ol>
+                <li>{t.a1}</li>
+                <li>{t.a2}</li>
+                <li>{t.a3}</li>
+              </ol>
+            </div>
+            <div className="step-box">
+              <b>{t.androidShareTitle}</b>
+              <ol>
+                <li>{t.as1}</li>
+                <li>{t.as2}</li>
+              </ol>
+            </div>
+          </div>
+        )}
 
         <button className="bigbtn ghost" onClick={onClose}>Close</button>
       </div>
@@ -1047,6 +1442,44 @@ const FOLLOWUP_HINT =
 
 let nextId = 1;
 
+// The server stops a check after 300 seconds, so the page stops waiting a little after that
+const CHECK_TIMEOUT_MS = 305000;
+const ASK_TIMEOUT_MS = 125000;
+
+// Sends a request and turns every kind of failure into a plain message (never raw technical text):
+// { data } when it worked, { message } for a plain message from the server, or { fail: <key in UI> }
+async function postJSON(url, body, timeoutMs = CHECK_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      return { fail: err?.name === 'AbortError' ? 'errTimeout' : 'errNetwork' };
+    }
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      // Not JSON: usually the server hit its time limit and sent back an error page
+      return { fail: err?.name === 'AbortError' ? 'errTimeout' : 'errBusy' };
+    }
+    if (res.status >= 500) return { fail: 'errServer' };
+    const msg = typeof data?.error === 'string' ? data.error : '';
+    if (msg) return /^something went wrong/i.test(msg) ? { fail: 'errServer' } : { message: msg };
+    if (!res.ok) return { fail: 'errServer' };
+    return { data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default function VeraChat({ tool = 'credible' }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
@@ -1054,29 +1487,22 @@ export default function VeraChat({ tool = 'credible' }) {
   const [audience, setAudience] = useState('everyone');
   const [language, setLanguage] = useState('auto');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
+  const [copyFailedId, setCopyFailedId] = useState(null);
   const [checkingPhoto, setCheckingPhoto] = useState(false);
   const [report, setReport] = useState(null); // the last report, so Vera can answer follow-up questions
   const [askHistory, setAskHistory] = useState([]);
   const [loadingKind, setLoadingKind] = useState('check');
+  const [live, setLive] = useState(''); // read out by screen readers
+  const [focusId, setFocusId] = useState(null); // the new result whose heading gets focus
   const steps = STEPS[tool] || STEPS.credible;
   const [showInstall, setShowInstall] = useState(false);
-  const [platform, setPlatform] = useState('desktop');
-  const [installEvent, setInstallEvent] = useState(null);
+  const { platform, canInstall, promptInstall } = useInstall();
+  const uiLang = useUiLanguage(language);
+  const t = ui(uiLang);
+  const loadingRef = useRef(false);
 
-  useEffect(() => {
-    const ua = navigator.userAgent || '';
-    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform('ios');
-    else if (/Android/i.test(ua)) setPlatform('android');
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    const onPrompt = (e) => {
-      e.preventDefault();
-      setInstallEvent(e);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('ff-prefs') || '{}');
@@ -1093,16 +1519,39 @@ export default function VeraChat({ tool = 'credible' }) {
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
+  // The progress steps are timed (one every 8 seconds). After the last one: "Still working, almost there…"
+  const step = Math.floor(elapsed / 8);
+  const stepText = loadingKind === 'ask' ? 'Looking into that…' : step < steps.length ? steps[step] : t.stillWorking;
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    endRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   }, [messages, loading, step]);
 
   useEffect(() => {
     if (!loading) return;
-    setStep(0);
-    const t = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), 8000);
-    return () => clearInterval(t);
+    setElapsed(0);
+    const start = Date.now();
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
   }, [loading]);
+
+  // Screen readers hear each progress step (and how long it can take, once)
+  useEffect(() => {
+    if (!loading) return;
+    setLive(step === 0 && loadingKind !== 'ask' ? `${t.waitNote} ${stepText}` : stepText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, stepText]);
+
+  // When a result arrives, move focus to its heading so it is read out first
+  useEffect(() => {
+    if (focusId == null) return;
+    const el = document.getElementById(`result-${focusId}`);
+    if (el) {
+      el.focus();
+      setFocusId(null);
+    }
+  }, [focusId, messages]);
 
   useEffect(() => {
     // A full result handed over from the iPhone popup (no need to check again)
@@ -1129,18 +1578,18 @@ export default function VeraChat({ tool = 'credible' }) {
           if (out && typeof out.valid === 'boolean' && (res.ok || res.status === 400 || res.status === 413)) valid = out.valid;
         } catch {}
         if (valid === null) {
-          add({ from: 'bot', kind: 'error', text: "I couldn't check this link right now. Please reload the page to try again." });
+          showError({ text: "I couldn't check this link right now. Please reload the page to try again." });
           return;
         }
         clearHash();
         if (!valid) {
-          add({ from: 'bot', kind: 'error', text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
+          showError({ text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
           return;
         }
         try {
           presentReport(decodeResult(payload));
         } catch {
-          add({ from: 'bot', kind: 'error', text: "I couldn't open that result. Try sharing it again." });
+          showError({ text: "I couldn't open that result. Try sharing it again." });
         }
       })();
       return;
@@ -1173,11 +1622,12 @@ export default function VeraChat({ tool = 'credible' }) {
 
   // Shows a finished report, then either invites questions or asks a clarifying question
   function presentReport(data, image = null, question = '') {
+    let id;
     if (data.tool === 'facts') {
-      add({ from: 'bot', kind: 'facts', data });
+      id = add({ from: 'bot', kind: 'facts', data });
       data = { ...data, question };
     } else {
-      add({ from: 'bot', kind: 'result', data, image });
+      id = add({ from: 'bot', kind: 'result', data, image });
       if (data.result.reply_draft) add({ from: 'bot', kind: 'reply', text: data.result.reply_draft });
     }
     const q = data.result.clarifying_question;
@@ -1185,105 +1635,122 @@ export default function VeraChat({ tool = 'credible' }) {
     else add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
     setReport(data);
     setAskHistory(q ? [{ role: 'assistant', content: `Clarifying question I asked: ${q}` }] : []);
+    resultReady(id);
   }
 
   function add(msg) {
-    setMessages((m) => [...m, { id: nextId++, ...msg }]);
+    const id = nextId++;
+    setMessages((m) => [...m, { id, ...msg }]);
+    return id;
+  }
+
+  function resultReady(id) {
+    setLive(t.resultReady);
+    setFocusId(id);
+  }
+
+  // An error bubble: { fail } is a key in UI (shown in the current language), { text } is shown as is.
+  // { retry } adds a "Try again" button.
+  function showError({ fail, text, retry }) {
+    add({ from: 'bot', kind: 'error', fail, text, retry });
+    setLive(fail ? t[fail] : text);
+  }
+
+  function startLoading(kind) {
+    loadingRef.current = true;
+    setElapsed(0);
+    setLoadingKind(kind);
+    setLoading(true);
+  }
+  function stopLoading() {
+    loadingRef.current = false;
+    setLoading(false);
+  }
+
+  // The typed text and photo stay in the box until the check works, so nothing is lost on an error
+  function clearSent(rawText, img) {
+    setDraft((d) => (d === rawText ? '' : d));
+    if (img) setImage((i) => (i === img ? null : i));
   }
 
   async function send(rawText, img, imageUrl = null, echo = true) {
     const { text, url } = splitInput(rawText);
     if (!text && !url && !img && !imageUrl) return;
-    if (loading) return;
+    if (loadingRef.current) return;
 
     if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
-    setDraft('');
-    setImage(null);
     setCheckingPhoto(!!(img || imageUrl));
-    setLoadingKind('check');
-    setLoading(true);
+    startLoading('check');
 
-    try {
-      const res = await fetch('/api/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, url, image: img, imageUrl, audience, language, mode: 'fact', tool }),
-      });
-      const data = await res.json();
-      if (data.error || !data.result) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        presentReport(data, img, (rawText || '').trim());
-      }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
+    const out = await postJSON('/api/check', { text, url, image: img, imageUrl, audience, language, mode: 'fact', tool });
+    const retry = () => send(rawText, img, imageUrl, false);
+    if (out.data?.result) {
+      clearSent(rawText, img);
+      presentReport(out.data, img, (rawText || '').trim());
+    } else {
+      showError({ fail: out.message ? undefined : out.fail || 'errServer', text: out.message, retry });
     }
-    setLoading(false);
+    stopLoading();
   }
 
   // "Is this photo AI?" mode: only the photo agents run
   async function sendPhoto(rawText, img, imageUrl = null, echo = true) {
-    if (loading || (!img && !imageUrl)) return;
+    if (loadingRef.current || (!img && !imageUrl)) return;
     if (echo) add({ from: 'me', text: (rawText || '').trim(), image: img || imageUrl });
-    setDraft('');
-    setImage(null);
-    setLoadingKind('photo');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: (rawText || '').trim(), image: img, imageUrl, audience, language }),
-      });
-      const data = await res.json();
-      if (data.error || !data.photo) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        add({ from: 'bot', kind: 'photo', data, image: img, note: (rawText || '').trim() });
-        add({ from: 'bot', kind: 'text', text: PHOTO_FOLLOWUP_HINT });
-        setReport({ tool: 'photo', photo: data.photo });
-        setAskHistory([]);
-      }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
+    startLoading('photo');
+    const out = await postJSON('/api/photo', { text: (rawText || '').trim(), image: img, imageUrl, audience, language });
+    const retry = () => sendPhoto(rawText, img, imageUrl, false);
+    if (out.data?.photo) {
+      clearSent(rawText, img);
+      const id = add({ from: 'bot', kind: 'photo', data: out.data, image: img, note: (rawText || '').trim() });
+      add({ from: 'bot', kind: 'text', text: PHOTO_FOLLOWUP_HINT });
+      setReport({ tool: 'photo', photo: out.data.photo });
+      setAskHistory([]);
+      resultReady(id);
+    } else {
+      showError({ fail: out.message ? undefined : out.fail || 'errServer', text: out.message, retry });
     }
-    setLoading(false);
+    stopLoading();
   }
 
   async function onFile(e) {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
-    setImage(await compressImage(file));
-    e.target.value = '';
+    try {
+      setImage(await compressImage(file));
+    } catch {
+      showError({ fail: 'photoUnreadable' });
+    }
+    input.value = '';
   }
 
-  async function ask(rawQuestion) {
+  async function ask(rawQuestion, echo = true) {
     const question = (rawQuestion || '').trim();
-    if (!question || loading || !report) return;
-    add({ from: 'me', text: question });
-    setDraft('');
-    setLoadingKind('ask');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, report, history: askHistory, audience, language }),
-      });
-      const data = await res.json();
-      if (data.error || !data.answer) {
-        add({ from: 'bot', kind: 'error', text: data.error || 'Something went wrong. Try again?' });
-      } else {
-        add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain, question });
-        setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
-        if (data.newSources?.length) {
-          setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
-        }
+    if (!question || loadingRef.current || !report) return;
+    if (echo) add({ from: 'me', text: question });
+    startLoading('ask');
+    const out = await postJSON('/api/ask', { question, report, history: askHistory, audience, language }, ASK_TIMEOUT_MS);
+    const data = out.data;
+    if (data?.answer) {
+      clearSent(rawQuestion);
+      add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain, question });
+      setLive(data.answer);
+      setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
+      if (data.newSources?.length) {
+        setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
       }
-    } catch {
-      add({ from: 'bot', kind: 'error', text: "I couldn't reach the server. Check your connection and try again." });
+    } else {
+      showError({ fail: out.message ? undefined : out.fail || 'errServer', text: out.message, retry: () => ask(rawQuestion, false) });
     }
-    setLoading(false);
+    stopLoading();
+  }
+
+  // "Try again" on an error: removes the error and runs the same request again
+  function retryFrom(m) {
+    if (loadingRef.current || !m.retry) return;
+    setMessages((list) => list.filter((x) => x.id !== m.id));
+    m.retry();
   }
 
   // A photo always starts a new check; otherwise, after a report, messages are follow-up questions
@@ -1321,17 +1788,28 @@ export default function VeraChat({ tool = 'credible' }) {
     }
   }
 
-  function copy(id, text) {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
+  // "Copied!" only shows when copying really worked
+  async function copy(id, text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setCopyFailedId(null);
+      setLive('Copied!');
+    } catch {
+      setCopiedId(null);
+      setCopyFailedId(id);
+      setLive(t.copyFailed);
+    }
   }
 
-  const welcome = WELCOME[tool][language] || WELCOME[tool].en;
+  const welcome = WELCOME[tool][uiLang] || WELCOME[tool].en;
   const canSend = !loading && (tool === 'photo' ? !!image || (!!report && !!draft.trim()) : draft.trim() || image);
 
   return (
     <div className="ff">
       <style>{CSS}</style>
+      <h1 className="sr-only">{toolName(tool, uiLang)} · Fact or Feed?</h1>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{live}</div>
 
       <header className="top">
         <div className="top-in">
@@ -1345,12 +1823,12 @@ export default function VeraChat({ tool = 'credible' }) {
             </div>
           </div>
           <div className="prefs">
-            <button className="getapp" onClick={() => setShowInstall(true)} aria-label="Get it on your phone">
-              <span className="emo">📲</span>
+            <button className="getapp" onClick={() => setShowInstall(true)} title={t.getApp} aria-haspopup="dialog">
+              <span className="emo" aria-hidden="true">📲</span>
               <span>Get it</span>
             </button>
             <a className="howlink" href="/how-it-works">How we check</a>
-            <select className="age" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="How detailed" title="How detailed">
+            <select className="age" dir="ltr" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="How detailed" title="How detailed">
               <option value="everyone">Level</option>
               <option value="simple">Simple</option>
               <option value="complex">Complex</option>
@@ -1374,10 +1852,10 @@ export default function VeraChat({ tool = 'credible' }) {
 
       <nav className="toolnav" aria-label="Tools">
         <div className="toolnav-in">
-          {TOOL_ORDER.map((t) => (
-            <a key={t} href={TOOLS[t].href} className={t === tool ? 'on' : ''} aria-current={t === tool ? 'page' : undefined}>
-              {TOOLS[t].icon} <span className="tn-long">{toolName(t, language)}</span>
-              <span className="tn-short">{TOOLS[t].short[language] || TOOLS[t].short.en}</span>
+          {TOOL_ORDER.map((k) => (
+            <a key={k} href={TOOLS[k].href} className={k === tool ? 'on' : ''} aria-current={k === tool ? 'page' : undefined}>
+              <span aria-hidden="true">{TOOLS[k].icon}</span> <bdi className="tn-long">{toolName(k, uiLang)}</bdi>
+              <bdi className="tn-short">{TOOLS[k].short[uiLang] || TOOLS[k].short.en}</bdi>
             </a>
           ))}
         </div>
@@ -1405,7 +1883,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <ResultBubble data={m.data} image={m.image} onPhotoCheck={loading ? null : () => openTool('photo', { image: m.image })} />
+                  <ResultBubble data={m.data} image={m.image} headingId={`result-${m.id}`} onPhotoCheck={loading ? null : () => openTool('photo', { image: m.image })} />
                 </div>
               );
             }
@@ -1413,7 +1891,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <PhotoResultBubble data={m.data} image={m.image} onFactCheck={loading ? null : () => openTool('credible', { image: m.image, text: m.note })} />
+                  <PhotoResultBubble data={m.data} image={m.image} headingId={`result-${m.id}`} onFactCheck={loading ? null : () => openTool('credible', { image: m.image, text: m.note })} />
                 </div>
               );
             }
@@ -1421,7 +1899,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <FactsBubble data={m.data} />
+                  <FactsBubble data={m.data} headingId={`result-${m.id}`} />
                 </div>
               );
             }
@@ -1430,10 +1908,10 @@ export default function VeraChat({ tool = 'credible' }) {
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
                   <div className="bub">
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                    <div dir="auto" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                     {m.searchedAgain && <div className="muted" style={{ marginTop: 6 }}>🔎 I searched again to answer this.</div>}
                     {m.cited?.length > 0 && (
-                      <ul style={{ marginTop: 8, fontSize: 13 }}>
+                      <ul style={{ marginTop: 8, fontSize: 14 }}>
                         {m.cited.map((c) => (
                           <SourceItem key={c.id} s={c} />
                         ))}
@@ -1448,7 +1926,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub">{m.text}</div>
+                  <div className="bub" dir="auto">{m.text}</div>
                 </div>
               );
             }
@@ -1462,6 +1940,7 @@ export default function VeraChat({ tool = 'credible' }) {
                     <button className="btn" onClick={() => copy(m.id, m.text)}>
                       {copiedId === m.id ? '✓ Copied!' : 'Copy message'}
                     </button>
+                    {copyFailedId === m.id && <div className="muted" dir="auto" style={{ marginTop: 6 }}>{t.copyFailed}</div>}
                   </div>
                 </div>
               );
@@ -1469,7 +1948,16 @@ export default function VeraChat({ tool = 'credible' }) {
             return (
               <div key={m.id} className="msg bot err">
                 <div className="av sm" aria-label="Vera">V</div>
-                <div className="bub">{m.text}</div>
+                <div className="bub" dir="auto">
+                  {m.fail ? t[m.fail] : m.text}
+                  {m.retry && (
+                    <div>
+                      <button className="btn" onClick={() => retryFrom(m)} disabled={loading}>
+                        ↻ {t.tryAgain}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -1477,9 +1965,13 @@ export default function VeraChat({ tool = 'credible' }) {
           {loading && (
             <div className="msg bot">
               <div className="av sm" aria-label="Vera">V</div>
-              <div className="bub">
-                <span className="dots"><i /><i /><i /></span>
-                <span className="typing-step">{loadingKind === 'ask' ? 'Looking into that…' : steps[Math.min(step, steps.length - 1)]}</span>
+              <div className="bub" dir="auto">
+                <span className="dots" aria-hidden="true"><i /><i /><i /></span>
+                <span className="typing-step">{stepText}</span>
+                <span className="wait">
+                  {loadingKind !== 'ask' && <>{t.waitNote} </>}
+                  <span>⏱ {t.elapsed.replace('{n}', elapsed)}</span>
+                </span>
               </div>
             </div>
           )}
@@ -1510,6 +2002,7 @@ export default function VeraChat({ tool = 'credible' }) {
             <textarea
               className="input"
               rows={1}
+              aria-label={t.messageLabel}
               placeholder={image ? (tool === 'photo' ? 'Add a note (optional)…' : 'Add a note or link (optional)…') : report ? 'Ask Vera about this…' : PLACEHOLDERS[tool]}
               dir="auto"
               value={draft}
@@ -1520,16 +2013,21 @@ export default function VeraChat({ tool = 'credible' }) {
               ↑
             </button>
           </div>
-          <div className="foot">
+          <div className="foot" dir="auto">
             Fact or Feed? uses AI and can make mistakes. Always check the sources.
           </div>
         </div>
       </footer>
 
       {showInstall && (
-        <InstallSheet onClose={() => setShowInstall(false)} />
+        <InstallSheet
+          onClose={() => setShowInstall(false)}
+          language={uiLang}
+          platform={platform}
+          canInstall={canInstall}
+          onInstall={promptInstall}
+        />
       )}
     </div>
   );
 }
-

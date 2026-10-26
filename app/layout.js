@@ -18,7 +18,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    // lang and dir start as English; the page switches them to the language the person picks (Arabic: right to left)
+    <html lang="en" dir="ltr">
       <body style={{ margin: 0, background: '#f7f7f5', color: '#1a1a1a' }}>
         {children}
       </body>
