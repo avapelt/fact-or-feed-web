@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
+import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
 import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
@@ -702,7 +702,7 @@ The user's exact question (answer THIS, not an easier one): ${userQuestion}
 Question type: ${questionType}${futureOutcome ? ' (about the future: never answer yes or no, never predict or endorse an outcome; report only the latest dated polls, forecasts, and reporting from the sources)' : ''}
 What it's about: ${reader.content_summary}
 
-Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to the National Weather Service, FEMA, and the local emergency management office for the place involved for safety information.' : ''}
+Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? EMERGENCY_NOTE : ''}
 
 Vera's notebook (unverified hints from past checks; re-verify against today's sources, which always win):
 ${notebookForPrompt(notebook)}
@@ -727,7 +727,7 @@ Outlet bias rating: ${outlet ? `${outlet.domain} is rated ${outlet.category}` : 
 Claims:
 ${reader.claims.join('\n')}
 
-Manager's game plan: ${plan.analysis}${plan.emergency_mode ? ' EMERGENCY MODE IS ON: lead with what official sources say, and point people to the National Weather Service, FEMA, and the local emergency management office for the place involved for safety information.' : ''}
+Manager's game plan: ${plan.analysis}${plan.emergency_mode ? EMERGENCY_NOTE : ''}
 
 Persuasion analysis:
 ${persuasion}
