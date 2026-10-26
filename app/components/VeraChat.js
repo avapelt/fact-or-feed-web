@@ -492,9 +492,10 @@ export const CSS = `
 @media (max-width:640px){.tn-long{display:none}.tn-short{display:inline}.toolnav a{min-width:0;padding:0 8px}}
 .toolnav a.on{background:var(--moss);border-color:var(--moss);color:#fff}
 a.wordmark{text-decoration:none;display:inline-block}
-.lean{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
+/* Left always sits on the left, even when the page is right to left (Arabic) */
+.lean{display:flex;direction:ltr;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
 .lean div{flex:1}
-.lean-labels{display:flex;font-size:12px;margin-top:3px}
+.lean-labels{display:flex;direction:ltr;font-size:12px;margin-top:3px}
 .lean-labels span{flex:1;text-align:center}
 .agree{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;margin-inline-start:6px;white-space:nowrap}
 .origin{margin-top:12px;border:1px solid #CFE6D9;background:#EFF8F2;border-radius:12px;padding:10px 14px;font-size:14px}
@@ -705,7 +706,7 @@ function SpectrumBar({ stats, total }) {
   const used = ORDER.filter((c) => stats[c]);
   return (
     <>
-      <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
+      <div style={{ display: 'flex', direction: 'ltr', height: 12, borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
         {used.map((c) => (
           <div key={c} title={`${c}: ${stats[c]}`} style={{ width: `${(stats[c] / total) * 100}%`, background: COLORS[c] }} />
         ))}
