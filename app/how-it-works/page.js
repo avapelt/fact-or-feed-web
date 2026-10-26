@@ -19,7 +19,7 @@ const LEANS = [
 const STEPS = [
   {
     title: 'Make a game plan',
-    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. Sometimes the best move isn’t reading 30 articles but going straight to the original source, so the Manager decides that too. A hurricane rumor switches on emergency mode and puts official sources first; and a health claim adds published research.',
+    body: 'The Manager agent goes first. It looks at what you sent, decides what kind of post it is, and chooses which specialist agents to use, with a reason for each choice. Sometimes the best move isn’t reading lots of articles but going straight to the original source, so the Manager decides that too. A hurricane rumor switches on emergency mode and puts official sources first; and a health claim adds published research.',
   },
   {
     title: 'Find the claims',
@@ -59,13 +59,14 @@ const STEPS = [
   },
 ];
 
+// [name, chip color, text color, meaning]: every chip has at least 4.5:1 contrast
 const VERDICTS = [
-  ['Accurate', '#2F8F5B', 'The main claim is backed by reliable sources.'],
-  ['Missing context', '#7FA83A', 'True, but leaves out something that changes the meaning.'],
-  ['Exaggerated', '#D99A2B', 'Starts from something real but blows it up.'],
-  ['Misleading', '#D9702F', 'Uses real facts to push a false impression.'],
-  ['False', '#C2413B', 'Reliable sources show the claim is wrong.'],
-  ["Can't confirm yet", '#6B6A73', 'Not enough reliable coverage to say either way.'],
+  ['Accurate', '#237A4B', '#FFFFFF', 'The main claim is backed by reliable sources.'],
+  ['Missing context', '#7FA83A', '#1D1D1F', 'True, but leaves out something that changes the meaning.'],
+  ['Exaggerated', '#D99A2B', '#1D1D1F', 'Starts from something real but blows it up.'],
+  ['Misleading', '#D9702F', '#1D1D1F', 'Uses real facts to push a false impression.'],
+  ['False', '#C2413B', '#FFFFFF', 'Reliable sources show the claim is wrong.'],
+  ["Can't confirm yet", '#6B6A73', '#FFFFFF', 'Not enough reliable coverage to say either way.'],
 ];
 
 function byLean() {
@@ -107,11 +108,11 @@ const CSS = `
 .steps p{margin:4px 0 0;font-size:15px}
 .tier{border:1.5px solid var(--ink);background:var(--paper);margin-top:14px}
 .tier-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tier-rank{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.tier-rank{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted)}
 .tier-name{font-family:var(--caslon);font-weight:700;font-size:18px}
 .tier-body{padding:12px 14px;font-size:15px}
 .tier-body p{margin:0 0 8px}
-.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{font-size:12.5px;background:var(--cream);border:1px solid var(--line);padding:2px 8px}
 .meter{display:flex;height:10px;margin:10px 0 4px}
@@ -128,7 +129,7 @@ const CSS = `
 .vtag{display:inline-block;color:#fff;font-family:var(--sans);font-weight:700;font-size:14px;padding:2px 12px;border-radius:999px;margin-bottom:6px}
 .rules{padding-left:20px;margin:0}
 .rules li{margin:6px 0}
-.hw-foot{text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:48px}
+.hw-foot{text-align:center;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:48px}
 @media (max-width:640px){.lean-grid{grid-template-columns:1fr 1fr}.hw-brand{font-size:17px}}
 `;
 
@@ -232,7 +233,7 @@ export default function HowItWorks() {
             </p>
           </Tier>
 
-          <Tier rank="Tier 1" name="Official sources" badge={<Badge color="#2F8F5B" text="#FFFFFF">Official</Badge>}>
+          <Tier rank="Tier 1" name="Official sources" badge={<Badge color="#237A4B" text="#FFFFFF">Official</Badge>}>
             <p>
               Government agencies, schools, and emergency services. Any <b>.gov</b> site counts, plus these:
             </p>
@@ -332,9 +333,9 @@ export default function HowItWorks() {
         <section>
           <h2>What the verdicts mean</h2>
           <div className="verdicts" style={{ marginTop: 14 }}>
-            {VERDICTS.map(([name, color, desc]) => (
+            {VERDICTS.map(([name, color, text, desc]) => (
               <div key={name} className="verdict">
-                <span className="vtag" style={{ background: color }}>{name}</span>
+                <span className="vtag" style={{ background: color, color: text }}>{name}</span>
                 <div>{desc}</div>
               </div>
             ))}
