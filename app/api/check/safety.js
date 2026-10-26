@@ -1,6 +1,6 @@
 // 🛡️ Small safety helpers shared by the API routes.
 // They are plain functions with no outside services, so they are easy to test.
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual, createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 // ── Our own photo storage ─────────────────────────────────────
 // The Blob token looks like vercel_blob_rw_<storeId>_<secret>, and our public files live at
@@ -328,4 +328,213 @@ export function todayEastern(now = new Date()) {
 
 export function dateRule(now = new Date()) {
   return `\n\nToday's date is ${todayEastern(now)} (US Eastern time; dates may be up to a day off by timezone). Your training data ends before today. Never call a claim false just because you don't remember it happening; rely on the dated sources.`;
+}
+
+// ── Models that don't take a temperature setting ──────────────
+// The newer Claude models on the AI Gateway reject a temperature, so we only send one when it's allowed.
+const NO_TEMPERATURE = ['anthropic/claude-sonnet-5.5', 'anthropic/claude-haiku-5.5'];
+export function withTemperature(model, value) {
+  return NO_TEMPERATURE.includes(model) ? {} : { temperature: value };
+}
+
+// ── Fewer, smarter searches ───────────────────────────────────
+// Two queries count as the same search when they use (almost) the same words,
+// in any order, ignoring tiny words, punctuation, case, and plural "s".
+const QUERY_STOP_WORDS = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'did', 'does', 'do', 'it', 'this', 'that', 'with', 'about', 'by']);
+
+function queryWords(query) {
+  const words = String(query || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  return new Set(
+    words
+      .filter((w) => !QUERY_STOP_WORDS.has(w))
+      .map((w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w))
+  );
+}
+
+export function similarQueries(a, b) {
+  const A = queryWords(a);
+  const B = queryWords(b);
+  if (!A.size || !B.size) return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  let both = 0;
+  for (const w of A) if (B.has(w)) both++;
+  return both / (A.size + B.size - both) >= 0.8;
+}
+
+// Removes near-identical queries, keeping the first of each
+export function dedupeQueries(list) {
+  const kept = [];
+  for (const q of Array.isArray(list) ? list : []) {
+    const text = String(q || '').trim();
+    if (text && !kept.some((k) => similarQueries(k, text))) kept.push(text);
+  }
+  return kept;
+}
+
+// Picks which searches to run, at most `cap` in total, with no near-duplicates.
+// groups: [{ name, queries, weight }] in order of importance. Each round, every group
+// takes `weight` queries in turn, so the most important searches always make the cut.
+export function planSearches(groups, cap) {
+  const out = {};
+  const queues = (groups || []).map((g) => {
+    out[g.name] = [];
+    return { name: g.name, weight: Math.max(1, g.weight || 1), list: (g.queries || []).map((q) => String(q || '').trim()).filter(Boolean) };
+  });
+  const picked = [];
+  let progress = true;
+  while (picked.length < cap && progress) {
+    progress = false;
+    for (const q of queues) {
+      for (let taken = 0; taken < q.weight && picked.length < cap && q.list.length; ) {
+        const next = q.list.shift();
+        if (picked.some((p) => similarQueries(p, next))) continue;
+        picked.push(next);
+        out[q.name].push(next);
+        taken++;
+        progress = true;
+      }
+    }
+  }
+  return out;
+}
+
+// ── Saved results (the same check isn't paid for twice) ───────
+// A result is kept for 6 hours, or 1 hour for recent or breaking news.
+export const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+export const CACHE_TTL_RECENT_MS = 60 * 60 * 1000;
+
+export function normalizeText(text) {
+  return String(text || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// Tracking bits that don't change what a link shows
+const TRACKING_PARAM = /^(utm_[a-z_]+|fbclid|gclid|dclid|msclkid|mc_cid|mc_eid|igsh|igshid|ref_src|ref_url|_ga|si)$/i;
+
+export function normalizeUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const u = new URL(raw);
+    u.hash = '';
+    u.hostname = u.hostname.toLowerCase().replace(/^www\./, '');
+    for (const k of [...u.searchParams.keys()]) if (TRACKING_PARAM.test(k)) u.searchParams.delete(k);
+    u.searchParams.sort();
+    u.pathname = u.pathname.replace(/\/+$/, '') || '/';
+    return u.toString().replace(/\/$/, '');
+  } catch {
+    return raw;
+  }
+}
+
+// A fingerprint of the photo's bytes (the photo itself is never stored)
+export function imageFingerprint(image) {
+  if (!image) return '';
+  const s = String(image);
+  const comma = s.indexOf(',');
+  return createHash('sha256').update(Buffer.from(comma >= 0 ? s.slice(comma + 1) : s, 'base64')).digest('hex');
+}
+
+// Everything that changes the answer: the input, the tool and mode, the language, and the level
+export function cacheInput(kind, input = {}) {
+  const base = {
+    language: String(input.language || 'auto').slice(0, 10).toLowerCase(),
+    audience: String(input.audience || 'everyone').slice(0, 20).toLowerCase(),
+    image: imageFingerprint(input.image),
+  };
+  if (kind === 'photo') return { ...base, tool: 'photo', text: normalizeText(String(input.text || '').slice(0, 1000)) };
+  return {
+    ...base,
+    tool: input.tool === 'facts' ? 'facts' : 'credible',
+    mode: input.mode === 'fact' ? 'fact' : 'full',
+    fast: !!input.fast,
+    text: normalizeText(String(input.text || '').slice(0, 6000)),
+    url: normalizeUrl(input.url),
+  };
+}
+
+// Two secrets made from the same input, keyed with the same secret as the signed result links:
+// `id` names the saved file, and `encKey` locks it. Only someone who sends exactly the same input
+// can find or open a saved result, so it tells them nothing they didn't already have.
+export function cacheKeys(parts, env = process.env) {
+  const key = resultKey(env);
+  if (!key) return null;
+  const p = parts || {};
+  const canonical = JSON.stringify(['v1', p.tool, p.mode || '', !!p.fast, p.language, p.audience, p.text || '', p.url || '', p.image || '']);
+  return {
+    id: createHmac('sha256', key).update('id:' + canonical).digest('hex'),
+    encKey: createHmac('sha256', key).update('enc:' + canonical).digest(),
+  };
+}
+
+// AES-256-GCM: a random 12-byte IV, then the 16-byte auth tag, then the ciphertext, as base64
+export function encryptEntry(entry, encKey) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', encKey, iv);
+  const ct = Buffer.concat([cipher.update(JSON.stringify(entry), 'utf8'), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), ct]).toString('base64');
+}
+
+// The saved entry, or null if it was made with a different input or was changed in any way
+export function decryptEntry(text, encKey) {
+  try {
+    const buf = Buffer.from(String(text || ''), 'base64');
+    if (buf.length < 29) return null;
+    const decipher = createDecipheriv('aes-256-gcm', encKey, buf.subarray(0, 12));
+    decipher.setAuthTag(buf.subarray(12, 28));
+    return JSON.parse(Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]).toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+// Only good, complete results are saved: never a forced "Can't confirm yet",
+// never one made while searches were failing, and never a half-finished one.
+export function isCacheable(data) {
+  if (!data || typeof data !== 'object' || data.error || data.cached) return false;
+  const t = data.trace || {};
+  if (t.complete === false) return false;
+  if (t.search?.forced) return false;
+  if ((t.search?.failed || 0) > 0) return false;
+  if ((t.search?.photo?.failed || 0) > 0) return false;
+  if (data.photo) return true;
+  const r = data.result;
+  if (!r) return false;
+  if (r.verdict === "Can't confirm yet") return false;
+  if (data.tool === 'facts' && r.consensus?.level === 'None yet') return false;
+  return true;
+}
+
+export function cacheTtlMs(data) {
+  const t = data?.trace || {};
+  return t.plan?.is_recent || t.recent ? CACHE_TTL_RECENT_MS : CACHE_TTL_MS;
+}
+
+export function isFreshEntry(entry, now = Date.now()) {
+  if (!entry || typeof entry !== 'object' || entry.v !== 1 || !entry.data) return false;
+  const saved = Number(entry.saved_at);
+  const ttl = Math.min(Number(entry.ttl_ms) || 0, CACHE_TTL_MS);
+  if (!Number.isFinite(saved) || ttl <= 0) return false;
+  const age = now - saved;
+  return age >= -60 * 1000 && age < ttl;
+}
+
+// A saved result, marked as saved, with when it was first checked
+export function restoreCached(saved, savedAt) {
+  return { ...saved, cached: true, checked_at: new Date(savedAt).toISOString() };
+}
+
+// ── Daily cleanup: which stored files are old enough to delete ─
+export function blobsOlderThan(blobs, maxAgeMs, now = Date.now()) {
+  return (Array.isArray(blobs) ? blobs : []).filter((b) => {
+    const at = new Date(b?.uploadedAt).getTime();
+    return b?.url && Number.isFinite(at) && now - at > maxAgeMs;
+  });
+}
+
+// The standard Vercel Cron check: "Authorization: Bearer <CRON_SECRET>". No secret set means no access.
+export function isCronAuthorized(header, env = process.env) {
+  const secret = env.CRON_SECRET;
+  if (!secret || typeof header !== 'string') return false;
+  const a = Buffer.from(`Bearer ${secret}`);
+  const b = Buffer.from(header);
+  return a.length === b.length && timingSafeEqual(a, b);
 }

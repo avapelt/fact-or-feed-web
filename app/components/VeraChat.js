@@ -22,7 +22,7 @@ const STEPS = {
     'Having a second AI double-check it…',
   ],
   photo: [
-    'Three photo agents are looking for AI warning signs…',
+    'A photo agent is looking for AI warning signs…',
     'Figuring out what the photo shows…',
     'Searching for real photos of the same thing…',
     'Comparing your photo with the real ones…',
@@ -548,6 +548,7 @@ function PhotoResultBubble({ data, image, onFactCheck }) {
   const color = AI_COLORS[AI_LEVELS.indexOf(p.level)] || '#6f6858';
   return (
     <div className="bub wide">
+      <CachedNote data={data} />
       <span className="vchip" style={{ background: color }}>{p.level}</span>
       <p dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600 }}>{p.headline}</p>
       <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
@@ -651,8 +652,8 @@ function ReviewBox({ review }) {
         <b>{review.approved ? '✅ Double-checked' : '🔧 Double-checked & corrected'}</b>
         <span className="pill" style={{ marginLeft: 8 }}>Confidence: {review.confidence}</span>
       </div>
-      <div style={{ marginTop: 4 }}>{review.review_note}</div>
-      {!review.approved && review.issues.length > 0 && (
+      {review.review_note && <div style={{ marginTop: 4 }}>{review.review_note}</div>}
+      {!review.approved && review.issues?.length > 0 && (
         <ul style={{ marginTop: 6 }}>
           {review.issues.map((x, i) => (
             <li key={i}>{x}</li>
@@ -668,7 +669,7 @@ function PlanBlock({ data }) {
   if (!plan) return null;
   return (
     <Block title="🧭 The Manager's game plan">
-      <p style={{ margin: '0 0 6px', fontSize: 14 }}>{plan.analysis}</p>
+      {plan.analysis && <p style={{ margin: '0 0 6px', fontSize: 14 }}>{plan.analysis}</p>}
       <div className="chips" style={{ marginBottom: 6 }}>
         {[
           [`Went to the original source${plan.original_source ? `: ${plan.original_source}` : ''}`, plan.go_to_original],
@@ -686,7 +687,7 @@ function PlanBlock({ data }) {
           ))}
       </div>
       <ul style={{ fontSize: 13.5 }}>
-        {plan.reasons.map((x, i) => (
+        {(plan.reasons || []).map((x, i) => (
           <li key={i}>{x}</li>
         ))}
       </ul>
@@ -731,6 +732,32 @@ const NO_SOURCES = {
   it: 'Nessuna fonte trovata. Non ho trovato nessuna fonte su questo, quindi non fidarti di questa risposta.',
 };
 
+// Shown on a saved result: when it was checked ({n} is the number of minutes or hours)
+const CHECKED_AGO = {
+  en: { now: 'Checked just now (saved result)', min: 'Checked {n} min ago (saved result)', hr: 'Checked {n} h ago (saved result)' },
+  es: { now: 'Verificado hace un momento (resultado guardado)', min: 'Verificado hace {n} min (resultado guardado)', hr: 'Verificado hace {n} h (resultado guardado)' },
+  ht: { now: 'Verifye kounye a la a (rezilta ki te sove)', min: 'Verifye sa gen {n} min (rezilta ki te sove)', hr: 'Verifye sa gen {n} è (rezilta ki te sove)' },
+  zh: { now: '刚刚核查（已保存的结果）', min: '{n} 分钟前核查（已保存的结果）', hr: '{n} 小时前核查（已保存的结果）' },
+  hi: { now: 'अभी-अभी जाँचा गया (सहेजा गया नतीजा)', min: '{n} मिनट पहले जाँचा गया (सहेजा गया नतीजा)', hr: '{n} घंटे पहले जाँचा गया (सहेजा गया नतीजा)' },
+  ar: { now: 'تم التحقق للتو (نتيجة محفوظة)', min: 'تم التحقق قبل {n} دقيقة (نتيجة محفوظة)', hr: 'تم التحقق قبل {n} ساعة (نتيجة محفوظة)' },
+  fr: { now: "Vérifié à l'instant (résultat enregistré)", min: 'Vérifié il y a {n} min (résultat enregistré)', hr: 'Vérifié il y a {n} h (résultat enregistré)' },
+  bn: { now: 'এইমাত্র যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)', min: '{n} মিনিট আগে যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)', hr: '{n} ঘণ্টা আগে যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)' },
+  it: { now: 'Verificato poco fa (risultato salvato)', min: 'Verificato {n} min fa (risultato salvato)', hr: 'Verificato {n} h fa (risultato salvato)' },
+};
+
+function CachedNote({ data }) {
+  const when = Date.parse(data?.checked_at || '');
+  if (!data?.cached || !Number.isFinite(when)) return null;
+  const m = CHECKED_AGO[data.lang] || CHECKED_AGO.en;
+  const minutes = Math.max(0, Math.round((Date.now() - when) / 60000));
+  const text = minutes < 1 ? m.now : minutes < 60 ? m.min.replace('{n}', minutes) : m.hr.replace('{n}', Math.round(minutes / 60));
+  return (
+    <div className="muted" dir="auto" style={{ marginBottom: 6 }}>
+      🕒 {text}
+    </div>
+  );
+}
+
 // 🔎 Find the facts: the answer, the consensus, and the sources it used
 function FactsBubble({ data }) {
   const r = data.result;
@@ -740,6 +767,7 @@ function FactsBubble({ data }) {
   const originalSrc = original?.source_id != null ? byId(original.source_id) : null;
   return (
     <div className="bub wide">
+      <CachedNote data={data} />
       {r.reframed && <div className="muted" dir="auto" style={{ marginBottom: 6 }}>ℹ️ {r.reframed}</div>}
       <div className="answer" dir="auto">{r.answer}</div>
       {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>}
@@ -810,6 +838,7 @@ function ResultBubble({ data, image, onPhotoCheck }) {
 
   return (
     <div className="bub wide">
+      <CachedNote data={data} />
       <div className="sub-label" style={{ marginTop: 0 }}>Are the facts accurate?</div>
       <span className="vchip" style={{ background: vColor }}>{r.verdict}</span>
       {vIndex >= 0 && <Meter labels={VERDICTS} colors={VERDICT_COLORS} active={vIndex} />}
@@ -837,7 +866,7 @@ function ResultBubble({ data, image, onPhotoCheck }) {
           <div style={{ marginTop: 6, fontSize: 14 }}>
             {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">We couldn't tell who made this.</span>}
           </div>
-          <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>
+          {r.who_posted.trust_note && <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>}
         </div>
       )}
 
@@ -850,7 +879,7 @@ function ResultBubble({ data, image, onPhotoCheck }) {
           <ul style={{ marginTop: 6, fontSize: 14 }}>
             {r.persuasion_tactics.map((t, i) => (
               <li key={i}>
-                <b>{t.tactic}</b> ({t.where}): {t.explanation}
+                <b>{t.tactic}</b>{t.where ? ` (${t.where})` : ''}: {t.explanation}
               </li>
             ))}
           </ul>

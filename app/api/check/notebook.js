@@ -8,6 +8,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { get, put } from '@vercel/blob';
 import { APPROVED_LESSONS } from './approved-lessons';
+import { withTemperature } from './safety';
 
 const PATH = 'notebook/vera-notebook.json';
 const PENDING_PATH = 'notebook/pending-lessons.json';
@@ -165,7 +166,7 @@ export async function bookkeep({ model, claims, verdict, realStory, review, feed
     const { output } = await generateText({
       model,
       system: BOOKKEEPER_PROMPT,
-      temperature: 0.2,
+      ...withTemperature(model, 0.2),
       prompt: `Claims checked:\n${(claims || []).join('\n')}
 
 Final verdict: ${verdict}

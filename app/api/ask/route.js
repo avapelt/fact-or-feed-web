@@ -3,14 +3,12 @@
 import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { RULES, FOLLOWUP_PROMPT } from '../check/prompts';
-import { searchWeb } from '../check/analyze';
+import { searchWeb, MODEL } from '../check/analyze';
 import { categorize } from '../check/bias';
 import { loadNotebook, lessonsFor } from '../check/notebook';
-import { dateRule, isBlockedSource } from '../check/safety';
+import { dateRule, isBlockedSource, similarQueries } from '../check/safety';
 
 export const maxDuration = 120;
-
-const MODEL = 'anthropic/claude-sonnet-4.5';
 
 // The report comes from the user's browser, so we never trust its size:
 // every string, list, and nested object is cut down before it reaches the AI.
@@ -50,14 +48,20 @@ export async function POST(req) {
     const notebook = await loadNotebook();
     const known = (Array.isArray(report?.sources) ? report.sources : []).filter((s) => s && typeof s === 'object' && !isBlockedSource(s.url)).slice(0, 30);
     const extra = [];
+    // 💰 At most 2 new searches per follow-up question, and never the same search twice
+    const asked = [];
     let nextId = known.reduce((m, s) => Math.max(m, Number(s?.id) || 0), 0) + 1;
 
     const searchNews = tool({
       description: 'Search news and official sources when the sources you already have do not answer the question.',
       inputSchema: z.object({ query: z.string() }),
       execute: async ({ query }) => {
+        const q = String(query).slice(0, 300);
+        if (asked.some((a) => similarQueries(a, q))) return 'You already ran this search. Use the results you have.';
+        if (asked.length >= 2) return 'No more searches for this question. Answer with the sources you have, and say what they do not cover.';
+        asked.push(q);
         const track = { tried: 0, failed: 0 };
-        const found = await searchWeb(String(query).slice(0, 300), { max_results: 6 }, track);
+        const found = await searchWeb(q, { max_results: 6 }, track);
         if (track.failed) return 'The search is not working right now. Do NOT guess: tell the user you could not search for this right now and they can try again in a few minutes.';
         const labeled = found.map((s) => ({ ...s, ...categorize(s), id: nextId++, snippet: (s.snippet || '').slice(0, 300) }));
         extra.push(...labeled);
@@ -76,7 +80,7 @@ What the photo shows: ${p.description || 'unknown'}
 How believable the scene is: ${p.plausibility || ''} ${p.plausibility_reason || ''}
 Warning signs: ${(p.signs || []).join('; ') || 'none'}
 Comparison with real photos: ${p.comparison ? `${p.comparison.match}, ${p.comparison.effect}: ${p.comparison.comparison}` : 'none'}
-${p.checks ? `${p.agree} of ${p.checks} checks agreed.` : ''}
+${p.checks > 1 ? `${p.agree} of ${p.checks} checks agreed.` : ''}
 Remember: warning signs are not proof; never say a photo is definitely AI or definitely real.`;
     } else if (report?.tool === 'facts') {
       summary = `The answer you sent (Find the facts):

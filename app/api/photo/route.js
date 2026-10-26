@@ -1,7 +1,9 @@
 // 🤖 "Is this photo AI?" mode: runs only the photo agents.
 import { del } from '@vercel/blob';
 import { isOurPhoto, fetchOurPhoto, checkImageField, badRequest } from '../check/safety';
+import { after } from 'next/server';
 import { checkPhoto } from '../check/analyze';
+import { cacheKeyFor, readCached, saveCached } from '../check/cache';
 
 export const maxDuration = 300;
 
@@ -17,7 +19,13 @@ export async function POST(req) {
     } else {
       body.image = checkImageField(body.image);
     }
-    return Response.json(await checkPhoto(body));
+    // 💾 The same photo (same bytes, note, language, and level) in the last 6 hours: reuse the result
+    const key = cacheKeyFor('photo', body);
+    const saved = await readCached(key);
+    if (saved) return Response.json(saved);
+    const data = await checkPhoto(body);
+    after(() => saveCached(key, data));
+    return Response.json(data);
   } catch (err) {
     console.error(err);
     return Response.json(

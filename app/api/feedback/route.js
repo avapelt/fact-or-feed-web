@@ -3,6 +3,7 @@
 // and feedback never changes what the notebook says about a rumor.
 // Only the general claim and the lesson are kept, never personal details.
 import { bookkeep } from '../check/notebook';
+import { FAST_MODEL } from '../check/analyze';
 
 export const maxDuration = 60;
 
@@ -21,7 +22,7 @@ export async function POST(req) {
     if (correct === true) return Response.json({ ok: true, lesson: null, job: null });
 
     const result = await bookkeep({
-      model: 'anthropic/claude-haiku-4.5',
+      model: FAST_MODEL,
       claims: list,
       verdict: clip(verdict, 100),
       realStory: clip(realStory, 600),
