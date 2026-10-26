@@ -374,7 +374,7 @@ export default function HowItWorks() {
           <ul className="rules" style={{ marginTop: 14 }}>
             <li>We stay neutral on politics and never tell you which side to take.</li>
             <li>If something can't be confirmed, we say so.</li>
-            <li>In emergencies we point you to official sources like the National Weather Service, FEMA, and your local emergency management office.</li>
+            <li>In emergencies we point you to official sources for where you are: your local emergency office and your country’s weather and disaster agencies (like the National Weather Service and FEMA in the US).</li>
             <li>We warn you when a post asks for money or personal information.</li>
             <li>No personal medical, legal, or money advice.</li>
             <li>We never post or send anything for you. The reply we write is just a suggestion.</li>

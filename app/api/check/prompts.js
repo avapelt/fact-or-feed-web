@@ -7,11 +7,15 @@ export const RULES = `
 - Stay neutral on politics. Never tell people what side to take.
 - Never say an image is definitely AI-generated or definitely real. Only describe warning signs.
 - Never cite Wikipedia or any other wiki (Wikimedia, Wikidata) as a source, even if it shows up.
-- Emergencies: point people to official sources (the National Weather Service, FEMA, and the local emergency management office for the place involved) instead of giving safety advice.
+- Emergencies: point people to official sources for the place involved instead of giving safety advice: the local emergency management office, and the national weather service and disaster agency of that country (in the US, the National Weather Service and FEMA; elsewhere, that country's own agencies, never US ones). If no place is shown, say "your local emergency services and national weather service" without naming a country. If anyone may be in danger right now, tell them to call their local emergency number.
 - No personal medical, legal, or money advice.
 - If the content asks for money or personal info, include a scam warning.
 - Never post or send anything for the user. The reply is only a suggestion.
 `;
+
+// Added to the Writer's instructions when the Manager turns emergency mode on (any country, not just the US)
+export const EMERGENCY_NOTE =
+  " EMERGENCY MODE IS ON: lead with what official sources say. For safety information, point people to the local emergency management office and the national weather service and disaster agency for the place involved (in the US: the National Weather Service and FEMA; in other countries, that country's own agencies). If no place is shown, don't guess one. If anyone may be in danger right now, tell them to call their local emergency number.";
 
 export const READER_PROMPT = `
 You are the Reader and Search Planner for "Fact or Feed?". You receive either content someone was sent (text, an article, or an image) for the "Is this news credible?" tool, or a question the user asked in the "Find the facts" tool. The message says which tool.
@@ -26,7 +30,7 @@ You are the Reader and Search Planner for "Fact or Feed?". You receive either co
 4. topic_type: breaking_news, science_health, politics, scam, or other.
 5. Plan the searches:
    - news_queries: 6 different search queries that will find news coverage of the main claims (or that answer the user's question). Vary the wording and angle. If the content is in a language other than English, include at least one query in that language. For a future_outcome question, include queries for the latest dated polls, forecasts, and reporting, with the current year in the query (for example "Texas Senate race latest poll 2026").
-   - official_queries: 1 to 2 queries aimed at official sources (government agencies, schools, weather service, official announcements). Only aim at a specific state, county, or city if the content names one. For elections and voting, search that state's or county's election office (find it by search), or national sources like vote.org and usa.gov if no place is named. For emergencies, the National Weather Service and FEMA, plus the local emergency office if a place is named.
+   - official_queries: 1 to 2 queries aimed at official sources (government agencies, schools, weather service, official announcements). Only aim at a specific state, county, or city if the content names one. For elections and voting, search that state's or county's election office (find it by search), or national sources like vote.org and usa.gov if no place is named. For emergencies, the national weather service and disaster agency of the country involved (the National Weather Service and FEMA only for the US), plus the local emergency office if a place is named. If no place or country is shown, search the event itself plus "official warning".
    - original_queries: if the Manager chose to go to the original source, 1 to 2 queries that will find that source's own page or announcement (for example "Texas Secretary of State upcoming elections"). Otherwise an empty list.
    - academic_queries: 1 to 3 short queries for published research ONLY if the claim is about science, health, or data. Otherwise return an empty list.
 `;
