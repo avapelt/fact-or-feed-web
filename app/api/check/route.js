@@ -1,8 +1,9 @@
 import { del } from '@vercel/blob';
 import { isOurPhoto, fetchOurPhoto, checkImageField, badRequest } from './safety';
 import { after } from 'next/server';
-import { analyze } from './analyze';
+import { analyze, FAST_MODEL } from './analyze';
 import { bookkeep } from './notebook';
+import { cacheKeyFor, readCached, saveCached } from './cache';
 
 export const maxDuration = 300;
 
@@ -21,14 +22,21 @@ export async function POST(req) {
       body.image = checkImageField(body.image);
     }
 
+    // 💾 The same check in the last few hours? Answer from the saved result (no AI calls, no searches).
+    // No Bookkeeper either: the notebook already learned from the first check.
+    const key = cacheKeyFor('check', body);
+    const saved = await readCached(key);
+    if (saved) return Response.json(saved);
+
     const data = await analyze(body);
+    after(() => saveCached(key, data));
 
     // 📒 The Bookkeeper writes an anonymous note in Vera's notebook after the answer is sent.
     // Skipped when the code forced "Can't confirm yet" (search down or too few sources),
     // so an outage never gets remembered as a result.
     if (!data.trace?.search?.forced) after(() =>
       bookkeep({
-        model: 'anthropic/claude-haiku-4.5',
+        model: FAST_MODEL,
         claims: data.trace?.claims,
         verdict: data.result?.verdict || `answer (consensus: ${data.result?.consensus?.level || 'unknown'})`,
         realStory: data.result?.real_story || data.result?.answer,

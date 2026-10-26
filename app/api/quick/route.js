@@ -1,5 +1,7 @@
 // Used by the iPhone Shortcut: Share anything → Fact or Feed? → popup over the app you're in.
+import { after } from 'next/server';
 import { analyze } from '../check/analyze';
+import { cacheKeyFor, readCached, saveCached } from '../check/cache';
 import { checkImageField, signPayload, photoTooBig, sniffImageType, MAX_IMAGE_BYTES } from '../check/safety';
 
 export const maxDuration = 300;
@@ -55,7 +57,11 @@ async function readRequest(req) {
 export async function POST(req) {
   try {
     const input = await readRequest(req);
-    const data = await analyze({ ...input, fast: true });
+    // 💾 The same check in the last few hours: reuse the saved result instead of paying again
+    const key = cacheKeyFor('check', { ...input, fast: true });
+    const saved = await readCached(key);
+    const data = saved || (await analyze({ ...input, fast: true }));
+    if (!saved) after(() => saveCached(key, data));
     const r = data.result;
     const total = data.sources?.length || 0;
 
@@ -71,6 +77,10 @@ export async function POST(req) {
     if (data.imageCheck) {
       lines.push(`🤖 Image: ${data.imageCheck.level} (warning signs, not proof)`);
       if (data.imageCheck.plausibility) lines.push(`🎯 Scene: ${data.imageCheck.plausibility}`);
+    }
+    if (data.cached && data.checked_at) {
+      const minutes = Math.max(0, Math.round((Date.now() - Date.parse(data.checked_at)) / 60000));
+      lines.push(`🕒 Checked ${minutes < 1 ? 'just now' : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`} (saved result)`);
     }
     lines.push('', 'Tap OK for the full breakdown.');
 

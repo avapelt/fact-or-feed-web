@@ -27,7 +27,7 @@ const STEPS = [
   },
   {
     title: 'Go to the source, or search widely',
-    body: 'If the Manager chose the original source, the Researcher goes there first (an agency, election office, school district, or study). Otherwise it runs 10+ searches at the same time: news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
+    body: 'If the Manager chose the original source, the Researcher goes there first (an agency, election office, school district, or study). Otherwise it runs up to 6 web searches at the same time (near-identical ones are skipped): news coverage worded different ways, official sources like government agencies, and published research when the claim is about science, health, or data.',
   },
   {
     title: 'Look for persuasion',
@@ -35,7 +35,7 @@ const STEPS = [
   },
   {
     title: 'Check photos (its own mode)',
-    body: 'Tap “Is this photo AI?” to run only the photo agents. Three Image agents check it for signs of AI at the same time, a Photo Finder figures out what the photo shows and searches for real photos of it, the Comparison agent compares them, and Vera explains the result in plain words. In the other tools, a screenshot is only read for its claims.',
+    body: 'Tap “Is this photo AI?” to run only the photo agents. The Image agent checks it for signs of AI, a Photo Finder figures out what the photo shows and searches for real photos of it, the Comparison agent compares them, and Vera explains the result in plain words. In the other tools, a screenshot is only read for its claims.',
   },
   {
     title: 'Label every source',
@@ -354,8 +354,8 @@ export default function HowItWorks() {
           <div className="callout" style={{ marginTop: 14 }}>
             <b>Warning signs.</b> The Image agent looks for signs of AI or editing (warped hands or text, odd lighting,
             strange reflections, plastic-looking skin) and asks whether the scene is even believable. A cat skydiving is
-            very unlikely. It does this <b>three separate times</b> and goes with the middle answer, so one odd result
-            can't flip it.
+            very unlikely. The code, not the AI, turns its scores into a Low, Medium, or High chance, so the same
+            scores always give the same answer.
           </div>
           <div className="callout">
             <b>Comparing with real photos.</b> The Photo Finder figures out what the picture shows, and the Comparison agent searches for real photos of the same scene and

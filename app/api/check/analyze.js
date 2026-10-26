@@ -3,13 +3,17 @@ import { z } from 'zod';
 import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT } from './prompts';
 import { categorize } from './bias';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
 
 
-// Paste your Opus model ID inside the quotes
-const MODEL = 'anthropic/claude-sonnet-4.5';
-// Faster model for the simple steps when speed matters (the iPhone popup)
-const FAST_MODEL = 'anthropic/claude-haiku-4.5';
+// 💰 The strong model only writes the verdict or answer (and judges a photo's AI warning signs).
+// Every helper step (Manager, Planner, Persuasion, Comparison, Photo Finder, Photo Writer) uses the cheap one.
+// Both are the newest Claude models on the AI Gateway, at a lower price per token than the 4.5 ones.
+export const MODEL = 'anthropic/claude-sonnet-5.5';
+export const FAST_MODEL = 'anthropic/claude-haiku-5.5';
+
+// Most Tavily searches one check may run (each basic search costs 1 credit)
+const MAX_SEARCHES = { full: 6, fast: 3 };
 
 // Language codes the app supports, and the names the AI is told to write in
 const LANGUAGE_NAMES = {
@@ -152,7 +156,7 @@ export async function searchWeb(query, extra = {}, track = null) {
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
       // Wikipedia and other wikis are never used as sources
-      body: JSON.stringify({ query, max_results: 10, ...extra, exclude_domains: EXCLUDED_DOMAINS }),
+      body: JSON.stringify({ query, max_results: 10, search_depth: 'basic', ...extra, exclude_domains: EXCLUDED_DOMAINS }),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return failed(`status ${res.status}`);
@@ -170,7 +174,9 @@ export async function searchWeb(query, extra = {}, track = null) {
 }
 
 // Finds real photos online of the same scene, so the Comparison agent can compare
-async function searchPhotos(query) {
+// (a failed search is counted in `track`, so a result made while search was down is never saved)
+async function searchPhotos(query, track = null) {
+  if (track) track.tried = (track.tried || 0) + 1;
   try {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -178,14 +184,17 @@ async function searchPhotos(query) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
       },
-      body: JSON.stringify({ query, max_results: 5, include_images: true, include_image_descriptions: true, exclude_domains: EXCLUDED_DOMAINS }),
+      body: JSON.stringify({ query, max_results: 5, search_depth: 'basic', include_images: true, include_image_descriptions: true, exclude_domains: EXCLUDED_DOMAINS }),
       signal: AbortSignal.timeout(15000),
     });
+    if (!res.ok) throw new Error(`status ${res.status}`);
     const data = await res.json();
     return (data.images || [])
       .map((img) => (typeof img === 'string' ? { url: img, description: '' } : img))
       .filter((img) => img && img.url && !isBlockedSource(img.url));
-  } catch {
+  } catch (err) {
+    if (track) track.failed = (track.failed || 0) + 1;
+    console.error('Photo search failed:', err?.message || err);
     return [];
   }
 }
@@ -211,8 +220,8 @@ async function fetchImageAsDataUrl(url) {
   }
 }
 
-async function compareWithRealPhotos(image, query, model, lessons = '') {
-  const found = await searchPhotos(query);
+async function compareWithRealPhotos(image, query, model, lessons = '', track = null) {
+  const found = await searchPhotos(query, track);
   const downloaded = await Promise.all(
     found.slice(0, 8).map(async (img) => ({ ...img, dataUrl: await fetchImageAsDataUrl(img.url) }))
   );
@@ -223,7 +232,7 @@ async function compareWithRealPhotos(image, query, model, lessons = '') {
   const { output } = await generateText({
     model,
     system: COMPARE_PROMPT + lessons,
-    temperature: 0.2,
+    ...withTemperature(model, 0.2),
     messages: [
       {
         role: 'user',
@@ -366,6 +375,31 @@ function levelFor(score) {
   return 'Low chance of AI';
 }
 
+// One image check (it used to run 3 times; the scoring works the same with one answer)
+async function runImageCheck(image, system, prompt) {
+  try {
+    const { output } = await generateText({
+      model: MODEL,
+      system,
+      ...withTemperature(MODEL, 0),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image', image },
+          ],
+        },
+      ],
+      output: Output.object({ schema: ImageSchema }),
+    });
+    return combineImageChecks(output ? [output] : []);
+  } catch (err) {
+    console.error('Image check failed', err);
+    return null;
+  }
+}
+
 function combineImageChecks(runs) {
   if (!runs.length) return null;
   const scored = runs.map((r) => ({ ...r, score: imageScore(r) })).sort((a, b) => a.score - b.score);
@@ -398,6 +432,7 @@ export async function analyze(input) {
   const toolName = input.tool === 'facts' ? 'facts' : 'credible';
   // In "Is this true?" mode the photo is only read for its claims; the AI photo check is its own mode
   const photoChecks = !!image && input.mode !== 'fact';
+  // The Writer (and the Reviewer, unchanged) use the strong model; the iPhone popup keeps the fast one for speed
   const quickModel = fast ? FAST_MODEL : MODEL;
   const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';
 
@@ -422,7 +457,7 @@ export async function analyze(input) {
     const { output } = await generateText({
       model: FAST_MODEL,
       system: MANAGER_PROMPT + lessonsFor(notebook, 'manager') + today,
-      temperature: 0.2,
+      ...withTemperature(FAST_MODEL, 0.2),
       messages: [
         {
           role: 'user',
@@ -469,7 +504,7 @@ export async function analyze(input) {
 
   // Step 1: Read the content and plan the searches
   const { output: reader } = await generateText({
-    model: quickModel,
+    model: FAST_MODEL,
     system: READER_PROMPT + lessonsFor(notebook, 'planner') + today,
     messages: [
       {
@@ -492,16 +527,38 @@ export async function analyze(input) {
   // A question about the future always gets a real news search
   const newsSearch = futureOutcome && plan.news_search === 'none' ? 'light' : plan.news_search;
   const newsCount = newsSearch === 'none' ? 0 : newsSearch === 'light' ? 3 : fast ? 3 : 6;
-  let newsQ = (reader.news_queries.length ? reader.news_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, newsCount);
+  const newsWanted = (reader.news_queries.length ? reader.news_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, newsCount);
+  const officialWanted = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
+  const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
+  // Going straight to the original source when the Manager decided that's the best move
+  const originalWanted = plan.go_to_original ? (reader.original_queries || []).slice(0, 2) : [];
+  // 💰 At most 6 web searches (3 in the iPhone popup), counting the photo search, with
+  // near-identical queries dropped. Each round the original source goes first, then two news
+  // searches, then official sources (official first in an emergency), so the key ones always run.
+  const willCompare = photoChecks && plan.photo_comparison && !!reader.photo_search_query;
+  const cap = (fast ? MAX_SEARCHES.fast : MAX_SEARCHES.full) - (willCompare ? 1 : 0);
+  const picked = planSearches(
+    plan.emergency_mode
+      ? [
+          { name: 'official', queries: officialWanted, weight: 2 },
+          { name: 'news', queries: newsWanted, weight: 2 },
+          { name: 'original', queries: originalWanted },
+        ]
+      : [
+          { name: 'original', queries: originalWanted },
+          { name: 'news', queries: newsWanted, weight: 2 },
+          { name: 'official', queries: officialWanted },
+        ],
+    cap
+  );
+  let newsQ = picked.news;
+  const officialQ = picked.official;
+  const originalQ = picked.original;
   // ...and at least one search for the latest dated polls and reporting, with the year in it
   const year = todayEastern().slice(0, 4);
   if (futureOutcome && newsQ.length && !newsQ.some((q) => q.includes(year))) {
     newsQ[newsQ.length - 1] = `${userQuestion.slice(0, 200)} latest polls forecasts ${year}`;
   }
-  const officialQ = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
-  const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
-  // Going straight to the original source when the Manager decided that's the best move
-  const originalQ = plan.go_to_original ? (reader.original_queries || []).slice(0, 2) : [];
   // Never search nothing at all if there is a checkable claim or a question
   // (with no claims, search with the user's own question instead of skipping)
   const needsCheck = reader.claims.length > 0 || (!!userQuestion && questionType !== 'opinion');
@@ -528,7 +585,7 @@ export async function analyze(input) {
 
   const persuasionPromise = plan.persuasion
     ? generateText({
-        model: quickModel,
+        model: FAST_MODEL,
         system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion') + today,
         prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
       }).then((r) => {
@@ -537,46 +594,29 @@ export async function analyze(input) {
       })
     : Promise.resolve('The Manager skipped the persuasion check for this one.');
 
-  // Three independent image checks run at the same time; we keep the middle (median) answer,
-  // so one odd answer can't flip the result.
+  // One image check (it used to be three runs with a median; one run costs a third as much)
   const imagePromise = photoChecks
-    ? Promise.allSettled(
-        [0, 1, 2].map(() =>
-          generateText({
-            model: MODEL,
-            system: IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
-            temperature: 0.3,
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: 'Check this image for warning signs of AI generation or editing.' },
-                  { type: 'image', image },
-                ],
-              },
-            ],
-            output: Output.object({ schema: ImageSchema }),
-          }).then((r) => r.output)
-        )
-      ).then((results) => {
-        const runs = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
-        mark(`Checked the image for AI warning signs (${runs.length} independent checks)`);
-        return combineImageChecks(runs);
+    ? runImageCheck(image, IMAGE_PROMPT + lessonsFor(notebook, 'image') + today, 'Check this image for warning signs of AI generation or editing.').then((r) => {
+        mark('Checked the image for AI warning signs');
+        return r;
       })
     : Promise.resolve(null);
 
-  const comparePromise =
-    photoChecks && plan.photo_comparison && reader.photo_search_query
-      ? compareWithRealPhotos(image, reader.photo_search_query, MODEL, lessonsFor(notebook, 'comparison') + today)
-          .then((r) => {
-            mark(`Compared the photo with ${r.compared.length} real photos found online`);
-            return r;
-          })
-          .catch((err) => {
-            console.error('Photo comparison failed', err);
-            return null;
-          })
-      : Promise.resolve(null);
+  // The photo search is counted on its own, so it never changes the news-source rule
+  const photoTrack = { tried: 0, failed: 0 };
+  let compareFailed = false;
+  const comparePromise = willCompare
+    ? compareWithRealPhotos(image, reader.photo_search_query, FAST_MODEL, lessonsFor(notebook, 'comparison') + today, photoTrack)
+        .then((r) => {
+          mark(`Compared the photo with ${r.compared.length} real photos found online`);
+          return r;
+        })
+        .catch((err) => {
+          console.error('Photo comparison failed', err);
+          compareFailed = true;
+          return null;
+        })
+    : Promise.resolve(null);
 
   const [searchResults, persuasion, rawImageCheck, photoComparison] = await Promise.all([
     searchesPromise,
@@ -682,6 +722,7 @@ ${sourceList || 'No sources were found.'}`,
 
   // Step 5: A separate Reviewer agent double-checks the draft against the sources
   let review = null;
+  let reviewFailed = false;
   try {
     const { output } = await generateText({
       model: quickModel,
@@ -711,8 +752,9 @@ ${sourceList || 'No sources were found.'}`,
     }
     mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
   } catch (err) {
-    // If the double-check fails, still show Vera's answer rather than nothing
+    // If the double-check fails, still show Vera's answer rather than nothing (but don't save it)
     console.error('Reviewer failed', err);
+    reviewFailed = true;
   }
 
   // Step 6: Never guess. If there are too few sources (fewer than 3, or all from one website),
@@ -757,7 +799,9 @@ ${sourceList || 'No sources were found.'}`,
       claims: reader.claims,
       queries: { original: originalQ, news: newsQ, official: officialQ, research: researchQ },
       recent,
-      search: { ...searchTrack, enough: !problem, forced: problem || null },
+      search: { ...searchTrack, photo: photoTrack, enough: !problem, forced: problem || null },
+      // false when a step failed (the double-check, or the photo comparison), so it isn't saved for reuse
+      complete: !reviewFailed && !compareFailed && !(photoChecks && !imageCheck),
       timings,
     },
   };
@@ -766,7 +810,7 @@ ${sourceList || 'No sources were found.'}`,
 
 // ─────────────────────────────────────────────────────────────
 // 🤖 "Is this photo AI?" mode: only the photo agents run.
-// Three Image agents score warning signs at the same time (we keep the median),
+// One Image agent scores warning signs,
 // a Photo Finder describes the scene and searches for real photos of it,
 // the Comparison agent compares them, and the Photo Writer explains it simply.
 // ─────────────────────────────────────────────────────────────
@@ -802,30 +846,17 @@ export async function checkPhoto(input) {
   const notebook = await loadNotebook();
   const today = dateRule();
 
-  const imagePromise = Promise.allSettled(
-    [0, 1, 2].map(() =>
-      generateText({
-        model: MODEL,
-        system: IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
-        temperature: 0.3,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${context}` : ''}` },
-              { type: 'image', image },
-            ],
-          },
-        ],
-        output: Output.object({ schema: ImageSchema }),
-      }).then((r) => r.output)
-    )
-  ).then((results) => {
-    const runs = results.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
-    mark(`Checked the photo for AI warning signs (${runs.length} independent checks)`);
-    return combineImageChecks(runs);
+  const imagePromise = runImageCheck(
+    image,
+    IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
+    `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${context}` : ''}`
+  ).then((r) => {
+    mark('Checked the photo for AI warning signs');
+    return r;
   });
 
+  const searchTrack = { tried: 0, failed: 0 };
+  let finderFailed = false;
   // The Photo Finder describes the scene and plans a search for real photos of it
   const comparePromise = generateText({
     model: FAST_MODEL,
@@ -846,16 +877,18 @@ export async function checkPhoto(input) {
       mark('Described the photo and planned a search for real ones');
       if (!d?.photo_search_query) return { describe: d, comparison: null };
       try {
-        const comparison = await compareWithRealPhotos(image, d.photo_search_query, MODEL, lessonsFor(notebook, 'comparison') + today);
+        const comparison = await compareWithRealPhotos(image, d.photo_search_query, FAST_MODEL, lessonsFor(notebook, 'comparison') + today, searchTrack);
         mark(`Compared the photo with ${comparison.compared.length} real photos found online`);
         return { describe: d, comparison };
       } catch (err) {
         console.error('Photo comparison failed', err);
+        finderFailed = true;
         return { describe: d, comparison: null };
       }
     })
     .catch((err) => {
       console.error('Photo finder failed', err);
+      finderFailed = true;
       return { describe: null, comparison: null };
     });
 
@@ -913,6 +946,8 @@ Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
   }
 
   return {
+    tool: 'photo',
+    lang: langCode,
     photo: {
       ...check,
       headline: summary?.headline || check.level,
@@ -920,6 +955,6 @@ Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
       tip: summary?.tip || 'Try a reverse image search to see where else this photo appears.',
       description: describe?.description || null,
     },
-    trace: { timings },
+    trace: { search: searchTrack, complete: !!summary && !finderFailed, timings },
   };
 }
