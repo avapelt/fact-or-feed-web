@@ -12,6 +12,9 @@ import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFact
 export const MODEL = 'anthropic/claude-sonnet-5.5';
 export const FAST_MODEL = 'anthropic/claude-haiku-5.5';
 
+// Always added (in full) to a reply for someone who may be thinking about hurting themselves
+const CRISIS_LINE = '📞 If you are in the US, call or text 988 (Suicide & Crisis Lifeline), any time. Anywhere else, find a free helpline at findahelpline.com. If you are in danger right now, call your local emergency number.';
+
 // Most Tavily searches one check may run (each basic search costs 1 credit)
 const MAX_SEARCHES = { full: 6, fast: 3 };
 
@@ -28,6 +31,8 @@ const LANGUAGE_NAMES = {
 };
 
 const ManagerSchema = z.object({
+  intent: z.enum(['check', 'chat', 'blocked', 'self_harm']),
+  chat_reply: z.string().nullable(),
   analysis: z.string(),
   news_search: z.enum(['none', 'light', 'full']),
   official_sources: z.boolean(),
@@ -514,6 +519,19 @@ export async function analyze(input) {
     is_recent: false,
     reasons: ['Using the full team to be safe.'],
   };
+  // 👋 Small talk gets a short reply as Vera, and anything against the safety rules is never searched.
+  // These skip every other agent, so a "hi" costs one cheap AI call instead of a whole check.
+  // (A photo or link is always checked, never treated as small talk.)
+  const intent = plan.intent === 'chat' && (image || url) ? 'check' : plan.intent || 'check';
+  if (intent !== 'check') {
+    let reply = String(plan.chat_reply || '').trim().slice(0, 1200);
+    if (intent === 'blocked' && !reply) reply = "Sorry, I can't help with that. I'm happy to fact-check a post, link, or photo for you instead.";
+    if (intent === 'self_harm') reply = `${reply || "I'm really sorry you're going through this. You matter, and talking to someone can help."}\n\n${CRISIS_LINE}`;
+    if (intent === 'chat' && !reply) reply = "Hi! I'm Vera. Send me a post, link, or question and I'll check the facts with you.";
+    mark(intent === 'chat' ? 'Vera answered a hello' : 'This request is not something Vera can help with');
+    return { tool: toolName, lang: LANGUAGE_NAMES[input.language] ? input.language : 'en', chat: { kind: intent, reply }, trace: { intent, complete: false, timings } };
+  }
+
   // Each tool has its own job: credibility always looks at persuasion; Find the facts answers a question
   if (toolName === 'credible') plan.persuasion = true;
   if (toolName === 'facts') {

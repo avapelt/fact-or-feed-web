@@ -1687,6 +1687,11 @@ export default function VeraChat({ tool = 'credible' }) {
     if (out.data?.result) {
       clearSent(rawText, img);
       presentReport(out.data, img, (rawText || '').trim());
+    } else if (out.data?.chat?.reply) {
+      // A hello, or something Vera won't look up: just her short reply, no report
+      clearSent(rawText, img);
+      add({ from: 'bot', kind: 'text', text: out.data.chat.reply });
+      setLive(out.data.chat.reply);
     } else {
       showError({ fail: out.message ? undefined : out.fail || 'errServer', text: out.message, retry });
     }
@@ -1926,7 +1931,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
-                  <div className="bub" dir="auto">{m.text}</div>
+                  <div className="bub" dir="auto" style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
                 </div>
               );
             }

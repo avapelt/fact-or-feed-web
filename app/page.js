@@ -5,6 +5,7 @@ import { CSS, LANGUAGES, TOOLS, TOOL_ORDER, toolName, InstallSheet, ui, useUiLan
 
 const TEXT = {
   en: {
+    slogan: "Don't feed the lies. Find the facts.",
     intro: "Saw something online and not sure it's real? Vera and her team of AI agents check it for you, show you the sources they used, and never tell you what to think.",
     pick: 'Pick a tool',
     open: 'Open',
@@ -14,6 +15,7 @@ const TEXT = {
     note: 'Leaning left or right doesn’t make something false. We judge the facts separately.',
   },
   es: {
+    slogan: "No alimentes las mentiras. Busca los hechos.",
     intro: '¿Viste algo en internet y no sabes si es real? Vera y su equipo de agentes de IA lo revisan por ti, te muestran las fuentes que usaron y nunca te dicen qué pensar.',
     pick: 'Elige una herramienta',
     open: 'Abrir',
@@ -23,6 +25,7 @@ const TEXT = {
     note: 'Inclinarse a la izquierda o a la derecha no hace que algo sea falso. Los hechos se revisan por separado.',
   },
   ht: {
+    slogan: "Pa nouri manti yo. Chèche verite a.",
     intro: 'Ou wè yon bagay sou entènèt epi ou pa sèten si se vre? Vera ak ekip ajan IA li a tcheke l pou ou, montre w sous yo itilize yo, epi yo pa janm di w sa pou w panse.',
     pick: 'Chwazi yon zouti',
     open: 'Louvri',
@@ -32,6 +35,7 @@ const TEXT = {
     note: 'Panche agoch oswa adwat pa fè yon bagay fo. Nou jije fè yo apa.',
   },
   zh: {
+    slogan: "别喂养谎言，去寻找事实。",
     intro: '在网上看到一些内容却不确定真假？Vera 和她的 AI 智能体团队会帮你核查，告诉你用了哪些来源，而且从不告诉你该怎么想。',
     pick: '选择一个工具',
     open: '打开',
@@ -41,6 +45,7 @@ const TEXT = {
     note: '偏左或偏右并不代表内容是假的。我们会单独判断事实。',
   },
   hi: {
+    slogan: "झूठ को बढ़ावा मत दो। तथ्य खोजो।",
     intro: 'ऑनलाइन कुछ देखा और यकीन नहीं कि सच है? वेरा और उसकी AI एजेंट टीम आपके लिए जाँच करती है, दिखाती है कि किन स्रोतों का इस्तेमाल हुआ, और कभी नहीं बताती कि आपको क्या सोचना है।',
     pick: 'एक टूल चुनें',
     open: 'खोलें',
@@ -50,6 +55,7 @@ const TEXT = {
     note: 'बाएँ या दाएँ झुकाव से कोई चीज़ झूठी नहीं हो जाती। हम तथ्यों को अलग से जाँचते हैं।',
   },
   ar: {
+    slogan: "لا تُغذِّ الأكاذيب. ابحث عن الحقائق.",
     intro: 'رأيت شيئًا على الإنترنت ولست متأكدًا من صحته؟ فيرا وفريقها من وكلاء الذكاء الاصطناعي يتحققون منه لك، ويُظهرون لك المصادر التي استخدموها، ولا يخبرونك أبدًا بما يجب أن تفكر فيه.',
     pick: 'اختر أداة',
     open: 'افتح',
@@ -59,6 +65,7 @@ const TEXT = {
     note: 'الميل إلى اليسار أو اليمين لا يجعل الخبر كاذبًا. نحكم على الحقائق بشكل منفصل.',
   },
   fr: {
+    slogan: "Ne nourris pas les mensonges. Trouve les faits.",
     intro: 'Tu as vu quelque chose en ligne et tu n’es pas sûr que ce soit vrai ? Vera et son équipe d’agents IA vérifient pour toi, te montrent les sources utilisées, et ne te disent jamais quoi penser.',
     pick: 'Choisis un outil',
     open: 'Ouvrir',
@@ -68,6 +75,7 @@ const TEXT = {
     note: 'Pencher à gauche ou à droite ne rend pas une info fausse. Nous jugeons les faits séparément.',
   },
   bn: {
+    slogan: "মিথ্যাকে খোরাক দিও না। সত্যটা খুঁজে নাও।",
     intro: 'অনলাইনে কিছু দেখেছ আর নিশ্চিত নও সেটা সত্যি কি না? ভেরা আর তার AI এজেন্টদের দল তোমার হয়ে যাচাই করে, দেখায় কোন কোন সূত্র ব্যবহার করা হয়েছে, আর কখনো বলে না তোমার কী ভাবা উচিত।',
     pick: 'একটা টুল বেছে নাও',
     open: 'খোলো',
@@ -152,8 +160,8 @@ export default function Home() {
           <h1 className="wordmark big" style={{ margin: '18px 0 0' }}>
             fact or feed<span>?</span>
           </h1>
-          <div className="status">
-            <i /> your fact-checking friend
+          <div className="status" dir="auto">
+            <i /> {t.slogan}
           </div>
           <p className="intro" dir="auto">{t.intro}</p>
         </div>
