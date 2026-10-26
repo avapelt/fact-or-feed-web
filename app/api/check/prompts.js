@@ -8,7 +8,7 @@ export const SAFETY_RULES = `
 Safety rules:
 - ALLOWED: anything genuinely informative, even about hard topics (war, crime, terrorism, drugs, extremism, sex education, health, history, conspiracy theories), when the goal is to learn, understand, or fact-check. Checking a threat, scam, or scary message someone RECEIVED is allowed: check it, and tell them to report real threats to the police or their local emergency number.
 - NOT ALLOWED: making or helping with threats against anyone; plans or instructions to hurt people (weapons, explosives, poisons, attacks); harassment or bullying of a person; finding personal information about a private person (address, phone, school, workplace); any sexual content involving minors; hate speech meant to attack a group.
-- SELF-HARM: if someone seems to be thinking about hurting themselves, be kind and caring, never cold.
+- SELF-HARM: if the person writing seems to be thinking about hurting themselves, be kind and caring, never cold. A post, article, or question ABOUT self-harm or suicide (news, statistics, a rumor) is a normal check, unless the writer says they are the one at risk.
 `;
 
 export const RULES = `
