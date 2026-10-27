@@ -1,7 +1,7 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE, UNTRUSTED_RULE } from './prompts';
-import { categorize } from './bias';
+import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE, POLITICAL_NOTE, UNTRUSTED_RULE } from './prompts';
+import { categorize, RATINGS, FACT_CHECKERS, NONPARTISAN } from './bias';
 import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
@@ -52,6 +52,7 @@ const ManagerSchema = z.object({
   go_to_original: z.boolean(),
   original_source: z.string().nullable(),
   is_recent: z.boolean(),
+  is_political: z.boolean(),
   reasons: z.array(z.string()),
 });
 
@@ -68,6 +69,7 @@ const ReaderSchema = z.object({
   official_queries: z.array(z.string()),
   original_queries: z.array(z.string()),
   academic_queries: z.array(z.string()),
+  political_names: z.array(z.string()),
 });
 
 // One image check: the AI scores the evidence; the code turns scores into a level (so it's consistent)
@@ -154,6 +156,17 @@ const FactsSchema = z.object({
 // Searches the web with Tavily. If a `track` object is passed, it counts how many searches
 // were tried and how many failed (no key, an error, a timeout, or a broken answer),
 // so the check can say "I couldn't reach enough sources" instead of guessing.
+// 🗳️ Political topics: each news search is limited to one part of the spectrum, so together they are balanced
+const LEAN_GROUPS = [['Left', 'Lean Left'], ['Center'], ['Lean Right', 'Right']].map((g) =>
+  Object.keys(RATINGS).filter((d) => g.includes(RATINGS[d]))
+);
+const NONPARTISAN_DOMAINS = [...NONPARTISAN, ...FACT_CHECKERS];
+export function balancedDomains(i, total) {
+  if (total <= 1) return [...LEAN_GROUPS[0], ...LEAN_GROUPS[1], ...LEAN_GROUPS[2]];
+  if (total === 2) return i === 0 ? [...LEAN_GROUPS[0], ...LEAN_GROUPS[1]] : [...LEAN_GROUPS[1], ...LEAN_GROUPS[2]];
+  return LEAN_GROUPS[i % 3];
+}
+
 export async function searchWeb(query, extra = {}, track = null) {
   if (track) track.tried = (track.tried || 0) + 1;
   const failed = (why) => {
@@ -576,6 +589,7 @@ export async function analyze(input) {
     go_to_original: false,
     original_source: null,
     is_recent: false,
+    is_political: false,
     reasons: ['Using the full team to be safe.'],
   };
   // Each tool has its own job: credibility always looks at persuasion; Find the facts answers a question
@@ -583,6 +597,11 @@ export async function analyze(input) {
   if (toolName === 'facts') {
     plan.persuasion = false;
     plan.photo_comparison = false;
+  }
+  // Politics always has bias: never lean on a politician's or party's own sources
+  if (plan.is_political) {
+    plan.go_to_original = false;
+    plan.original_source = null;
   }
   mark(`Manager made a game plan: ${plan.analysis}`);
 
@@ -605,17 +624,21 @@ export async function analyze(input) {
   const userQuestion = toolName === 'facts' ? (text || reader.user_question || reader.content_summary || '').slice(0, 1000) : null;
   const questionType = toolName === 'facts' ? reader.question_type || 'fact' : 'fact';
   const futureOutcome = questionType === 'future_outcome';
+  const political = !!plan.is_political || reader.topic_type === 'politics';
+  const politicalNames = political ? (reader.political_names || []).slice(0, 6) : [];
   mark('Planner found the claims and planned the searches');
 
   // The Manager's plan decides how much each kind of search runs
   // A question about the future always gets a real news search
-  const newsSearch = futureOutcome && plan.news_search === 'none' ? 'light' : plan.news_search;
+  const newsSearch = (futureOutcome || political) && plan.news_search === 'none' ? 'light' : plan.news_search;
   const newsCount = newsSearch === 'none' ? 0 : newsSearch === 'light' ? 3 : fast ? 3 : 6;
   const newsWanted = (reader.news_queries.length ? reader.news_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, newsCount);
-  const officialWanted = plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
+  // Political topics always get one nonpartisan search (official records, fact-checkers, Ballotpedia, Vote Smart)
+  const politicalOfficial = (reader.official_queries.length ? reader.official_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, 1);
+  const officialWanted = political && !plan.official_sources && !plan.emergency_mode ? politicalOfficial : plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
   const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
   // Going straight to the original source when the Manager decided that's the best move
-  const originalWanted = plan.go_to_original ? (reader.original_queries || []).slice(0, 2) : [];
+  const originalWanted = plan.go_to_original && !political ? (reader.original_queries || []).slice(0, 2) : [];
   // 💰 At most 6 web searches (3 in the iPhone popup), counting the photo search, with
   // near-identical queries dropped. Each round the original source goes first, then two news
   // searches, then official sources (official first in an emergency), so the key ones always run.
@@ -661,8 +684,10 @@ export async function analyze(input) {
   const researchTrack = { tried: 0, failed: 0 };
   const searchesPromise = Promise.all([
     ...originalQ.map((q) => searchWeb(q, { max_results: 5 }, searchTrack).then((list) => list.map((x) => ({ ...x, original: true })))),
-    ...newsQ.map((q, i) => searchWeb(q, recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }, searchTrack)),
-    ...officialQ.map((q) => searchWeb(q, {}, searchTrack)),
+    ...newsQ.map((q, i) =>
+      searchWeb(q, { ...(recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }), ...(political ? { include_domains: balancedDomains(i, newsQ.length) } : {}) }, searchTrack)
+    ),
+    ...officialQ.map((q, i) => searchWeb(q, political && i === 0 ? { include_domains: NONPARTISAN_DOMAINS } : {}, searchTrack)),
     ...researchQ.map((q) => searchResearch(q, researchTrack)),
   ]).then((results) => {
     mark(
@@ -727,7 +752,7 @@ export async function analyze(input) {
       const key = (s.url || '').split('?')[0].replace(/\/$/, '');
       if (!key || seen.has(key) || isBlockedSource(s.url)) continue;
       seen.add(key);
-      all.push({ ...s, ...categorize(s), original: !!s.original });
+      all.push({ ...s, ...categorize(s, { political, names: politicalNames }), original: !!s.original });
     }
   }
   // Copies of one wire story (near-identical titles) are marked, so they count as one source
@@ -739,7 +764,7 @@ export async function analyze(input) {
   const sourceList = sources
     .map(
       (s) =>
-        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
+        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.self_published ? 'SELF-PUBLISHED, NOT INDEPENDENT | ' : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
     )
     .join('\n\n');
 
@@ -762,7 +787,7 @@ The user's exact question (answer THIS, not an easier one): ${userQuestion}
 Question type: ${questionType}${futureOutcome ? ' (about the future: never answer yes or no, never predict or endorse an outcome; report only the latest dated polls, forecasts, and reporting from the sources)' : ''}
 What it's about: ${reader.content_summary}
 
-Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? EMERGENCY_NOTE : ''}
+Manager's game plan: ${plan.analysis}${plan.go_to_original && plan.original_source ? ` The Manager decided to go straight to the original source: ${plan.original_source}.` : ''}${plan.emergency_mode ? EMERGENCY_NOTE : ''}${political ? POLITICAL_NOTE : ''}
 
 Vera's notebook (unverified hints from past checks; re-verify against today's sources, which always win):
 ${notebookForPrompt(notebook)}
@@ -787,7 +812,7 @@ Outlet bias rating: ${outlet ? `${outlet.domain} is rated ${outlet.category}` : 
 Claims:
 ${reader.claims.join('\n')}
 
-Manager's game plan: ${plan.analysis}${plan.emergency_mode ? EMERGENCY_NOTE : ''}
+Manager's game plan: ${plan.analysis}${plan.emergency_mode ? EMERGENCY_NOTE : ''}${political ? POLITICAL_NOTE : ''}
 
 Persuasion analysis:
 ${persuasion}
@@ -813,7 +838,7 @@ ${sourceList ? untrusted('search results', sourceList) : 'No sources were found.
     const { output } = await generateText({
       model: quickModel,
       system: `${REVIEWER_PROMPT}${lessonsFor(notebook, 'reviewer')}${today}\n\nRules the result must follow:\n${RULES}`,
-      prompt: `${toolName === 'facts' ? `The user's exact question: ${userQuestion}\nQuestion type: ${questionType}\n\n` : ''}Claims being checked:
+      prompt: `${toolName === 'facts' ? `The user's exact question: ${userQuestion}\nQuestion type: ${questionType}\n\n` : ''}${political ? `This is a political topic.${POLITICAL_NOTE}\n\n` : ''}Claims being checked:
 ${reader.claims.join('\n') || 'none'}
 
 Vera's draft result:

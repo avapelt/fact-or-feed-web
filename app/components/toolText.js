@@ -260,6 +260,7 @@ const LABELS = {
   Research: [`Research`, `Investigación`, `Rechèch`, `研究`, `शोध`, `بحث علمي`, `Recherche`, `গবেষণা`, `Ricerca`, `Pesquisa`, `研究`],
   'Fact-check': [`Fact-check`, `Verificación`, `Verifikasyon`, `事实核查`, `फ़ैक्ट-चेक`, `تدقيق حقائق`, `Vérification`, `ফ্যাক্ট-চেক`, `Fact-checking`, `Checagem`, `ファクトチェック`],
   'State media/government': [`State media/government`, `Medio estatal/gobierno`, `Medya leta/gouvènman`, `官方媒体/政府`, `सरकारी मीडिया/सरकार`, `إعلام رسمي/حكومة`, `Média d'État/gouvernement`, `রাষ্ট্রীয় মিডিয়া/সরকার`, `Media di Stato/governo`, `Mídia estatal/governo`, `国営メディア／政府`],
+  'Campaign / party (self-published)': [`Campaign / party (self-published)`, `Campaña / partido (publicación propia)`, `Kanpay / pati (pwòp piblikasyon)`, `竞选团队/政党（自行发布）`, `चुनाव अभियान / पार्टी (स्व-प्रकाशित)`, `حملة / حزب (نشر ذاتي)`, `Campagne / parti (auto-publié)`, `প্রচারণা / দল (স্ব-প্রকাশিত)`, `Campagna / partito (autopubblicato)`, `Campanha / partido (autopublicado)`, `選挙陣営／政党（自己発信）`],
   'Not rated': [`Not rated`, `Sin calificar`, `Pa evalye`, `未评级`, `रेटिंग नहीं`, `غير مصنّف`, `Non classé`, `রেটিং নেই`, `Non valutato`, `Sem avaliação`, `評価なし`],
   'Original source': [`Original source`, `Fuente original`, `Sous orijinal`, `原始来源`, `मूल स्रोत`, `المصدر الأصلي`, `Source d'origine`, `মূল সূত্র`, `Fonte originale`, `Fonte original`, `元の情報源`],
   'News outlet': [`News outlet`, `Medio de noticias`, `Medya nouvèl`, `新闻媒体`, `समाचार संस्थान`, `وسيلة إخبارية`, `Média d'info`, `সংবাদমাধ্যম`, `Testata giornalistica`, `Veículo de notícias`, `報道機関`],

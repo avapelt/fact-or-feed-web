@@ -246,7 +246,8 @@ function domainOf(s) {
 export function evidenceProblem(sources, { claims = 0, searchesFailed = 0 } = {}) {
   if (!claims) return null; // nothing checkable: keep the normal behavior
   // Syndicated copies of one story count once
-  const list = (Array.isArray(sources) ? sources : []).filter((s) => !s?.dup_of);
+  // Campaign and party sites are self-published, so they never count as independent evidence
+  const list = (Array.isArray(sources) ? sources : []).filter((s) => !s?.dup_of && !s?.self_published);
   const domains = new Set(list.map(domainOf).filter(Boolean));
   if (list.length >= 3 && domains.size >= 2) return null;
   return searchesFailed > 0 ? 'search_down' : 'thin';
