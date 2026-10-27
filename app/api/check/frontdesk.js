@@ -5,7 +5,7 @@
 // Words that make up a plain greeting or thanks, by language. A message counts as a greeting only if
 // it is made ONLY of these (plus punctuation and emoji), so "hi, is this true: ..." is NOT a greeting.
 const GREETINGS = {
-  en: ['hi', 'hii', 'hiii', 'hello', 'hey', 'heya', 'hiya', 'yo', 'sup', 'howdy', 'good morning', 'good afternoon', 'good evening', 'how are you', 'how r u', 'how are u', 'whats up', "what's up", 'thanks', 'thank you', 'thx', 'ty', 'thanks a lot', 'thank you so much', 'thanks so much', 'vera', 'there', 'ok', 'okay', 'cool', 'great'],
+  en: ['hi', 'hii', 'hiii', 'hello', 'hey', 'heya', 'hiya', 'yo', 'sup', 'howdy', 'good morning', 'good afternoon', 'good evening', 'how are you', 'how r u', 'how are u', 'whats up', "what's up", 'thanks', 'thank you', 'thx', 'ty', 'thanks a lot', 'thank you so much', 'thanks so much', 'vera', 'hi there', 'hey there', 'hello there'],
   es: ['hola', 'buenas', 'buenos dias', 'buenos días', 'buenas tardes', 'buenas noches', 'que tal', 'qué tal', 'como estas', 'cómo estás', 'como está', 'cómo está', 'gracias', 'muchas gracias', 'mil gracias'],
   ht: ['bonjou', 'bonswa', 'alo', 'sak pase', 'sa k pase', 'kijan ou ye', 'kòman ou ye', 'koman ou ye', 'mèsi', 'mesi', 'mèsi anpil', 'mesi anpil'],
   zh: ['你好', '您好', '嗨', '哈喽', '早上好', '晚上好', '你好吗', '谢谢', '谢谢你', '多谢', '感谢'],

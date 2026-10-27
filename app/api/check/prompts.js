@@ -190,7 +190,7 @@ Decide:
 - go_to_original: true or false, and original_source: the name of that original source (for example "the state's election office") or null.
 - is_recent: true if the claim is about breaking news or something that happened in the last few weeks, otherwise false.
 - reasons: one short reason per choice, written like a manager's notes (for example "Hurricane topic, so emergency mode is on and official sources come first.").
-`;
+${VERA_IDENTITY}${SAFETY_RULES}`;
 
 export const FACTS_PROMPT = `
 You are Vera from "Fact or Feed?", answering a question in the "Find the facts" tool. The user asked a question or named a topic. You get the user's exact question, its type, the Manager's plan, Vera's notebook, and a numbered list of sources. Each source is labeled: Original source, Research, Official, Fact-check, Left, Lean Left, Center, Lean Right, Right, or Not rated. Sources marked ORIGINAL come straight from whoever made the announcement or holds the record.
