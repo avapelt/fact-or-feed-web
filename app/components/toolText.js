@@ -1,0 +1,276 @@
+// The rest of the words on the tool pages, in every language.
+// Each line is: [English, Spanish, Haitian Creole, Chinese, Hindi, Arabic, French, Bengali, Italian]
+// {n} and {a} are numbers filled in by the page. The site name "Fact or Feed?" stays in English.
+const ORDER = ['en', 'es', 'ht', 'zh', 'hi', 'ar', 'fr', 'bn', 'it'];
+
+const TEXT = {
+  // Header
+  checking: [`Vera is checking…`, `Vera está revisando…`, `Vera ap tcheke…`, `Vera 正在核查…`, `वेरा जाँच रही है…`, `فيرا تتحقق…`, `Vera vérifie…`, `ভেরা যাচাই করছে…`, `Vera sta controllando…`],
+  friend: [`your fact-checking friend`, `tu amiga verificadora de datos`, `zanmi w ki tcheke verite a`, `你的事实核查好朋友`, `आपकी फ़ैक्ट-चेक करने वाली दोस्त`, `صديقتك لتدقيق الحقائق`, `ton amie qui vérifie les faits`, `তোমার তথ্য যাচাইয়ের বন্ধু`, `la tua amica che verifica i fatti`],
+  getIt: [`Get it`, `Obtener`, `Telechaje`, `获取`, `पाएँ`, `احصل عليه`, `L'obtenir`, `নাও`, `Scarica`],
+  howWeCheck: [`How we check`, `Cómo verificamos`, `Kijan nou tcheke`, `我们如何核查`, `हम कैसे जाँचते हैं`, `كيف نتحقق`, `Comment on vérifie`, `আমরা কীভাবে যাচাই করি`, `Come controlliamo`],
+  howDetailed: [`How detailed`, `Nivel de detalle`, `Konbyen detay`, `详细程度`, `कितना विस्तार`, `مستوى التفصيل`, `Niveau de détail`, `কতটা বিস্তারিত`, `Livello di dettaglio`],
+  level: [`Level`, `Nivel`, `Nivo`, `难度`, `स्तर`, `المستوى`, `Niveau`, `স্তর`, `Livello`],
+  simple: [`Simple`, `Sencillo`, `Senp`, `简单`, `आसान`, `بسيط`, `Simple`, `সহজ`, `Semplice`],
+  complex: [`Complex`, `Detallado`, `Konplèks`, `详细`, `विस्तृत`, `مفصّل`, `Détaillé`, `বিস্তারিত`, `Dettagliato`],
+  changeLanguage: [`Change language`, `Cambiar idioma`, `Chanje lang`, `更改语言`, `भाषा बदलें`, `تغيير اللغة`, `Changer de langue`, `ভাষা বদলাও`, `Cambia lingua`],
+  tools: [`Tools`, `Herramientas`, `Zouti`, `工具`, `टूल`, `الأدوات`, `Outils`, `টুল`, `Strumenti`],
+
+  // Text box
+  phFacts: [`Ask a question or name a topic…`, `Haz una pregunta o nombra un tema…`, `Poze yon kesyon oswa nonmen yon sijè…`, `提一个问题或说一个话题…`, `कोई सवाल पूछें या विषय बताएँ…`, `اطرح سؤالًا أو اذكر موضوعًا…`, `Pose une question ou cite un sujet…`, `একটা প্রশ্ন করো বা বিষয়ের নাম দাও…`, `Fai una domanda o indica un argomento…`],
+  phCredible: [`Paste a news link or a post…`, `Pega un enlace de noticias o una publicación…`, `Kole yon lyen nouvèl oswa yon post…`, `粘贴新闻链接或帖子…`, `न्यूज़ लिंक या पोस्ट पेस्ट करें…`, `الصق رابط خبر أو منشورًا…`, `Colle un lien d'actualité ou une publication…`, `খবরের লিংক বা পোস্ট পেস্ট করো…`, `Incolla un link a una notizia o un post…`],
+  phPhoto: [`Tap 📎 to add a photo…`, `Toca 📎 para añadir una foto…`, `Peze 📎 pou ajoute yon foto…`, `点 📎 添加照片…`, `फ़ोटो जोड़ने के लिए 📎 दबाएँ…`, `اضغط 📎 لإضافة صورة…`, `Appuie sur 📎 pour ajouter une photo…`, `ছবি দিতে 📎 চাপো…`, `Tocca 📎 per aggiungere una foto…`],
+  phNote: [`Add a note (optional)…`, `Añade una nota (opcional)…`, `Ajoute yon nòt (si ou vle)…`, `添加备注（可选）…`, `नोट जोड़ें (वैकल्पिक)…`, `أضف ملاحظة (اختياري)…`, `Ajoute une note (facultatif)…`, `একটা নোট যোগ করো (ঐচ্ছিক)…`, `Aggiungi una nota (facoltativo)…`],
+  phNoteLink: [`Add a note or link (optional)…`, `Añade una nota o un enlace (opcional)…`, `Ajoute yon nòt oswa yon lyen (si ou vle)…`, `添加备注或链接（可选）…`, `नोट या लिंक जोड़ें (वैकल्पिक)…`, `أضف ملاحظة أو رابطًا (اختياري)…`, `Ajoute une note ou un lien (facultatif)…`, `একটা নোট বা লিংক যোগ করো (ঐচ্ছিক)…`, `Aggiungi una nota o un link (facoltativo)…`],
+  phAsk: [`Ask Vera about this…`, `Pregúntale a Vera sobre esto…`, `Mande Vera sou sa a…`, `就此问问 Vera…`, `इसके बारे में वेरा से पूछें…`, `اسأل فيرا عن هذا…`, `Pose une question à Vera à ce sujet…`, `এ নিয়ে ভেরাকে জিজ্ঞেস করো…`, `Chiedi a Vera di questo…`],
+  disclaimer: [
+    `Fact or Feed? uses AI and can make mistakes. Always check the sources.`,
+    `Fact or Feed? usa IA y puede equivocarse. Revisa siempre las fuentes.`,
+    `Fact or Feed? itilize IA epi li ka fè erè. Toujou tcheke sous yo.`,
+    `Fact or Feed? 使用 AI，可能会出错。请务必查看来源。`,
+    `Fact or Feed? AI का इस्तेमाल करता है और गलती कर सकता है। हमेशा स्रोत जाँचें।`,
+    `يستخدم Fact or Feed? الذكاء الاصطناعي وقد يخطئ. تحقّق دائمًا من المصادر.`,
+    `Fact or Feed? utilise l'IA et peut se tromper. Vérifie toujours les sources.`,
+    `Fact or Feed? AI ব্যবহার করে এবং ভুল করতে পারে। সবসময় সূত্রগুলো দেখে নিও।`,
+    `Fact or Feed? usa l'IA e può sbagliare. Controlla sempre le fonti.`,
+  ],
+  addPhoto: [`Add a photo`, `Añadir una foto`, `Ajoute yon foto`, `添加照片`, `फ़ोटो जोड़ें`, `أضف صورة`, `Ajouter une photo`, `ছবি যোগ করো`, `Aggiungi una foto`],
+  removePhoto: [`Remove photo`, `Quitar foto`, `Retire foto a`, `移除照片`, `फ़ोटो हटाएँ`, `إزالة الصورة`, `Retirer la photo`, `ছবি সরাও`, `Rimuovi foto`],
+  photoToSend: [`Photo to send`, `Foto para enviar`, `Foto pou voye`, `要发送的照片`, `भेजने के लिए फ़ोटो`, `الصورة المراد إرسالها`, `Photo à envoyer`, `পাঠানোর ছবি`, `Foto da inviare`],
+  whatYouSent: [`What you sent`, `Lo que enviaste`, `Sa ou voye a`, `你发送的内容`, `आपने जो भेजा`, `ما أرسلته`, `Ce que tu as envoyé`, `তুমি যা পাঠিয়েছ`, `Quello che hai inviato`],
+  send: [`Send`, `Enviar`, `Voye`, `发送`, `भेजें`, `إرسال`, `Envoyer`, `পাঠাও`, `Invia`],
+  askAbout: [`Ask about this report, or`, `Pregunta sobre este informe, o`, `Poze kesyon sou rapò sa a, oswa`, `可以就这份报告提问，或者`, `इस रिपोर्ट के बारे में पूछें, या`, `اسأل عن هذا التقرير، أو`, `Pose une question sur ce rapport, ou`, `এই রিপোর্ট নিয়ে প্রশ্ন করো, অথবা`, `Fai una domanda su questo report, oppure`],
+  newSearch: [`＋ New search`, `＋ Nueva búsqueda`, `＋ Nouvo rechèch`, `＋ 新搜索`, `＋ नई खोज`, `＋ بحث جديد`, `＋ Nouvelle recherche`, `＋ নতুন খোঁজ`, `＋ Nuova ricerca`],
+  lookingInto: [`Looking into that…`, `Lo estoy revisando…`, `M ap gade sa…`, `我正在查…`, `मैं देख रही हूँ…`, `أبحث في ذلك…`, `Je regarde ça…`, `দেখছি…`, `Ci sto guardando…`],
+
+  // Messages and hints
+  sharedFromPhone: [`📲 Shared from my phone`, `📲 Compartido desde mi teléfono`, `📲 Pataje depi telefòn mwen`, `📲 从我的手机分享`, `📲 मेरे फ़ोन से शेयर किया`, `📲 تمت المشاركة من هاتفي`, `📲 Partagé depuis mon téléphone`, `📲 আমার ফোন থেকে শেয়ার করা`, `📲 Condiviso dal mio telefono`],
+  linkCheckFail: [
+    `I couldn't check this link right now. Please reload the page to try again.`,
+    `No pude verificar este enlace ahora. Recarga la página para intentarlo de nuevo.`,
+    `M pa t ka tcheke lyen sa a kounye a. Tanpri rechaje paj la pou eseye ankò.`,
+    `我现在无法验证这个链接。请刷新页面再试一次。`,
+    `मैं अभी यह लिंक नहीं जाँच सकी। दोबारा कोशिश के लिए पेज रीलोड करें।`,
+    `لم أتمكن من التحقق من هذا الرابط الآن. أعد تحميل الصفحة للمحاولة مرة أخرى.`,
+    `Je n'ai pas pu vérifier ce lien pour l'instant. Recharge la page pour réessayer.`,
+    `এখন এই লিংকটা যাচাই করতে পারিনি। আবার চেষ্টা করতে পেজটা রিলোড করো।`,
+    `Non sono riuscita a verificare questo link ora. Ricarica la pagina per riprovare.`,
+  ],
+  linkFake: [
+    `⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows.`,
+    `⚠️ Este enlace no lo creó Fact or Feed?. No confíes en el resultado que muestra.`,
+    `⚠️ Se pa Fact or Feed? ki fè lyen sa a. Pa fè rezilta li montre a konfyans.`,
+    `⚠️ 这个链接不是 Fact or Feed? 生成的。不要相信它显示的结果。`,
+    `⚠️ यह लिंक Fact or Feed? ने नहीं बनाया। इसके दिखाए नतीजे पर भरोसा न करें।`,
+    `⚠️ هذا الرابط لم يصنعه Fact or Feed?. لا تثق بالنتيجة التي يعرضها.`,
+    `⚠️ Ce lien n'a pas été créé par Fact or Feed?. Ne te fie pas au résultat qu'il affiche.`,
+    `⚠️ এই লিংকটা Fact or Feed? বানায়নি। এর দেখানো ফলাফলে ভরসা কোরো না।`,
+    `⚠️ Questo link non è stato creato da Fact or Feed?. Non fidarti del risultato che mostra.`,
+  ],
+  linkOpenFail: [
+    `I couldn't open that result. Try sharing it again.`,
+    `No pude abrir ese resultado. Intenta compartirlo de nuevo.`,
+    `M pa t ka louvri rezilta sa a. Eseye pataje l ankò.`,
+    `我打不开这个结果。请再分享一次。`,
+    `मैं वह नतीजा नहीं खोल सकी। इसे फिर से शेयर करके देखें।`,
+    `لم أتمكن من فتح تلك النتيجة. حاول مشاركتها مرة أخرى.`,
+    `Je n'ai pas pu ouvrir ce résultat. Essaie de le partager à nouveau.`,
+    `ফলাফলটা খুলতে পারিনি। আবার শেয়ার করে দেখো।`,
+    `Non sono riuscita ad aprire quel risultato. Prova a condividerlo di nuovo.`,
+  ],
+  hint: [
+    `Got questions? Ask me anything about this report, like "Why did you say that?" or "Which source is most reliable?" Or tap ＋ New search to check something else.`,
+    `¿Tienes preguntas? Pregúntame lo que quieras sobre este informe, como "¿Por qué dijiste eso?" o "¿Qué fuente es la más confiable?". O toca ＋ Nueva búsqueda para revisar otra cosa.`,
+    `Ou gen kesyon? Mande m nenpòt bagay sou rapò sa a, tankou "Poukisa ou di sa?" oswa "Ki sous ki pi serye?". Oswa peze ＋ Nouvo rechèch pou tcheke yon lòt bagay.`,
+    `有问题吗？关于这份报告随便问我，比如"你为什么这么说？"或"哪个来源最可靠？"。或者点 ＋ 新搜索 查别的内容。`,
+    `कोई सवाल है? इस रिपोर्ट के बारे में कुछ भी पूछें, जैसे "आपने ऐसा क्यों कहा?" या "कौन-सा स्रोत सबसे भरोसेमंद है?" या कुछ और जाँचने के लिए ＋ नई खोज दबाएँ।`,
+    `لديك أسئلة؟ اسألني أي شيء عن هذا التقرير، مثل "لماذا قلتِ ذلك؟" أو "أي مصدر هو الأكثر موثوقية؟". أو اضغط ＋ بحث جديد للتحقق من شيء آخر.`,
+    `Des questions ? Demande-moi ce que tu veux sur ce rapport, comme « Pourquoi as-tu dit ça ? » ou « Quelle source est la plus fiable ? ». Ou appuie sur ＋ Nouvelle recherche pour vérifier autre chose.`,
+    `কোনো প্রশ্ন আছে? এই রিপোর্ট নিয়ে যা খুশি জিজ্ঞেস করো, যেমন "তুমি এটা কেন বললে?" বা "কোন সূত্রটা সবচেয়ে নির্ভরযোগ্য?"। অথবা অন্য কিছু যাচাই করতে ＋ নতুন খোঁজ চাপো।`,
+    `Hai domande? Chiedimi qualsiasi cosa su questo report, per esempio "Perché hai detto così?" o "Quale fonte è la più affidabile?". Oppure tocca ＋ Nuova ricerca per controllare altro.`,
+  ],
+  hintPhoto: [
+    `Got questions? Ask me about this photo check, like "Which warning sign matters most?" Or tap 📎 to check another photo.`,
+    `¿Tienes preguntas? Pregúntame sobre esta revisión de la foto, como "¿Qué señal de alerta importa más?". O toca 📎 para revisar otra foto.`,
+    `Ou gen kesyon? Mande m sou tchèk foto sa a, tankou "Ki siy avètisman ki pi enpòtan?". Oswa peze 📎 pou tcheke yon lòt foto.`,
+    `有问题吗？关于这次照片检查问我，比如"哪个警示迹象最重要？"。或者点 📎 检查另一张照片。`,
+    `कोई सवाल है? इस फ़ोटो जाँच के बारे में पूछें, जैसे "कौन-सा चेतावनी संकेत सबसे अहम है?" या दूसरी फ़ोटो जाँचने के लिए 📎 दबाएँ।`,
+    `لديك أسئلة؟ اسألني عن فحص هذه الصورة، مثل "أي علامة تحذير هي الأهم؟". أو اضغط 📎 لفحص صورة أخرى.`,
+    `Des questions ? Demande-moi à propos de cette vérification, comme « Quel signe d'alerte compte le plus ? ». Ou appuie sur 📎 pour vérifier une autre photo.`,
+    `কোনো প্রশ্ন আছে? এই ছবি যাচাই নিয়ে জিজ্ঞেস করো, যেমন "কোন সতর্কতার চিহ্নটা সবচেয়ে গুরুত্বপূর্ণ?"। অথবা আরেকটা ছবি যাচাই করতে 📎 চাপো।`,
+    `Hai domande? Chiedimi di questo controllo della foto, per esempio "Quale segnale d'allarme conta di più?". Oppure tocca 📎 per controllare un'altra foto.`,
+  ],
+  replyIntro: [`Want to reply to whoever sent it? You could say:`, `¿Quieres responder a quien te lo envió? Podrías decir:`, `Ou vle reponn moun ki voye l la? Ou ta ka di:`, `想回复发给你的人吗？你可以这样说：`, `भेजने वाले को जवाब देना चाहते हैं? आप कह सकते हैं:`, `هل تريد الرد على من أرسله؟ يمكنك أن تقول:`, `Tu veux répondre à la personne qui l'a envoyé ? Tu pourrais dire :`, `যে পাঠিয়েছে তাকে উত্তর দিতে চাও? বলতে পারো:`, `Vuoi rispondere a chi te l'ha mandato? Potresti dire:`],
+  copied: [`✓ Copied!`, `✓ ¡Copiado!`, `✓ Kopye!`, `✓ 已复制！`, `✓ कॉपी हो गया!`, `✓ تم النسخ!`, `✓ Copié !`, `✓ কপি হয়েছে!`, `✓ Copiato!`],
+  copyMessage: [`Copy message`, `Copiar mensaje`, `Kopye mesaj la`, `复制消息`, `संदेश कॉपी करें`, `نسخ الرسالة`, `Copier le message`, `মেসেজ কপি করো`, `Copia messaggio`],
+  searchedAgain: [`🔎 I searched again to answer this.`, `🔎 Busqué de nuevo para responder esto.`, `🔎 M chèche ankò pou m reponn sa.`, `🔎 为了回答这个问题，我又搜索了一次。`, `🔎 इसका जवाब देने के लिए मैंने फिर से खोजा।`, `🔎 بحثت مرة أخرى للإجابة عن هذا.`, `🔎 J'ai cherché à nouveau pour répondre.`, `🔎 এর উত্তর দিতে আবার খুঁজেছি।`, `🔎 Ho cercato di nuovo per rispondere.`],
+
+  // Feedback
+  fbThanks: [`📒 Thanks! I saved that so it can be reviewed, to help me do better next time.`, `📒 ¡Gracias! Lo guardé para que se revise y así mejorar la próxima vez.`, `📒 Mèsi! M sove sa pou yo ka revize l, pou m ka fè pi byen pwochen fwa.`, `📒 谢谢！我已保存，供审核，帮助我下次做得更好。`, `📒 धन्यवाद! मैंने इसे समीक्षा के लिए सहेज लिया, ताकि अगली बार बेहतर कर सकूँ।`, `📒 شكرًا! حفظت ذلك لتتم مراجعته، لأتحسن في المرة القادمة.`, `📒 Merci ! Je l'ai enregistré pour qu'il soit relu, pour faire mieux la prochaine fois.`, `📒 ধন্যবাদ! পর্যালোচনার জন্য এটা সেভ করেছি, যাতে পরের বার আরও ভালো করতে পারি।`, `📒 Grazie! L'ho salvato per farlo rivedere, così la prossima volta farò meglio.`],
+  fbLesson: [`Suggested lesson (waiting for review):`, `Lección sugerida (esperando revisión):`, `Leson yo pwopoze (ap tann revizyon):`, `建议的经验（等待审核）：`, `सुझाया गया सबक (समीक्षा बाकी):`, `درس مقترح (بانتظار المراجعة):`, `Leçon suggérée (en attente de relecture) :`, `প্রস্তাবিত শিক্ষা (পর্যালোচনার অপেক্ষায়):`, `Lezione suggerita (in attesa di revisione):`],
+  fbSaving: [`Writing it in my notebook…`, `Lo anoto en mi cuaderno…`, `M ap ekri l nan kaye mwen…`, `正在记到我的笔记本里…`, `अपनी नोटबुक में लिख रही हूँ…`, `أكتبه في دفتري…`, `Je le note dans mon carnet…`, `আমার নোটবুকে লিখছি…`, `Lo sto scrivendo nel mio quaderno…`],
+  fbWhich: [`Which part was wrong?`, `¿Qué parte estuvo mal?`, `Ki pati ki te mal?`, `哪一部分错了？`, `कौन-सा हिस्सा गलत था?`, `أي جزء كان خاطئًا؟`, `Quelle partie était fausse ?`, `কোন অংশটা ভুল ছিল?`, `Quale parte era sbagliata?`],
+  fbMore: [`Tell me more (optional, no names or personal info):`, `Cuéntame más (opcional, sin nombres ni datos personales):`, `Di m plis (si ou vle, pa mete non oswa enfòmasyon pèsonèl):`, `多告诉我一些（可选，不要写姓名或个人信息）：`, `और बताएँ (वैकल्पिक, कोई नाम या निजी जानकारी नहीं):`, `أخبرني المزيد (اختياري، بلا أسماء أو معلومات شخصية):`, `Dis-m'en plus (facultatif, sans noms ni infos personnelles) :`, `আরও বলো (ঐচ্ছিক, কোনো নাম বা ব্যক্তিগত তথ্য নয়):`, `Dimmi di più (facoltativo, niente nomi o dati personali):`],
+  fbMoreLabel: [`Tell me more (optional)`, `Cuéntame más (opcional)`, `Di m plis (si ou vle)`, `多告诉我一些（可选）`, `और बताएँ (वैकल्पिक)`, `أخبرني المزيد (اختياري)`, `Dis-m'en plus (facultatif)`, `আরও বলো (ঐচ্ছিক)`, `Dimmi di più (facoltativo)`],
+  fbExample: [`For example: this photo is actually AI-made`, `Por ejemplo: esta foto en realidad está hecha con IA`, `Pa egzanp: foto sa a fèt ak IA an reyalite`, `例如：这张照片其实是 AI 生成的`, `उदाहरण: यह फ़ोटो असल में AI से बनी है`, `مثلًا: هذه الصورة مصنوعة بالذكاء الاصطناعي فعلًا`, `Par exemple : cette photo est en fait faite par IA`, `যেমন: এই ছবিটা আসলে AI দিয়ে বানানো`, `Per esempio: questa foto in realtà è fatta con l'IA`],
+  cancel: [`Cancel`, `Cancelar`, `Anile`, `取消`, `रद्द करें`, `إلغاء`, `Annuler`, `বাতিল`, `Annulla`],
+  rate: [`Rate this (optional):`, `Califica esto (opcional):`, `Bay nòt (si ou vle):`, `评价一下（可选）：`, `इसे रेट करें (वैकल्पिक):`, `قيّم هذا (اختياري):`, `Note ceci (facultatif) :`, `রেটিং দাও (ঐচ্ছিক):`, `Valuta (facoltativo):`],
+  wasRight: [`This was right`, `Esto estuvo bien`, `Sa te bon`, `这是对的`, `यह सही था`, `كان هذا صحيحًا`, `C'était juste`, `এটা ঠিক ছিল`, `Era giusto`],
+  wasWrong: [`This was wrong`, `Esto estuvo mal`, `Sa te mal`, `这是错的`, `यह गलत था`, `كان هذا خاطئًا`, `C'était faux`, `এটা ভুল ছিল`, `Era sbagliato`],
+
+  // Photo check
+  aiTitle: [`🤖 Could this image be AI-made?`, `🤖 ¿Podría esta imagen estar hecha con IA?`, `🤖 Èske imaj sa a ta ka fèt ak IA?`, `🤖 这张图片可能是 AI 生成的吗？`, `🤖 क्या यह तस्वीर AI से बनी हो सकती है?`, `🤖 هل يمكن أن تكون هذه الصورة مصنوعة بالذكاء الاصطناعي؟`, `🤖 Cette image pourrait-elle être faite par IA ?`, `🤖 ছবিটা কি AI দিয়ে বানানো হতে পারে?`, `🤖 Questa immagine potrebbe essere fatta con l'IA?`],
+  believable: [`How believable is this scene?`, `¿Qué tan creíble es esta escena?`, `Konbyen sèn sa a kredib?`, `这个场景有多可信？`, `यह दृश्य कितना विश्वसनीय है?`, `ما مدى واقعية هذا المشهد؟`, `Cette scène est-elle crédible ?`, `দৃশ্যটা কতটা বিশ্বাসযোগ্য?`, `Quanto è credibile questa scena?`],
+  compared: [`🔍 Compared with real photos online`, `🔍 Comparada con fotos reales en internet`, `🔍 Konpare ak vrè foto sou entènèt`, `🔍 与网上真实照片的对比`, `🔍 ऑनलाइन असली फ़ोटो से तुलना`, `🔍 مقارنة بصور حقيقية على الإنترنت`, `🔍 Comparée à de vraies photos en ligne`, `🔍 অনলাইনের আসল ছবির সাথে তুলনা`, `🔍 Confrontata con foto reali online`],
+  reused: [`⚠️ This photo may be an older or unrelated photo being reposted.`, `⚠️ Esta foto podría ser una foto antigua o sin relación que se vuelve a publicar.`, `⚠️ Foto sa a ka yon ansyen foto oswa yon foto ki pa gen rapò y ap repibliye.`, `⚠️ 这张照片可能是被重新发布的旧照片或无关照片。`, `⚠️ यह कोई पुरानी या असंबंधित फ़ोटो हो सकती है जिसे फिर से पोस्ट किया गया है।`, `⚠️ قد تكون هذه صورة قديمة أو غير ذات صلة يُعاد نشرها.`, `⚠️ Cette photo est peut-être une photo ancienne ou sans rapport republiée.`, `⚠️ এটা হয়তো পুরোনো বা সম্পর্কহীন কোনো ছবি, যা আবার পোস্ট করা হচ্ছে।`, `⚠️ Questa foto potrebbe essere una foto vecchia o non correlata ripubblicata.`],
+  photoOnline: [`Photo found online`, `Foto encontrada en internet`, `Foto yo jwenn sou entènèt`, `网上找到的照片`, `ऑनलाइन मिली फ़ोटो`, `صورة وُجدت على الإنترنت`, `Photo trouvée en ligne`, `অনলাইনে পাওয়া ছবি`, `Foto trovata online`],
+  agreed: [`{a} of {n} independent checks agreed.`, `{a} de {n} revisiones independientes coincidieron.`, `{a} sou {n} tchèk endepandan te dakò.`, `{n} 次独立检查中有 {a} 次结论一致。`, `{n} में से {a} स्वतंत्र जाँचें सहमत थीं।`, `اتفق {a} من أصل {n} فحوصات مستقلة.`, `{a} vérifications indépendantes sur {n} étaient d'accord.`, `{n}টি স্বাধীন যাচাইয়ের {a}টি একমত হয়েছে।`, `{a} controlli indipendenti su {n} erano d'accordo.`],
+  notProof: [`Warning signs aren't proof. No tool can say for sure if an image is AI-made.`, `Las señales de alerta no son pruebas. Ninguna herramienta puede asegurar si una imagen está hecha con IA.`, `Siy avètisman yo pa prèv. Okenn zouti pa ka di sèten si yon imaj fèt ak IA.`, `警示迹象不是证据。没有任何工具能确定一张图片是不是 AI 生成的。`, `चेतावनी के संकेत सबूत नहीं हैं। कोई भी टूल पक्का नहीं कह सकता कि तस्वीर AI से बनी है।`, `علامات التحذير ليست دليلًا. لا توجد أداة يمكنها الجزم بأن الصورة مصنوعة بالذكاء الاصطناعي.`, `Les signes d'alerte ne sont pas des preuves. Aucun outil ne peut dire avec certitude si une image est faite par IA.`, `সতর্কতার চিহ্ন প্রমাণ নয়। কোনো টুলই নিশ্চিত বলতে পারে না ছবিটা AI দিয়ে বানানো কি না।`, `I segnali d'allarme non sono prove. Nessuno strumento può dire con certezza se un'immagine è fatta con l'IA.`],
+  theDetails: [`🔎 The details`, `🔎 Los detalles`, `🔎 Detay yo`, `🔎 细节`, `🔎 विवरण`, `🔎 التفاصيل`, `🔎 Les détails`, `🔎 বিস্তারিত`, `🔎 I dettagli`],
+  whatISee: [`📷 What I see:`, `📷 Lo que veo:`, `📷 Sa m wè:`, `📷 我看到的：`, `📷 मुझे क्या दिखता है:`, `📷 ما أراه:`, `📷 Ce que je vois :`, `📷 আমি যা দেখছি:`, `📷 Cosa vedo:`],
+  checkYourself: [`Check it yourself:`, `Compruébalo tú mismo:`, `Tcheke l pou kont ou:`, `自己核查一下：`, `खुद जाँचें:`, `تحقق بنفسك:`, `Vérifie toi-même :`, `নিজেই যাচাই করো:`, `Controlla tu stesso:`],
+  nowCredible: [`📰 Now check if the story is credible`, `📰 Ahora revisa si la historia es creíble`, `📰 Kounye a tcheke si istwa a serye`, `📰 现在检查这个故事是否可信`, `📰 अब जाँचें कि कहानी भरोसेमंद है या नहीं`, `📰 الآن تحقق مما إذا كانت القصة موثوقة`, `📰 Vérifie maintenant si l'histoire est crédible`, `📰 এবার দেখো গল্পটা বিশ্বাসযোগ্য কি না`, `📰 Ora controlla se la storia è credibile`],
+  alsoPhoto: [`🤖 Also check if this photo is AI`, `🤖 Revisa también si esta foto es IA`, `🤖 Tcheke tou si foto sa a fèt ak IA`, `🤖 同时检查这张照片是不是 AI 生成的`, `🤖 यह भी जाँचें कि फ़ोटो AI की है या नहीं`, `🤖 تحقق أيضًا مما إذا كانت هذه الصورة بالذكاء الاصطناعي`, `🤖 Vérifie aussi si cette photo est faite par IA`, `🤖 ছবিটা AI কি না সেটাও দেখো`, `🤖 Controlla anche se questa foto è IA`],
+
+  // Report
+  whoPublished: [`📰 Who published it and how they lean`, `📰 Quién lo publicó y hacia dónde se inclina`, `📰 Kiyès ki pibliye l ak ki bò li panche`, `📰 谁发布的，立场偏向哪边`, `📰 किसने छापा और उसका झुकाव`, `📰 من نشره وإلى أي اتجاه يميل`, `📰 Qui l'a publié et de quel côté il penche`, `📰 কে প্রকাশ করেছে ও তাদের ঝোঁক`, `📰 Chi l'ha pubblicato e da che parte pende`],
+  leanNote: [`Leaning left or right does not make an article true or false. We judge the facts separately.`, `Inclinarse a la izquierda o a la derecha no hace que un artículo sea verdadero o falso. Juzgamos los hechos por separado.`, `Panche agoch oswa adwat pa fè yon atik vre oswa fo. Nou jije fè yo apa.`, `偏左或偏右并不决定一篇文章的真假。我们会单独判断事实。`, `बाएँ या दाएँ झुकाव से कोई लेख सच या झूठ नहीं हो जाता। हम तथ्यों को अलग से परखते हैं।`, `الميل إلى اليسار أو اليمين لا يجعل المقال صحيحًا أو كاذبًا. نحكم على الحقائق بشكل منفصل.`, `Pencher à gauche ou à droite ne rend pas un article vrai ou faux. Nous jugeons les faits à part.`, `বাম বা ডান দিকে ঝোঁক থাকলেই কোনো লেখা সত্যি বা মিথ্যা হয় না। আমরা তথ্য আলাদাভাবে বিচার করি।`, `Pendere a sinistra o a destra non rende un articolo vero o falso. Giudichiamo i fatti a parte.`],
+  biasApprox: [`Bias labels are approximate, based on published media bias ratings.`, `Las etiquetas de sesgo son aproximadas, basadas en calificaciones publicadas de sesgo de medios.`, `Etikèt patipri yo apeprè, yo baze sou evalyasyon patipri medya ki pibliye.`, `倾向标签是大致的，依据已发布的媒体倾向评级。`, `झुकाव के लेबल अनुमानित हैं, प्रकाशित मीडिया झुकाव रेटिंग पर आधारित।`, `تصنيفات التحيّز تقريبية، وتستند إلى تقييمات منشورة لتحيّز وسائل الإعلام.`, `Les étiquettes de tendance sont approximatives, basées sur des évaluations publiées des médias.`, `ঝোঁকের লেবেলগুলো আনুমানিক, প্রকাশিত মিডিয়া ঝোঁক রেটিংয়ের ভিত্তিতে।`, `Le etichette di orientamento sono approssimative, basate su valutazioni pubblicate dei media.`],
+  sources: [`📚 Sources`, `📚 Fuentes`, `📚 Sous`, `📚 来源`, `📚 स्रोत`, `📚 المصادر`, `📚 Sources`, `📚 সূত্র`, `📚 Fonti`],
+  mostImportant: [`Most important`, `Las más importantes`, `Pi enpòtan yo`, `最重要的`, `सबसे अहम`, `الأهم`, `Les plus importantes`, `সবচেয়ে গুরুত্বপূর্ণ`, `Le più importanti`],
+  everything: [`Everything I read, by type`, `Todo lo que leí, por tipo`, `Tout sa m li, pa kalite`, `我读过的所有内容，按类型`, `मैंने जो कुछ पढ़ा, प्रकार के अनुसार`, `كل ما قرأته، حسب النوع`, `Tout ce que j'ai lu, par type`, `যা যা পড়েছি, ধরন অনুযায়ী`, `Tutto quello che ho letto, per tipo`],
+  doubleChecked: [`✅ Double-checked`, `✅ Verificado dos veces`, `✅ Tcheke de fwa`, `✅ 已复核`, `✅ दोबारा जाँचा गया`, `✅ تم التحقق مرتين`, `✅ Revérifié`, `✅ দুবার যাচাই করা`, `✅ Ricontrollato`],
+  corrected: [`🔧 Double-checked & corrected`, `🔧 Verificado dos veces y corregido`, `🔧 Tcheke de fwa epi korije`, `🔧 已复核并更正`, `🔧 दोबारा जाँचा और सुधारा गया`, `🔧 تم التحقق مرتين والتصحيح`, `🔧 Revérifié et corrigé`, `🔧 দুবার যাচাই ও সংশোধন করা`, `🔧 Ricontrollato e corretto`],
+  confidence: [`Confidence:`, `Confianza:`, `Konfyans:`, `可信度：`, `भरोसा:`, `الثقة:`, `Confiance :`, `আস্থা:`, `Affidabilità:`],
+  consensus: [`Consensus:`, `Consenso:`, `Konsansis:`, `共识：`, `सहमति:`, `الإجماع:`, `Consensus :`, `ঐকমত্য:`, `Consenso:`],
+  straight: [`🎯 Straight from the original source:`, `🎯 Directo de la fuente original:`, `🎯 Dirèkteman nan sous orijinal la:`, `🎯 直接来自原始来源：`, `🎯 सीधे मूल स्रोत से:`, `🎯 مباشرة من المصدر الأصلي:`, `🎯 Directement de la source d'origine :`, `🎯 সরাসরি মূল সূত্র থেকে:`, `🎯 Direttamente dalla fonte originale:`],
+  fromNotebook: [`From my notebook:`, `De mi cuaderno:`, `Nan kaye mwen:`, `来自我的笔记本：`, `मेरी नोटबुक से:`, `من دفتري:`, `De mon carnet :`, `আমার নোটবুক থেকে:`, `Dal mio quaderno:`],
+  wentOriginal: [`I went to the original source and read {n} sources`, `Fui a la fuente original y leí {n} fuentes`, `M al nan sous orijinal la epi m li {n} sous`, `我找到了原始来源，并阅读了 {n} 个来源`, `मैं मूल स्रोत तक गई और {n} स्रोत पढ़े`, `ذهبت إلى المصدر الأصلي وقرأت {n} مصادر`, `Je suis allée à la source d'origine et j'ai lu {n} sources`, `আমি মূল সূত্রে গিয়েছি এবং {n}টি সূত্র পড়েছি`, `Sono andata alla fonte originale e ho letto {n} fonti`],
+  checkedN: [`I checked {n} sources`, `Revisé {n} fuentes`, `M tcheke {n} sous`, `我查看了 {n} 个来源`, `मैंने {n} स्रोत जाँचे`, `تحققت من {n} مصادر`, `J'ai vérifié {n} sources`, `আমি {n}টি সূত্র যাচাই করেছি`, `Ho controllato {n} fonti`],
+  fullBreakdown: [`See the full breakdown ↓`, `Ver el análisis completo ↓`, `Wè tout detay yo ↓`, `查看完整分析 ↓`, `पूरा विश्लेषण देखें ↓`, `اعرض التحليل الكامل ↓`, `Voir l'analyse complète ↓`, `পুরো বিশ্লেষণ দেখো ↓`, `Vedi l'analisi completa ↓`],
+  disagree: [`🤔 Sources disagree on`, `🤔 Las fuentes no coinciden en`, `🤔 Sous yo pa dakò sou`, `🤔 来源之间有分歧的地方`, `🤔 स्रोत इन बातों पर असहमत हैं`, `🤔 تختلف المصادر حول`, `🤔 Les sources ne sont pas d'accord sur`, `🤔 সূত্রগুলো যেখানে একমত নয়`, `🤔 Le fonti non concordano su`],
+  stillUnknown: [`❓ Still unknown`, `❓ Aún se desconoce`, `❓ Nou poko konnen`, `❓ 仍然未知`, `❓ अभी पता नहीं`, `❓ ما زال غير معروف`, `❓ Encore inconnu`, `❓ এখনও অজানা`, `❓ Ancora sconosciuto`],
+  accurateQ: [`Are the facts accurate?`, `¿Son correctos los hechos?`, `Èske fè yo kòrèk?`, `事实准确吗？`, `क्या तथ्य सही हैं?`, `هل الحقائق دقيقة؟`, `Les faits sont-ils exacts ?`, `তথ্যগুলো কি সঠিক?`, `I fatti sono corretti?`],
+  whoPosted: [`✍️ Who posted this?`, `✍️ ¿Quién publicó esto?`, `✍️ Kiyès ki poste sa a?`, `✍️ 这是谁发的？`, `✍️ इसे किसने पोस्ट किया?`, `✍️ من نشر هذا؟`, `✍️ Qui a publié ceci ?`, `✍️ এটা কে পোস্ট করেছে?`, `✍️ Chi l'ha pubblicato?`],
+  couldntTell: [`We couldn't tell who made this.`, `No pudimos saber quién hizo esto.`, `Nou pa t ka konnen kiyès ki fè sa.`, `我们无法判断这是谁做的。`, `हम नहीं बता सके कि इसे किसने बनाया।`, `لم نتمكن من معرفة من صنع هذا.`, `Nous n'avons pas pu savoir qui l'a fait.`, `এটা কে বানিয়েছে আমরা বুঝতে পারিনি।`, `Non siamo riusciti a capire chi l'ha fatto.`],
+  persuadeTitle: [`🎣 How it tries to persuade you`, `🎣 Cómo intenta convencerte`, `🎣 Kijan li eseye konvenk ou`, `🎣 它如何试图说服你`, `🎣 यह आपको कैसे मनाने की कोशिश करता है`, `🎣 كيف يحاول إقناعك`, `🎣 Comment il essaie de te convaincre`, `🎣 এটা তোমাকে কীভাবে প্রভাবিত করতে চায়`, `🎣 Come cerca di convincerti`],
+  persuasionLabel: [`Persuasion tactics:`, `Tácticas de persuasión:`, `Taktik pou konvenk:`, `说服手法：`, `मनाने की तरकीबें:`, `أساليب الإقناع:`, `Techniques de persuasion :`, `প্রভাবিত করার কৌশল:`, `Tecniche di persuasione:`],
+  persuasionNone: [`I didn't spot any clear ones.`, `No encontré ninguna clara.`, `M pa wè okenn ki klè.`, `我没有发现明显的手法。`, `मुझे कोई साफ़ तरकीब नहीं दिखी।`, `لم ألاحظ أي أساليب واضحة.`, `Je n'en ai repéré aucune de claire.`, `স্পষ্ট কোনোটা চোখে পড়েনি।`, `Non ne ho notate di evidenti.`],
+  gotWrong: [`❌ What the post got wrong`, `❌ En qué se equivocó la publicación`, `❌ Sa post la te di ki pa kòrèk`, `❌ 帖子说错了什么`, `❌ पोस्ट ने क्या गलत कहा`, `❌ ما أخطأ فيه المنشور`, `❌ Ce que la publication a mal dit`, `❌ পোস্টে কী ভুল ছিল`, `❌ Cosa ha sbagliato il post`],
+  postSays: [`Post says:`, `La publicación dice:`, `Post la di:`, `帖子说：`, `पोस्ट कहती है:`, `يقول المنشور:`, `La publication dit :`, `পোস্টে বলা:`, `Il post dice:`],
+  actually: [`Actually:`, `En realidad:`, `An reyalite:`, `实际上：`, `असल में:`, `في الواقع:`, `En réalité :`, `আসলে:`, `In realtà:`],
+  spread: [`🕒 How this claim spread`, `🕒 Cómo se difundió esta afirmación`, `🕒 Kijan deklarasyon sa a gaye`, `🕒 这个说法是如何传播的`, `🕒 यह दावा कैसे फैला`, `🕒 كيف انتشر هذا الادعاء`, `🕒 Comment cette affirmation s'est répandue`, `🕒 দাবিটা কীভাবে ছড়িয়েছে`, `🕒 Come si è diffusa questa affermazione`],
+
+  // Install sheet (iPhone)
+  iosIntro: [`See a sketchy post anywhere? Just tap Share → Fact or Feed?`, `¿Ves una publicación sospechosa? Solo toca Compartir → Fact or Feed?`, `Ou wè yon post ki sanble pa serye? Jis peze Pataje → Fact or Feed?`, `看到可疑的帖子？只要点 分享 → Fact or Feed?`, `कहीं संदिग्ध पोस्ट दिखी? बस शेयर → Fact or Feed? दबाएँ`, `رأيت منشورًا مريبًا؟ فقط اضغط مشاركة ← Fact or Feed?`, `Tu vois une publication douteuse ? Appuie simplement sur Partager → Fact or Feed?`, `কোথাও সন্দেহজনক পোস্ট দেখলে? শুধু শেয়ার → Fact or Feed? চাপো`, `Vedi un post sospetto? Tocca Condividi → Fact or Feed?`],
+  addShortcut: [`Add the Fact or Feed? shortcut`, `Añadir el atajo de Fact or Feed?`, `Ajoute rakousi Fact or Feed? la`, `添加 Fact or Feed? 快捷指令`, `Fact or Feed? शॉर्टकट जोड़ें`, `أضف اختصار Fact or Feed?`, `Ajouter le raccourci Fact or Feed?`, `Fact or Feed? শর্টকাট যোগ করো`, `Aggiungi la scorciatoia Fact or Feed?`],
+  howItWorks: [`How it works`, `Cómo funciona`, `Kijan li mache`, `使用方法`, `यह कैसे काम करता है`, `كيف يعمل`, `Comment ça marche`, `কীভাবে কাজ করে`, `Come funziona`],
+  i1: [`Tap the button above, then Add Shortcut.`, `Toca el botón de arriba y luego Añadir atajo.`, `Peze bouton ki anlè a, epi Ajoute rakousi.`, `点上面的按钮，然后点"添加快捷指令"。`, `ऊपर वाला बटन दबाएँ, फिर Add Shortcut दबाएँ।`, `اضغط الزر أعلاه، ثم إضافة اختصار.`, `Appuie sur le bouton ci-dessus, puis Ajouter le raccourci.`, `ওপরের বোতামে চাপো, তারপর Add Shortcut চাপো।`, `Tocca il pulsante qui sopra, poi Aggiungi scorciatoia.`],
+  i2: [`On any post, link, article, or screenshot, tap Share.`, `En cualquier publicación, enlace, artículo o captura, toca Compartir.`, `Sou nenpòt post, lyen, atik oswa foto ekran, peze Pataje.`, `在任何帖子、链接、文章或截图上，点"分享"。`, `किसी भी पोस्ट, लिंक, लेख या स्क्रीनशॉट पर शेयर दबाएँ।`, `على أي منشور أو رابط أو مقال أو لقطة شاشة، اضغط مشاركة.`, `Sur n'importe quelle publication, lien, article ou capture, appuie sur Partager.`, `যেকোনো পোস্ট, লিংক, লেখা বা স্ক্রিনশটে শেয়ার চাপো।`, `Su qualsiasi post, link, articolo o screenshot, tocca Condividi.`],
+  i3: [`Scroll down and tap Fact or Feed? It opens and starts checking right away.`, `Desplázate hacia abajo y toca Fact or Feed? Se abre y empieza a revisar enseguida.`, `Desann epi peze Fact or Feed? Li louvri epi li kòmanse tcheke touswit.`, `向下滑动并点 Fact or Feed?，它会打开并立即开始核查。`, `नीचे स्क्रॉल करें और Fact or Feed? दबाएँ। यह खुलकर तुरंत जाँच शुरू कर देता है।`, `مرّر للأسفل واضغط Fact or Feed?. سيفتح ويبدأ التحقق فورًا.`, `Fais défiler et appuie sur Fact or Feed? Il s'ouvre et commence à vérifier tout de suite.`, `নিচে স্ক্রল করে Fact or Feed? চাপো। এটা খুলে সাথে সাথে যাচাই শুরু করবে।`, `Scorri in basso e tocca Fact or Feed? Si apre e inizia subito il controllo.`],
+  i4: [`You can also open Fact or Feed? and tap 📎 to add a photo.`, `También puedes abrir Fact or Feed? y tocar 📎 para añadir una foto.`, `Ou ka louvri Fact or Feed? tou epi peze 📎 pou ajoute yon foto.`, `你也可以打开 Fact or Feed? 并点 📎 添加照片。`, `आप Fact or Feed? खोलकर 📎 दबाकर फ़ोटो भी जोड़ सकते हैं।`, `يمكنك أيضًا فتح Fact or Feed? والضغط على 📎 لإضافة صورة.`, `Tu peux aussi ouvrir Fact or Feed? et appuyer sur 📎 pour ajouter une photo.`, `চাইলে Fact or Feed? খুলে 📎 চেপে ছবিও দিতে পারো।`, `Puoi anche aprire Fact or Feed? e toccare 📎 per aggiungere una foto.`],
+  homeTitle: [`Add the app to your Home Screen`, `Añade la app a tu pantalla de inicio`, `Ajoute app la sou ekran dakèy ou`, `把应用添加到主屏幕`, `ऐप को होम स्क्रीन पर जोड़ें`, `أضف التطبيق إلى الشاشة الرئيسية`, `Ajoute l'app à ton écran d'accueil`, `অ্যাপটা হোম স্ক্রিনে যোগ করো`, `Aggiungi l'app alla schermata Home`],
+  h1: [`Open this site in Safari.`, `Abre este sitio en Safari.`, `Louvri sit sa a nan Safari.`, `在 Safari 中打开本网站。`, `यह साइट Safari में खोलें।`, `افتح هذا الموقع في Safari.`, `Ouvre ce site dans Safari.`, `এই সাইটটা Safari-তে খোলো।`, `Apri questo sito in Safari.`],
+  h2: [`Tap Share (the square with the arrow).`, `Toca Compartir (el cuadrado con la flecha).`, `Peze Pataje (kare ki gen flèch la).`, `点"分享"（带箭头的方框）。`, `शेयर दबाएँ (तीर वाला चौकोर)।`, `اضغط مشاركة (المربع الذي فيه سهم).`, `Appuie sur Partager (le carré avec la flèche).`, `শেয়ার চাপো (তীর-সহ চৌকো চিহ্ন)।`, `Tocca Condividi (il quadrato con la freccia).`],
+  h3: [`Tap Add to Home Screen.`, `Toca Añadir a pantalla de inicio.`, `Peze Ajoute sou ekran dakèy.`, `点"添加到主屏幕"。`, `होम स्क्रीन में जोड़ें दबाएँ।`, `اضغط إضافة إلى الشاشة الرئيسية.`, `Appuie sur Sur l'écran d'accueil.`, `Add to Home Screen চাপো।`, `Tocca Aggiungi a schermata Home.`],
+  close: [`Close`, `Cerrar`, `Fèmen`, `关闭`, `बंद करें`, `إغلاق`, `Fermer`, `বন্ধ করো`, `Chiudi`],
+};
+
+// The parts people can say were wrong. The English name is still what is saved; only the label is translated.
+const AREAS = {
+  'The answer': [`The answer`, `La respuesta`, `Repons lan`, `答案`, `जवाब`, `الإجابة`, `La réponse`, `উত্তর`, `La risposta`],
+  'The original source': [`The original source`, `La fuente original`, `Sous orijinal la`, `原始来源`, `मूल स्रोत`, `المصدر الأصلي`, `La source d'origine`, `মূল সূত্র`, `La fonte originale`],
+  'The sources': [`The sources`, `Las fuentes`, `Sous yo`, `来源`, `स्रोत`, `المصادر`, `Les sources`, `সূত্রগুলো`, `Le fonti`],
+  'Something else': [`Something else`, `Otra cosa`, `Yon lòt bagay`, `其他`, `कुछ और`, `شيء آخر`, `Autre chose`, `অন্য কিছু`, `Altro`],
+  'The verdict': [`The verdict`, `El veredicto`, `Vèdik la`, `结论`, `फ़ैसला`, `الحكم`, `Le verdict`, `রায়`, `Il verdetto`],
+  'The photo check': [`The photo check`, `La revisión de la foto`, `Tchèk foto a`, `照片检查`, `फ़ोटो जाँच`, `فحص الصورة`, `La vérification de la photo`, `ছবি যাচাই`, `Il controllo della foto`],
+  'The photo comparison': [`The photo comparison`, `La comparación de fotos`, `Konparezon foto yo`, `照片对比`, `फ़ोटो की तुलना`, `مقارنة الصور`, `La comparaison de photos`, `ছবির তুলনা`, `Il confronto delle foto`],
+  'Persuasion tactics': [`Persuasion tactics`, `Tácticas de persuasión`, `Taktik pou konvenk`, `说服手法`, `मनाने की तरकीबें`, `أساليب الإقناع`, `Techniques de persuasion`, `প্রভাবিত করার কৌশল`, `Tecniche di persuasione`],
+  'Who posted it': [`Who posted it`, `Quién lo publicó`, `Kiyès ki poste l`, `发布者`, `किसने पोस्ट किया`, `من نشره`, `Qui l'a publié`, `কে পোস্ট করেছে`, `Chi l'ha pubblicato`],
+};
+
+// The progress steps while Vera works, per tool
+const STEPS = {
+  credible: [
+    [`The Manager is making a game plan…`, `El Gerente está haciendo un plan…`, `Manadjè a ap fè yon plan…`, `经理正在制定计划…`, `मैनेजर योजना बना रहा है…`, `المدير يضع خطة العمل…`, `Le Manager prépare un plan…`, `ম্যানেজার পরিকল্পনা করছে…`, `Il Manager sta facendo un piano…`],
+    [`Reading what you sent…`, `Leyendo lo que enviaste…`, `M ap li sa ou voye a…`, `正在阅读你发送的内容…`, `आपने जो भेजा उसे पढ़ रही हूँ…`, `أقرأ ما أرسلته…`, `Je lis ce que tu as envoyé…`, `তুমি যা পাঠিয়েছ পড়ছি…`, `Sto leggendo quello che hai inviato…`],
+    [`Checking who published it and how they lean…`, `Revisando quién lo publicó y hacia dónde se inclina…`, `M ap tcheke kiyès ki pibliye l ak ki bò li panche…`, `正在查看发布者及其立场…`, `देख रही हूँ किसने छापा और उसका झुकाव क्या है…`, `أتحقق ممن نشره وإلى أي اتجاه يميل…`, `Je vérifie qui l'a publié et de quel côté il penche…`, `কে প্রকাশ করেছে ও তাদের ঝোঁক দেখছি…`, `Controllo chi l'ha pubblicato e da che parte pende…`],
+    [`Spotting persuasion tactics…`, `Detectando tácticas de persuasión…`, `M ap chèche taktik pou konvenk…`, `正在找出说服手法…`, `मनाने की तरकीबें ढूँढ रही हूँ…`, `أرصد أساليب الإقناع…`, `Je repère les techniques de persuasion…`, `প্রভাবিত করার কৌশল খুঁজছি…`, `Cerco le tecniche di persuasione…`],
+    [`Searching news sources across the spectrum…`, `Buscando fuentes de noticias de todo el espectro…`, `M ap chèche sous nouvèl sou tout bò yo…`, `正在搜索不同立场的新闻来源…`, `हर विचारधारा के समाचार स्रोत खोज रही हूँ…`, `أبحث في مصادر إخبارية من مختلف التوجهات…`, `Je cherche des sources d'info de tout le spectre…`, `সব মতের খবরের সূত্র খুঁজছি…`, `Cerco fonti di notizie di ogni orientamento…`],
+    [`Checking official sources and published research…`, `Revisando fuentes oficiales e investigaciones publicadas…`, `M ap tcheke sous ofisyèl ak rechèch ki pibliye…`, `正在查看官方来源和已发表的研究…`, `आधिकारिक स्रोत और प्रकाशित शोध देख रही हूँ…`, `أتحقق من المصادر الرسمية والأبحاث المنشورة…`, `Je vérifie les sources officielles et la recherche publiée…`, `সরকারি সূত্র ও প্রকাশিত গবেষণা দেখছি…`, `Controllo fonti ufficiali e ricerche pubblicate…`],
+    [`Weighing the evidence…`, `Sopesando las pruebas…`, `M ap peze prèv yo…`, `正在权衡证据…`, `सबूत परख रही हूँ…`, `أوازن الأدلة…`, `Je pèse les preuves…`, `প্রমাণ বিচার করছি…`, `Valuto le prove…`],
+    [`Having a second AI double-check it…`, `Pidiendo a una segunda IA que lo verifique…`, `M ap mande yon dezyèm IA tcheke l ankò…`, `正在让第二个 AI 复核…`, `एक दूसरी AI से दोबारा जाँच करवा रही हूँ…`, `أطلب من ذكاء اصطناعي ثانٍ التحقق مرة أخرى…`, `Je fais revérifier par une deuxième IA…`, `দ্বিতীয় একটা AI দিয়ে আবার যাচাই করাচ্ছি…`, `Lo faccio ricontrollare da una seconda IA…`],
+  ],
+  facts: [
+    [`The Manager is deciding: go to the original source, or search widely?`, `El Gerente está decidiendo: ¿ir a la fuente original o buscar ampliamente?`, `Manadjè a ap deside: ale nan sous orijinal la, oswa chèche toupatou?`, `经理正在决定：直接找原始来源，还是广泛搜索？`, `मैनेजर तय कर रहा है: मूल स्रोत पर जाएँ या बड़े पैमाने पर खोजें?`, `المدير يقرر: الذهاب إلى المصدر الأصلي أم البحث على نطاق واسع؟`, `Le Manager décide : aller à la source d'origine ou chercher largement ?`, `ম্যানেজার ঠিক করছে: মূল সূত্রে যাবে, নাকি ব্যাপকভাবে খুঁজবে?`, `Il Manager decide: andare alla fonte originale o cercare ovunque?`],
+    [`Understanding your question…`, `Entendiendo tu pregunta…`, `M ap konprann kesyon w lan…`, `正在理解你的问题…`, `आपका सवाल समझ रही हूँ…`, `أفهم سؤالك…`, `Je comprends ta question…`, `তোমার প্রশ্নটা বুঝছি…`, `Sto capendo la tua domanda…`],
+    [`Finding the original source and searching across the spectrum…`, `Buscando la fuente original y en todo el espectro…`, `M ap chèche sous orijinal la ak sou tout bò yo…`, `正在寻找原始来源并搜索不同立场…`, `मूल स्रोत ढूँढ रही हूँ और हर विचारधारा में खोज रही हूँ…`, `أبحث عن المصدر الأصلي وعبر مختلف التوجهات…`, `Je cherche la source d'origine et dans tout le spectre…`, `মূল সূত্র আর সব মতের সূত্র খুঁজছি…`, `Cerco la fonte originale e in ogni orientamento…`],
+    [`Labeling every source…`, `Etiquetando cada fuente…`, `M ap mete etikèt sou chak sous…`, `正在给每个来源贴标签…`, `हर स्रोत को लेबल कर रही हूँ…`, `أصنّف كل مصدر…`, `J'étiquette chaque source…`, `প্রতিটা সূত্রে লেবেল দিচ্ছি…`, `Etichetto ogni fonte…`],
+    [`Weighing the evidence…`, `Sopesando las pruebas…`, `M ap peze prèv yo…`, `正在权衡证据…`, `सबूत परख रही हूँ…`, `أوازن الأدلة…`, `Je pèse les preuves…`, `প্রমাণ বিচার করছি…`, `Valuto le prove…`],
+    [`Writing your answer…`, `Escribiendo tu respuesta…`, `M ap ekri repons ou…`, `正在撰写你的答案…`, `आपका जवाब लिख रही हूँ…`, `أكتب إجابتك…`, `J'écris ta réponse…`, `তোমার উত্তর লিখছি…`, `Scrivo la tua risposta…`],
+    [`Having a second AI double-check it…`, `Pidiendo a una segunda IA que lo verifique…`, `M ap mande yon dezyèm IA tcheke l ankò…`, `正在让第二个 AI 复核…`, `एक दूसरी AI से दोबारा जाँच करवा रही हूँ…`, `أطلب من ذكاء اصطناعي ثانٍ التحقق مرة أخرى…`, `Je fais revérifier par une deuxième IA…`, `দ্বিতীয় একটা AI দিয়ে আবার যাচাই করাচ্ছি…`, `Lo faccio ricontrollare da una seconda IA…`],
+  ],
+  photo: [
+    [`A photo agent is looking for AI warning signs…`, `Un agente de fotos busca señales de IA…`, `Yon ajan foto ap chèche siy IA…`, `照片助手正在寻找 AI 警示迹象…`, `एक फ़ोटो एजेंट AI के चेतावनी संकेत ढूँढ रहा है…`, `وكيل الصور يبحث عن علامات الذكاء الاصطناعي…`, `Un agent photo cherche des signes d'IA…`, `একজন ছবি-এজেন্ট AI-এর সতর্কতার চিহ্ন খুঁজছে…`, `Un agente foto cerca segnali di IA…`],
+    [`Figuring out what the photo shows…`, `Averiguando qué muestra la foto…`, `M ap chèche konprann sa foto a montre…`, `正在弄清照片里是什么…`, `समझ रही हूँ कि फ़ोटो में क्या है…`, `أفهم ما تُظهره الصورة…`, `Je regarde ce que montre la photo…`, `ছবিতে কী আছে বুঝছি…`, `Capisco cosa mostra la foto…`],
+    [`Searching for real photos of the same thing…`, `Buscando fotos reales de lo mismo…`, `M ap chèche vrè foto menm bagay la…`, `正在搜索同一事物的真实照片…`, `उसी चीज़ की असली फ़ोटो खोज रही हूँ…`, `أبحث عن صور حقيقية للشيء نفسه…`, `Je cherche de vraies photos de la même chose…`, `একই জিনিসের আসল ছবি খুঁজছি…`, `Cerco foto reali della stessa cosa…`],
+    [`Comparing your photo with the real ones…`, `Comparando tu foto con las reales…`, `M ap konpare foto w la ak vrè yo…`, `正在把你的照片和真实照片对比…`, `आपकी फ़ोटो को असली फ़ोटो से मिला रही हूँ…`, `أقارن صورتك بالصور الحقيقية…`, `Je compare ta photo aux vraies…`, `তোমার ছবি আসলগুলোর সাথে মেলাচ্ছি…`, `Confronto la tua foto con quelle reali…`],
+    [`Writing up what I found…`, `Escribiendo lo que encontré…`, `M ap ekri sa m jwenn…`, `正在写下我的发现…`, `जो मिला उसे लिख रही हूँ…`, `أكتب ما وجدته…`, `Je rédige ce que j'ai trouvé…`, `যা পেয়েছি লিখছি…`, `Scrivo quello che ho trovato…`],
+  ],
+};
+
+// Labels the AI returns in English (verdicts, levels, lean, source types). Only the shown label is translated.
+const LABELS = {
+  Accurate: [`Accurate`, `Correcto`, `Kòrèk`, `准确`, `सही`, `دقيق`, `Exact`, `সঠিক`, `Corretto`],
+  'Missing context': [`Missing context`, `Falta contexto`, `Manke kontèks`, `缺少背景`, `संदर्भ अधूरा`, `ينقصه السياق`, `Contexte manquant`, `প্রসঙ্গ অনুপস্থিত`, `Manca il contesto`],
+  Exaggerated: [`Exaggerated`, `Exagerado`, `Egzajere`, `夸大`, `बढ़ा-चढ़ाकर`, `مبالغ فيه`, `Exagéré`, `অতিরঞ্জিত`, `Esagerato`],
+  Misleading: [`Misleading`, `Engañoso`, `Twonpè`, `误导`, `भ्रामक`, `مضلل`, `Trompeur`, `বিভ্রান্তিকর`, `Fuorviante`],
+  False: [`False`, `Falso`, `Fo`, `错误`, `झूठ`, `خاطئ`, `Faux`, `মিথ্যা`, `Falso`],
+  "Can't confirm yet": [`Can't confirm yet`, `Aún no se puede confirmar`, `Poko ka konfime`, `暂时无法确认`, `अभी पुष्टि नहीं हो सकती`, `لا يمكن التأكيد بعد`, `Impossible à confirmer pour l'instant`, `এখনও নিশ্চিত করা যায়নি`, `Non ancora confermabile`],
+  'Low chance of AI': [`Low chance of AI`, `Baja probabilidad de IA`, `Ti chans IA`, `AI 可能性低`, `AI की कम संभावना`, `احتمال ضعيف للذكاء الاصطناعي`, `Faible probabilité d'IA`, `AI হওয়ার সম্ভাবনা কম`, `Bassa probabilità di IA`],
+  'Medium chance of AI': [`Medium chance of AI`, `Probabilidad media de IA`, `Chans mwayen IA`, `AI 可能性中等`, `AI की मध्यम संभावना`, `احتمال متوسط للذكاء الاصطناعي`, `Probabilité moyenne d'IA`, `AI হওয়ার মাঝারি সম্ভাবনা`, `Media probabilità di IA`],
+  'High chance of AI': [`High chance of AI`, `Alta probabilidad de IA`, `Gwo chans IA`, `AI 可能性高`, `AI की अधिक संभावना`, `احتمال كبير للذكاء الاصطناعي`, `Forte probabilité d'IA`, `AI হওয়ার সম্ভাবনা বেশি`, `Alta probabilità di IA`],
+  Strong: [`Strong`, `Fuerte`, `Fò`, `强`, `मज़बूत`, `قوي`, `Fort`, `জোরালো`, `Forte`],
+  Mixed: [`Mixed`, `Mixto`, `Melanje`, `不一`, `मिला-जुला`, `متباين`, `Mitigé`, `মিশ্র`, `Misto`],
+  Weak: [`Weak`, `Débil`, `Fèb`, `弱`, `कमज़ोर`, `ضعيف`, `Faible`, `দুর্বল`, `Debole`],
+  'None yet': [`None yet`, `Aún no hay`, `Poko genyen`, `尚无`, `अभी नहीं`, `لا يوجد بعد`, `Pas encore`, `এখনও নেই`, `Ancora nessuno`],
+  Left: [`Left`, `Izquierda`, `Agoch`, `左`, `बायाँ`, `يسار`, `Gauche`, `বাম`, `Sinistra`],
+  'Lean Left': [`Lean Left`, `Centroizquierda`, `Panche agoch`, `偏左`, `बाएँ झुकाव`, `يميل لليسار`, `Centre gauche`, `বাম-ঘেঁষা`, `Centro-sinistra`],
+  Center: [`Center`, `Centro`, `Santral`, `中间`, `मध्य`, `وسط`, `Centre`, `মধ্য`, `Centro`],
+  'Lean Right': [`Lean Right`, `Centroderecha`, `Panche adwat`, `偏右`, `दाएँ झुकाव`, `يميل لليمين`, `Centre droit`, `ডান-ঘেঁষা`, `Centro-destra`],
+  Right: [`Right`, `Derecha`, `Adwat`, `右`, `दायाँ`, `يمين`, `Droite`, `ডান`, `Destra`],
+  Official: [`Official`, `Oficial`, `Ofisyèl`, `官方`, `आधिकारिक`, `رسمي`, `Officiel`, `সরকারি`, `Ufficiale`],
+  Research: [`Research`, `Investigación`, `Rechèch`, `研究`, `शोध`, `بحث علمي`, `Recherche`, `গবেষণা`, `Ricerca`],
+  'Fact-check': [`Fact-check`, `Verificación`, `Verifikasyon`, `事实核查`, `फ़ैक्ट-चेक`, `تدقيق حقائق`, `Vérification`, `ফ্যাক্ট-চেক`, `Fact-checking`],
+  'Not rated': [`Not rated`, `Sin calificar`, `Pa evalye`, `未评级`, `रेटिंग नहीं`, `غير مصنّف`, `Non classé`, `রেটিং নেই`, `Non valutato`],
+  'Original source': [`Original source`, `Fuente original`, `Sous orijinal`, `原始来源`, `मूल स्रोत`, `المصدر الأصلي`, `Source d'origine`, `মূল সূত্র`, `Fonte originale`],
+  'News outlet': [`News outlet`, `Medio de noticias`, `Medya nouvèl`, `新闻媒体`, `समाचार संस्थान`, `وسيلة إخبارية`, `Média d'info`, `সংবাদমাধ্যম`, `Testata giornalistica`],
+  'Official source': [`Official source`, `Fuente oficial`, `Sous ofisyèl`, `官方来源`, `आधिकारिक स्रोत`, `مصدر رسمي`, `Source officielle`, `সরকারি সূত্র`, `Fonte ufficiale`],
+  'Satire site': [`Satire site`, `Sitio satírico`, `Sit satir`, `讽刺网站`, `व्यंग्य साइट`, `موقع ساخر`, `Site satirique`, `ব্যঙ্গ সাইট`, `Sito satirico`],
+  'Influencer or creator': [`Influencer or creator`, `Influencer o creador`, `Enfliyansè oswa kreyatè`, `网红或创作者`, `इन्फ़्लुएंसर या क्रिएटर`, `مؤثر أو صانع محتوى`, `Influenceur ou créateur`, `ইনফ্লুয়েন্সার বা ক্রিয়েটর`, `Influencer o creator`],
+  'Personal or anonymous account': [`Personal or anonymous account`, `Cuenta personal o anónima`, `Kont pèsonèl oswa anonim`, `个人或匿名账号`, `निजी या गुमनाम अकाउंट`, `حساب شخصي أو مجهول`, `Compte personnel ou anonyme`, `ব্যক্তিগত বা বেনামি অ্যাকাউন্ট`, `Account personale o anonimo`],
+  'Known unreliable site': [`Known unreliable site`, `Sitio poco fiable conocido`, `Sit ki pa serye`, `已知不可靠网站`, `जानी-मानी अविश्वसनीय साइट`, `موقع معروف بعدم الموثوقية`, `Site peu fiable connu`, `পরিচিত অনির্ভরযোগ্য সাইট`, `Sito noto come inaffidabile`],
+  Unknown: [`Unknown`, `Desconocido`, `Enkoni`, `未知`, `अज्ञात`, `غير معروف`, `Inconnu`, `অজানা`, `Sconosciuto`],
+  'Same photo found': [`Same photo found`, `Se encontró la misma foto`, `Yo jwenn menm foto a`, `找到了同一张照片`, `वही फ़ोटो मिली`, `وُجدت الصورة نفسها`, `Même photo trouvée`, `একই ছবি পাওয়া গেছে`, `Trovata la stessa foto`],
+  'Similar real photos found': [`Similar real photos found`, `Se encontraron fotos reales similares`, `Yo jwenn vrè foto ki sanble`, `找到了相似的真实照片`, `मिलती-जुलती असली फ़ोटो मिलीं`, `وُجدت صور حقيقية مشابهة`, `Photos réelles similaires trouvées`, `একই রকম আসল ছবি পাওয়া গেছে`, `Trovate foto reali simili`],
+  'No similar real photos': [`No similar real photos`, `No hay fotos reales similares`, `Pa gen vrè foto ki sanble`, `没有相似的真实照片`, `कोई मिलती-जुलती असली फ़ोटो नहीं`, `لا توجد صور حقيقية مشابهة`, `Aucune photo réelle similaire`, `একই রকম আসল ছবি নেই`, `Nessuna foto reale simile`],
+  'More likely real': [`More likely real`, `Más probablemente real`, `Plis sanble vre`, `更可能是真的`, `असली होने की ज़्यादा संभावना`, `على الأرجح حقيقية`, `Plutôt réelle`, `আসল হওয়ার সম্ভাবনা বেশি`, `Più probabilmente reale`],
+  'No change': [`No change`, `Sin cambio`, `Pa gen chanjman`, `没有变化`, `कोई बदलाव नहीं`, `لا تغيير`, `Aucun changement`, `কোনো পরিবর্তন নেই`, `Nessun cambiamento`],
+  'More likely fake': [`More likely fake`, `Más probablemente falsa`, `Plis sanble fo`, `更可能是假的`, `नकली होने की ज़्यादा संभावना`, `على الأرجح مزيفة`, `Plutôt fausse`, `নকল হওয়ার সম্ভাবনা বেশি`, `Più probabilmente falsa`],
+};
+
+const cache = {};
+// Every string above in one language (English when a language is missing)
+export function toolText(lang) {
+  const i = Math.max(0, ORDER.indexOf(lang));
+  if (cache[i]) return cache[i];
+  const pick = (row) => row[i] || row[0];
+  const out = {};
+  for (const [k, row] of Object.entries(TEXT)) out[k] = pick(row);
+  out.areas = Object.fromEntries(Object.entries(AREAS).map(([k, row]) => [k, pick(row)]));
+  out.steps = Object.fromEntries(Object.entries(STEPS).map(([k, rows]) => [k, rows.map(pick)]));
+  out.label = (v) => (LABELS[v] ? pick(LABELS[v]) : v);
+  out.fill = (s, vars) => Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, v), s);
+  cache[i] = out;
+  return out;
+}
