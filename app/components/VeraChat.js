@@ -618,6 +618,7 @@ a.wordmark{text-decoration:none;display:inline-block}
 `;
 
 function Badge({ category }) {
+  const T = useTT();
   return (
     <span
       style={{
@@ -630,18 +631,19 @@ function Badge({ category }) {
         fontWeight: 700,
       }}
     >
-      {category}
+      {T.label(category)}
     </span>
   );
 }
 
 function Meter({ labels, colors, active }) {
+  const T = useTT();
   return (
     <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
       {labels.map((label, i) => (
         <div key={label} style={{ flex: 1, textAlign: 'center', fontSize: 12, lineHeight: 1.2 }}>
           <div style={{ height: 8, borderRadius: 4, background: colors[i], opacity: i === active ? 1 : 0.18 }} />
-          <div style={{ fontWeight: i === active ? 700 : 400, marginTop: 3 }}>{label}</div>
+          <div style={{ fontWeight: i === active ? 700 : 400, marginTop: 3 }}>{T.label(label)}</div>
         </div>
       ))}
     </div>
@@ -793,8 +795,8 @@ function PhotoCheck({ check, title }) {
                 <b>{T.compared}</b>
               </div>
               <div style={{ marginTop: 4 }}>
-                <span className="pill">{check.comparison.match}</span>
-                <span className="pill">{check.comparison.effect}</span>
+                <span className="pill">{T.label(check.comparison.match)}</span>
+                <span className="pill">{T.label(check.comparison.effect)}</span>
               </div>
               {check.comparison.reused_old_photo && (
                 <div className="warn" style={{ marginTop: 6 }}>{T.reused}</div>
@@ -831,7 +833,7 @@ function PhotoResultBubble({ data, image, onFactCheck, headingId }) {
   return (
     <div className="bub wide">
       <CachedNote data={data} />
-      <span className="vchip" style={{ background: color, color: AI_TEXT[li] || '#FFFFFF' }}>{p.level}</span>
+      <span className="vchip" style={{ background: color, color: AI_TEXT[li] || '#FFFFFF' }}>{T.label(p.level)}</span>
       <h2 id={headingId} tabIndex={-1} className="rh" dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600, fontSize: 16 }}>{p.headline}</h2>
       <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
       {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>{T.whatISee} {p.description}</p>}
@@ -873,7 +875,7 @@ function OutletLean({ outlet, note }) {
           </div>
           <div className="lean-labels">
             {LEANS.map((l, k) => (
-              <span key={l} style={{ fontWeight: k === i ? 700 : 400 }}>{l}</span>
+              <span key={l} style={{ fontWeight: k === i ? 700 : 400 }}>{T.label(l)}</span>
             ))}
           </div>
         </>
@@ -1004,7 +1006,7 @@ function FactsBubble({ data, headingId }) {
       {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{stripCites(r.details)}</p>}
       {total === 0 && <div className="warn" dir="auto">⚠️ {NO_SOURCES[data.lang] || NO_SOURCES.en}</div>}
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
-        <span className="pill">{T.consensus} {r.consensus.level}</span>
+        <span className="pill">{T.consensus} {T.label(r.consensus.level)}</span>
         {stripCites(r.consensus.explanation)}
       </p>
 
@@ -1066,15 +1068,15 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
   return (
     <div className="bub wide">
       <CachedNote data={data} />
-      <h2 id={headingId} tabIndex={-1} className="sub-label rh" style={{ marginTop: 0 }}>{T.accurateQ} <span className="sr-only">{r.verdict}</span></h2>
-      <span className="vchip" style={{ background: vColor, color: vIndex >= 0 ? VERDICT_TEXT[vIndex] : '#FFFFFF' }} aria-hidden="true">{r.verdict}</span>
+      <h2 id={headingId} tabIndex={-1} className="sub-label rh" style={{ marginTop: 0 }}>{T.accurateQ} <span className="sr-only">{T.label(r.verdict)}</span></h2>
+      <span className="vchip" style={{ background: vColor, color: vIndex >= 0 ? VERDICT_TEXT[vIndex] : '#FFFFFF' }} aria-hidden="true">{T.label(r.verdict)}</span>
       {vIndex >= 0 && <Meter labels={VERDICTS} colors={VERDICT_COLORS} active={vIndex} />}
 
       {r.warning && <div className="warn">⚠️ {r.warning}</div>}
 
       <p dir="auto" style={{ margin: '12px 0 8px' }}>{stripCites(r.real_story)}</p>
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
-        <span className="pill">{T.consensus} {r.consensus.level}</span>
+        <span className="pill">{T.consensus} {T.label(r.consensus.level)}</span>
         {stripCites(r.consensus.explanation)}
       </p>
 
@@ -1088,7 +1090,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
         <div className="mini">
           <b>{T.whoPosted}</b>
           <div style={{ marginTop: 6 }}>
-            <span className="pill">{r.who_posted.type}</span>
+            <span className="pill">{T.label(r.who_posted.type)}</span>
           </div>
           <div style={{ marginTop: 6, fontSize: 14 }}>
             {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">{T.couldntTell}</span>}

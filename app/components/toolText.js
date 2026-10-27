@@ -219,6 +219,46 @@ const STEPS = {
   ],
 };
 
+// Labels the AI returns in English (verdicts, levels, lean, source types). Only the shown label is translated.
+const LABELS = {
+  Accurate: [`Accurate`, `Correcto`, `Kòrèk`, `准确`, `सही`, `دقيق`, `Exact`, `সঠিক`, `Corretto`],
+  'Missing context': [`Missing context`, `Falta contexto`, `Manke kontèks`, `缺少背景`, `संदर्भ अधूरा`, `ينقصه السياق`, `Contexte manquant`, `প্রসঙ্গ অনুপস্থিত`, `Manca il contesto`],
+  Exaggerated: [`Exaggerated`, `Exagerado`, `Egzajere`, `夸大`, `बढ़ा-चढ़ाकर`, `مبالغ فيه`, `Exagéré`, `অতিরঞ্জিত`, `Esagerato`],
+  Misleading: [`Misleading`, `Engañoso`, `Twonpè`, `误导`, `भ्रामक`, `مضلل`, `Trompeur`, `বিভ্রান্তিকর`, `Fuorviante`],
+  False: [`False`, `Falso`, `Fo`, `错误`, `झूठ`, `خاطئ`, `Faux`, `মিথ্যা`, `Falso`],
+  "Can't confirm yet": [`Can't confirm yet`, `Aún no se puede confirmar`, `Poko ka konfime`, `暂时无法确认`, `अभी पुष्टि नहीं हो सकती`, `لا يمكن التأكيد بعد`, `Impossible à confirmer pour l'instant`, `এখনও নিশ্চিত করা যায়নি`, `Non ancora confermabile`],
+  'Low chance of AI': [`Low chance of AI`, `Baja probabilidad de IA`, `Ti chans IA`, `AI 可能性低`, `AI की कम संभावना`, `احتمال ضعيف للذكاء الاصطناعي`, `Faible probabilité d'IA`, `AI হওয়ার সম্ভাবনা কম`, `Bassa probabilità di IA`],
+  'Medium chance of AI': [`Medium chance of AI`, `Probabilidad media de IA`, `Chans mwayen IA`, `AI 可能性中等`, `AI की मध्यम संभावना`, `احتمال متوسط للذكاء الاصطناعي`, `Probabilité moyenne d'IA`, `AI হওয়ার মাঝারি সম্ভাবনা`, `Media probabilità di IA`],
+  'High chance of AI': [`High chance of AI`, `Alta probabilidad de IA`, `Gwo chans IA`, `AI 可能性高`, `AI की अधिक संभावना`, `احتمال كبير للذكاء الاصطناعي`, `Forte probabilité d'IA`, `AI হওয়ার সম্ভাবনা বেশি`, `Alta probabilità di IA`],
+  Strong: [`Strong`, `Fuerte`, `Fò`, `强`, `मज़बूत`, `قوي`, `Fort`, `জোরালো`, `Forte`],
+  Mixed: [`Mixed`, `Mixto`, `Melanje`, `不一`, `मिला-जुला`, `متباين`, `Mitigé`, `মিশ্র`, `Misto`],
+  Weak: [`Weak`, `Débil`, `Fèb`, `弱`, `कमज़ोर`, `ضعيف`, `Faible`, `দুর্বল`, `Debole`],
+  'None yet': [`None yet`, `Aún no hay`, `Poko genyen`, `尚无`, `अभी नहीं`, `لا يوجد بعد`, `Pas encore`, `এখনও নেই`, `Ancora nessuno`],
+  Left: [`Left`, `Izquierda`, `Agoch`, `左`, `बायाँ`, `يسار`, `Gauche`, `বাম`, `Sinistra`],
+  'Lean Left': [`Lean Left`, `Centroizquierda`, `Panche agoch`, `偏左`, `बाएँ झुकाव`, `يميل لليسار`, `Centre gauche`, `বাম-ঘেঁষা`, `Centro-sinistra`],
+  Center: [`Center`, `Centro`, `Santral`, `中间`, `मध्य`, `وسط`, `Centre`, `মধ্য`, `Centro`],
+  'Lean Right': [`Lean Right`, `Centroderecha`, `Panche adwat`, `偏右`, `दाएँ झुकाव`, `يميل لليمين`, `Centre droit`, `ডান-ঘেঁষা`, `Centro-destra`],
+  Right: [`Right`, `Derecha`, `Adwat`, `右`, `दायाँ`, `يمين`, `Droite`, `ডান`, `Destra`],
+  Official: [`Official`, `Oficial`, `Ofisyèl`, `官方`, `आधिकारिक`, `رسمي`, `Officiel`, `সরকারি`, `Ufficiale`],
+  Research: [`Research`, `Investigación`, `Rechèch`, `研究`, `शोध`, `بحث علمي`, `Recherche`, `গবেষণা`, `Ricerca`],
+  'Fact-check': [`Fact-check`, `Verificación`, `Verifikasyon`, `事实核查`, `फ़ैक्ट-चेक`, `تدقيق حقائق`, `Vérification`, `ফ্যাক্ট-চেক`, `Fact-checking`],
+  'Not rated': [`Not rated`, `Sin calificar`, `Pa evalye`, `未评级`, `रेटिंग नहीं`, `غير مصنّف`, `Non classé`, `রেটিং নেই`, `Non valutato`],
+  'Original source': [`Original source`, `Fuente original`, `Sous orijinal`, `原始来源`, `मूल स्रोत`, `المصدر الأصلي`, `Source d'origine`, `মূল সূত্র`, `Fonte originale`],
+  'News outlet': [`News outlet`, `Medio de noticias`, `Medya nouvèl`, `新闻媒体`, `समाचार संस्थान`, `وسيلة إخبارية`, `Média d'info`, `সংবাদমাধ্যম`, `Testata giornalistica`],
+  'Official source': [`Official source`, `Fuente oficial`, `Sous ofisyèl`, `官方来源`, `आधिकारिक स्रोत`, `مصدر رسمي`, `Source officielle`, `সরকারি সূত্র`, `Fonte ufficiale`],
+  'Satire site': [`Satire site`, `Sitio satírico`, `Sit satir`, `讽刺网站`, `व्यंग्य साइट`, `موقع ساخر`, `Site satirique`, `ব্যঙ্গ সাইট`, `Sito satirico`],
+  'Influencer or creator': [`Influencer or creator`, `Influencer o creador`, `Enfliyansè oswa kreyatè`, `网红或创作者`, `इन्फ़्लुएंसर या क्रिएटर`, `مؤثر أو صانع محتوى`, `Influenceur ou créateur`, `ইনফ্লুয়েন্সার বা ক্রিয়েটর`, `Influencer o creator`],
+  'Personal or anonymous account': [`Personal or anonymous account`, `Cuenta personal o anónima`, `Kont pèsonèl oswa anonim`, `个人或匿名账号`, `निजी या गुमनाम अकाउंट`, `حساب شخصي أو مجهول`, `Compte personnel ou anonyme`, `ব্যক্তিগত বা বেনামি অ্যাকাউন্ট`, `Account personale o anonimo`],
+  'Known unreliable site': [`Known unreliable site`, `Sitio poco fiable conocido`, `Sit ki pa serye`, `已知不可靠网站`, `जानी-मानी अविश्वसनीय साइट`, `موقع معروف بعدم الموثوقية`, `Site peu fiable connu`, `পরিচিত অনির্ভরযোগ্য সাইট`, `Sito noto come inaffidabile`],
+  Unknown: [`Unknown`, `Desconocido`, `Enkoni`, `未知`, `अज्ञात`, `غير معروف`, `Inconnu`, `অজানা`, `Sconosciuto`],
+  'Same photo found': [`Same photo found`, `Se encontró la misma foto`, `Yo jwenn menm foto a`, `找到了同一张照片`, `वही फ़ोटो मिली`, `وُجدت الصورة نفسها`, `Même photo trouvée`, `একই ছবি পাওয়া গেছে`, `Trovata la stessa foto`],
+  'Similar real photos found': [`Similar real photos found`, `Se encontraron fotos reales similares`, `Yo jwenn vrè foto ki sanble`, `找到了相似的真实照片`, `मिलती-जुलती असली फ़ोटो मिलीं`, `وُجدت صور حقيقية مشابهة`, `Photos réelles similaires trouvées`, `একই রকম আসল ছবি পাওয়া গেছে`, `Trovate foto reali simili`],
+  'No similar real photos': [`No similar real photos`, `No hay fotos reales similares`, `Pa gen vrè foto ki sanble`, `没有相似的真实照片`, `कोई मिलती-जुलती असली फ़ोटो नहीं`, `لا توجد صور حقيقية مشابهة`, `Aucune photo réelle similaire`, `একই রকম আসল ছবি নেই`, `Nessuna foto reale simile`],
+  'More likely real': [`More likely real`, `Más probablemente real`, `Plis sanble vre`, `更可能是真的`, `असली होने की ज़्यादा संभावना`, `على الأرجح حقيقية`, `Plutôt réelle`, `আসল হওয়ার সম্ভাবনা বেশি`, `Più probabilmente reale`],
+  'No change': [`No change`, `Sin cambio`, `Pa gen chanjman`, `没有变化`, `कोई बदलाव नहीं`, `لا تغيير`, `Aucun changement`, `কোনো পরিবর্তন নেই`, `Nessun cambiamento`],
+  'More likely fake': [`More likely fake`, `Más probablemente falsa`, `Plis sanble fo`, `更可能是假的`, `नकली होने की ज़्यादा संभावना`, `على الأرجح مزيفة`, `Plutôt fausse`, `নকল হওয়ার সম্ভাবনা বেশি`, `Più probabilmente falsa`],
+};
+
 const cache = {};
 // Every string above in one language (English when a language is missing)
 export function toolText(lang) {
@@ -229,6 +269,7 @@ export function toolText(lang) {
   for (const [k, row] of Object.entries(TEXT)) out[k] = pick(row);
   out.areas = Object.fromEntries(Object.entries(AREAS).map(([k, row]) => [k, pick(row)]));
   out.steps = Object.fromEntries(Object.entries(STEPS).map(([k, rows]) => [k, rows.map(pick)]));
+  out.label = (v) => (LABELS[v] ? pick(LABELS[v]) : v);
   out.fill = (s, vars) => Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, v), s);
   cache[i] = out;
   return out;

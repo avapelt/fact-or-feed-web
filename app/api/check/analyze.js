@@ -485,40 +485,58 @@ export async function analyze(input) {
 
   // Step 0: 🛎️ The Front desk (small fast model) decides: check, chat, blocked, or self_harm.
   // It runs before link reading and the Manager, so small talk never waits for them.
-  let desk = null;
-  try {
-    const deskContent = [];
-    if (text) deskContent.push({ type: 'text', text: `The user's message:\n${text}` });
-    if (url) deskContent.push({ type: 'text', text: `A link was sent: ${url}` });
-    if (image) deskContent.push({ type: 'image', image });
-    deskContent.push({ type: 'text', text: `${image ? 'A photo was sent.' : 'No photo was sent.'}\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` });
-    const { output } = await generateText({
-      model: FAST_MODEL,
-      system: FRONT_DESK_PROMPT,
-      ...withTemperature(FAST_MODEL, 0.2),
-      messages: [{ role: 'user', content: deskContent }],
-      output: Output.object({ schema: FrontDeskSchema }),
-    });
-    desk = output;
-  } catch (err) {
-    console.error('Front desk failed, treating it as a check', err);
-  }
-  // 👋 Small talk gets a short reply as Vera, and anything against the safety rules is never searched.
-  // (A photo or link is always checked, never treated as small talk.)
-  const intent = desk?.intent === 'chat' && (image || url) ? 'check' : desk?.intent || 'check';
-  if (intent !== 'check') {
-    let reply = String(desk.chat_reply || '').trim().slice(0, 1200);
+  const askFrontDesk = async (deskContent) => {
+    try {
+      const { output } = await generateText({
+        model: FAST_MODEL,
+        system: FRONT_DESK_PROMPT,
+        ...withTemperature(FAST_MODEL, 0.2),
+        messages: [{ role: 'user', content: deskContent }],
+        output: Output.object({ schema: FrontDeskSchema }),
+      });
+      return output;
+    } catch (err) {
+      console.error('Front desk failed, treating it as a check', err);
+      return null;
+    }
+  };
+  const deskReply = (intent, raw) => {
+    let reply = String(raw || '').trim().slice(0, 1200);
     if (intent === 'blocked' && !reply) reply = "Sorry, I can't help with that. I'm happy to fact-check a post, link, or photo for you instead.";
     if (intent === 'self_harm') reply = `${reply || "I'm really sorry you're going through this. You matter, and talking to someone can help."}\n\n${CRISIS_LINE}`;
     if (intent === 'chat' && !reply) reply = "Hi! I'm Vera. Send me a post, link, or question and I'll check the facts with you.";
     mark(intent === 'chat' ? 'Vera answered a hello' : 'This request is not something Vera can help with');
     notebookPromise.catch(() => {});
     return chatResult(intent, reply);
+  };
+  let desk = null;
+  {
+    const deskContent = [];
+    if (text) deskContent.push({ type: 'text', text: `The user's message:\n${text}` });
+    if (url) deskContent.push({ type: 'text', text: `A link was sent: ${url}` });
+    if (image) deskContent.push({ type: 'image', image });
+    deskContent.push({ type: 'text', text: `${image ? 'A photo was sent.' : 'No photo was sent.'}\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` });
+    desk = await askFrontDesk(deskContent);
   }
+  // 👋 Small talk gets a short reply as Vera, and anything against the safety rules is never searched.
+  // (A photo or link is always checked, never treated as small talk.)
+  const intent = desk?.intent === 'chat' && (image || url) ? 'check' : desk?.intent || 'check';
+  if (intent !== 'check') return deskReply(intent, desk.chat_reply);
 
   const content = [];
   if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${text}` : `The user was sent this:\n${text}` });
-  if (url) content.push({ type: 'text', text: `Article from ${url}:\n${await readArticle(url)}` });
+  if (url) {
+    const article = await readArticle(url);
+    content.push({ type: 'text', text: `Article from ${url}:\n${article}` });
+    // 🛡️ The linked article gets the same safety screening the Manager used to give it (blocked / self_harm only;
+    // a link is never small talk). One cheap Haiku call, only when a link was read.
+    const linkDesk = await askFrontDesk([
+      ...(text ? [{ type: 'text', text: `The user's message:\n${text}` }] : []),
+      { type: 'text', text: `Article from ${url}:\n${article}` },
+      { type: 'text', text: `A link was sent, so this is never chat.\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` },
+    ]);
+    if (linkDesk?.intent === 'blocked' || linkDesk?.intent === 'self_harm') return deskReply(linkDesk.intent, linkDesk.chat_reply);
+  }
   if (image) content.push({ type: 'image', image });
   if (content.length === 0) {
     const e = new Error('Paste some text, a link, or add a screenshot.');
