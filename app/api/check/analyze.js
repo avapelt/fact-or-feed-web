@@ -5,7 +5,7 @@ import { categorize } from './bias';
 import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden, VERDICT_LIST, applyReview, skipsEvidenceRule } from './safety';
 import { safeFetch } from './fetchsafe';
 
 
@@ -89,7 +89,7 @@ const ReviewSchema = z.object({
   confidence: z.enum(['High', 'Medium', 'Low']),
   issues: z.array(z.string()),
   corrected_verdict: z
-    .enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"])
+    .enum(VERDICT_LIST)
     .nullable(),
   corrected_real_story: z.string().nullable(),
   review_note: z.string(),
@@ -113,7 +113,7 @@ const StorySchema = z.object({
     trust_note: z.string(),
   }),
   bias_note: z.string().nullable(),
-  verdict: z.enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"]),
+  verdict: z.enum(VERDICT_LIST),
   real_story: z.string(),
   consensus: z.object({
     level: z.enum(['Strong', 'Mixed', 'Weak', 'None yet']),
@@ -835,14 +835,10 @@ ${sourceList ? untrusted('search results', sourceList) : 'No sources were found.
       output: Output.object({ schema: ReviewSchema }),
     });
     review = output;
-    if (review && !review.approved) {
-      if (toolName === 'facts') {
-        if (review.corrected_real_story) story.answer = review.corrected_real_story;
-      } else {
-        if (review.corrected_verdict) story.verdict = review.corrected_verdict;
-        if (review.corrected_real_story) story.real_story = review.corrected_real_story;
-      }
-    }
+    // A changed verdict also fixes or clears the parts written for the old one (see applyReview)
+    const fixed = applyReview(story, review, toolName);
+    story = fixed.story;
+    if (review && fixed.adjusted) review = { ...review, adjusted: true };
     mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
   } catch (err) {
     // If the double-check fails, still show Vera's answer rather than nothing (but don't save it)
@@ -853,7 +849,9 @@ ${sourceList ? untrusted('search results', sourceList) : 'No sources were found.
   // Step 6: Never guess. If there are too few sources (fewer than 3, or all from one website),
   // the code itself says "Can't confirm yet", whatever the AI wrote. A failed search only
   // matters when it left us short of sources.
-  const problem = evidenceProblem(sources, {
+  // (Satire from a recognized satire site, and opinions, are labeled without the 3-source rule)
+  const exempt = toolName !== 'facts' && skipsEvidenceRule(story);
+  const problem = exempt ? null : evidenceProblem(sources, {
     claims: needsCheck ? Math.max(1, reader.claims.length) : 0,
     searchesFailed: searchTrack.failed,
   });
@@ -880,6 +878,8 @@ ${sourceList ? untrusted('search results', sourceList) : 'No sources were found.
     outlet,
     result: story,
     review,
+    // 'failed' when the double-check couldn't run, so the page says "not double-checked"
+    reviewStatus: problem ? 'skipped' : reviewFailed ? 'failed' : 'done',
     keySources,
     sources: sources.map(({ snippet, ...rest }) => ({ ...rest, snippet: (snippet || '').slice(0, 300) })),
     stats,

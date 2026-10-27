@@ -25,6 +25,8 @@ const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
 const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
 const VERDICT_COLORS = ['#237A4B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
 // Text on each verdict chip: dark ink on the light chips, white on the dark ones (all at least 4.5:1)
+// Satire and opinion aren't on the true-to-false scale: their own chip colors (white text, over 4.5:1)
+const OTHER_VERDICT_COLORS = { Satire: '#6B4FA0', 'Opinion — not checkable': '#4A5568' };
 const VERDICT_TEXT = ['#FFFFFF', '#1D1D1F', '#1D1D1F', '#1D1D1F', '#FFFFFF'];
 // The three tools: icon, link, and name in each language
 export const TOOLS = {
@@ -930,9 +932,9 @@ function SourcesList({ data, total }) {
   );
 }
 
-function ReviewBox({ review }) {
+function ReviewBox({ review, status }) {
   const T = useTT();
-  if (!review) return null;
+  if (!review) return status === 'failed' ? <div className="review">{T.notDoubleChecked}</div> : null;
   return (
     <div className="review">
       <div>
@@ -940,6 +942,8 @@ function ReviewBox({ review }) {
         <span className="pill" style={{ marginLeft: 8 }}>{T.confidence} {review.confidence}</span>
       </div>
       {review.review_note && <div style={{ marginTop: 4 }}>{review.review_note}</div>}
+      {review.confidence === 'Low' && <div style={{ marginTop: 4 }}><b>{T.lessCertain}</b></div>}
+      {review.adjusted && <div style={{ marginTop: 4 }}>{T.reviewAdjusted}</div>}
       {!review.approved && review.issues?.length > 0 && (
         <ul style={{ marginTop: 6 }}>
           {review.issues.map((x, i) => (
@@ -1023,7 +1027,7 @@ function FactsBubble({ data, headingId }) {
         </div>
       )}
 
-      <ReviewBox review={data.review} />
+      <ReviewBox review={data.review} status={data.reviewStatus} />
       {r.notebook_note && <div className="notebook">📒 <b>{T.fromNotebook}</b> {r.notebook_note}</div>}
 
       {total > 0 && (
@@ -1063,7 +1067,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
   const r = data.result;
   const total = data.sources?.length || 0;
   const vIndex = VERDICTS.indexOf(r.verdict);
-  const vColor = vIndex >= 0 ? VERDICT_COLORS[vIndex] : '#6f6858';
+  const vColor = vIndex >= 0 ? VERDICT_COLORS[vIndex] : OTHER_VERDICT_COLORS[r.verdict] || '#6f6858';
 
   return (
     <div className="bub wide">
@@ -1080,7 +1084,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
         {stripCites(r.consensus.explanation)}
       </p>
 
-      <ReviewBox review={data.review} />
+      <ReviewBox review={data.review} status={data.reviewStatus} />
 
       {r.notebook_note && (
         <div className="notebook">📒 <b>{T.fromNotebook}</b> {r.notebook_note}</div>

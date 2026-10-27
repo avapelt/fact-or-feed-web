@@ -14,6 +14,8 @@ const ICONS = {
   Exaggerated: '🟠',
   Misleading: '🟠',
   False: '❌',
+  Satire: '🎭',
+  'Opinion — not checkable': '💬',
   "Can't confirm yet": '❔',
 };
 
@@ -81,6 +83,8 @@ export async function POST(req) {
     lines.push(r.real_story, '');
     lines.push(`Consensus: ${r.consensus.level}${total ? ` · checked ${total} sources` : ''}`);
     if (data.review) lines.push(`✅ Double-checked by a second AI (confidence: ${data.review.confidence})`);
+    if (data.review?.confidence === 'Low') lines.push('⚠️ Less certain: the evidence is thin or conflicting.');
+    if (data.reviewStatus === 'failed') lines.push('⚠️ Not double-checked: the second AI was unavailable.');
     if (r.who_posted) {
       lines.push(`✍️ Posted by: ${r.who_posted.name || 'unknown'} (${r.who_posted.type})`);
     }

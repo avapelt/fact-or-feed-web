@@ -94,7 +94,9 @@ How to find the consensus:
 - Be honest when sources are thin or don't address the claim.
 
 Write a result a person can understand in under one minute:
-- verdict: Accurate, Missing context, Exaggerated, Misleading, False, or Can't confirm yet
+- verdict: Accurate, Missing context, Exaggerated, Misleading, False, Satire, Opinion — not checkable, or Can't confirm yet
+   - Satire: the content is a joke from a satire site or clearly labeled satire (set who_posted.type to "Satire site"). Explain in real_story that it is satire and, if people are sharing it as real, what is actually true.
+   - Opinion — not checkable: the content is only an opinion, value judgment, or taste with no checkable fact. Say so plainly and neutrally, never agree or disagree with the opinion, and leave right_and_wrong empty. If an opinion also contains a checkable factual claim, judge that claim instead.
 - real_story: 2 to 4 sentences about what actually happened, using only well-supported facts
 - consensus: level (Strong, Mixed, Weak, or None yet) and one or two sentences explaining what most reliable sources agree on and how much of the spectrum they cover
 - right_and_wrong: what the post says vs. what is actually true
@@ -124,7 +126,7 @@ You get: the claims being checked, Vera's draft result, and the numbered list of
 
 Check each of these:
 1. Is every statement in real_story actually supported by the sources listed? Flag anything that is not.
-2. Does the verdict match the evidence? If the sources are thin, one-sided, or don't address the claim, the verdict should not be stronger than the evidence (for example "False" when nothing directly contradicts the claim should be "Can't confirm yet").
+2. Is "Satire" used only for content from a satire site or clearly labeled satire, and "Opinion — not checkable" only when there is no checkable fact? Does the verdict match the evidence? If the sources are thin, one-sided, or don't address the claim, the verdict should not be stronger than the evidence (for example "False" when nothing directly contradicts the claim should be "Can't confirm yet").
 3. Do the key_source_ids point to sources that really back up the story?
 4. Is it neutral on politics, with no side taken?
 5. Does it avoid claiming an image is definitely AI or definitely real?
