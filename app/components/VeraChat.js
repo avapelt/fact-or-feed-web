@@ -17,6 +17,7 @@ const COLORS = {
   Official: '#237A4B',
   Research: '#5B3FA6',
   'Fact-check': '#D99A2B',
+  'State media/government': '#5A4A3A',
   'Not rated': '#E2E0E6',
 };
 const ORDER = Object.keys(COLORS);

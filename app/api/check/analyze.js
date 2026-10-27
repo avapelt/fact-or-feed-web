@@ -5,7 +5,7 @@ import { categorize } from './bias';
 import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden, VERDICT_LIST, applyReview, skipsEvidenceRule } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden, VERDICT_LIST, applyReview, skipsEvidenceRule, groupSyndicated, imageScoreFor, aiLevelFor, weighComparison, metadataHints, finalImageCheck } from './safety';
 import { safeFetch } from './fetchsafe';
 
 
@@ -81,6 +81,8 @@ const CompareSchema = z.object({
   match: z.enum(['Same photo found', 'Similar real photos found', 'No similar real photos']),
   reused_old_photo: z.boolean(),
   effect: z.enum(['More likely real', 'No change', 'More likely fake']),
+  copy_index: z.number().nullable(),
+  copy_looks_older: z.boolean().nullable(),
   comparison: z.string(),
 });
 
@@ -250,7 +252,9 @@ async function compareWithRealPhotos(image, query, model, lessons = '', track = 
     ],
     output: Output.object({ schema: CompareSchema }),
   });
-  return { ...output, compared: picked.map((p) => ({ url: p.url, description: p.description || '' })), query };
+  const compared = picked.map((p) => ({ url: p.url, description: p.description || '' }));
+  // A found copy only counts toward "real" when it's from a credible publisher (see weighComparison)
+  return { ...weighComparison(output, compared, categorize), compared, query };
 }
 
 function rebuildAbstract(inverted) {
@@ -371,18 +375,9 @@ async function readArticle(url) {
   return parts.length ? parts.join('\n\n') : 'Could not open this link.';
 }
 
-const PLAUSIBILITY_SCORE = { Plausible: 0, Unusual: 4, 'Very unlikely': 8 };
-
-function imageScore(run) {
-  const visual = Math.max(0, Math.min(10, Number(run.visual_signs_score) || 0));
-  return Math.max(visual, PLAUSIBILITY_SCORE[run.plausibility] ?? 0);
-}
-
-function levelFor(score) {
-  if (score >= 7) return 'High chance of AI';
-  if (score >= 3) return 'Medium chance of AI';
-  return 'Low chance of AI';
-}
+// Scoring lives in safety.js (an unlikely scene alone can't reach "High chance of AI")
+const imageScore = imageScoreFor;
+const levelFor = aiLevelFor;
 
 // One image check (it used to run 3 times; the scoring works the same with one answer).
 // If the AI call fails, it tries once more before giving up.
@@ -719,13 +714,8 @@ export async function analyze(input) {
   ]);
 
   // The comparison nudges the AI-chance score up or down
-  let imageCheck = rawImageCheck;
-  if (imageCheck && photoComparison) {
-    let score = imageCheck.score ?? 0;
-    if (photoComparison.effect === 'More likely fake') score = Math.min(10, score + 2);
-    if (photoComparison.effect === 'More likely real') score = Math.max(0, score - 2);
-    imageCheck = { ...imageCheck, score, level: levelFor(score), comparison: photoComparison };
-  }
+  // ...and hints in the photo's own metadata (C2PA, AI tool names) are a small supporting signal
+  const imageCheck = finalImageCheck(rawImageCheck, { comparison: photoComparison, hints: photoChecks ? metadataHints(image) : null });
 
   // Step 3: Remove duplicates and label each source
   const seen = new Set();
@@ -738,7 +728,8 @@ export async function analyze(input) {
       all.push({ ...s, ...categorize(s), original: !!s.original });
     }
   }
-  const sources = all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 }));
+  // Copies of one wire story (near-identical titles) are marked, so they count as one source
+  const sources = groupSyndicated(all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 })));
 
   const stats = {};
   for (const s of sources) stats[s.category] = (stats[s.category] || 0) + 1;
@@ -746,7 +737,7 @@ export async function analyze(input) {
   const sourceList = sources
     .map(
       (s) =>
-        `[${s.id}] ${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
+        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
     )
     .join('\n\n');
 
@@ -988,13 +979,7 @@ export async function checkPhoto(input) {
   const [rawCheck, { describe, comparison }] = await Promise.all([imagePromise, comparePromise]);
   if (!rawCheck) throw new Error("I couldn't check that photo. Try again in a moment?");
 
-  let check = rawCheck;
-  if (comparison) {
-    let score = check.score ?? 0;
-    if (comparison.effect === 'More likely fake') score = Math.min(10, score + 2);
-    if (comparison.effect === 'More likely real') score = Math.max(0, score - 2);
-    check = { ...check, score, level: levelFor(score), comparison };
-  }
+  let check = finalImageCheck(rawCheck, { comparison, hints: metadataHints(image) });
 
   // The Photo Writer explains the result in plain words, in the user's language
   const langCode = LANGUAGE_NAMES[input.language] ? input.language : describe?.language || 'en';
@@ -1017,6 +1002,7 @@ Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${UNTRUSTED_RULE}${today}`,
         plausibility_reason: check.plausibility_reason,
         signs: check.signs,
         note: check.note,
+        metadata: check.metadata ? { content_credentials_found: check.metadata.c2pa, ai_tool_names_in_file: check.metadata.ai_tags, caution: 'a supporting hint only: metadata is often removed and can be faked' } : null,
         comparison: comparison ? { match: comparison.match, effect: comparison.effect, text: comparison.comparison } : null,
         what_the_photo_shows: describe?.description || null,
         user_note: context ? untrusted('user note', context) : null,

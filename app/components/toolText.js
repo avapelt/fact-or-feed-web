@@ -247,6 +247,7 @@ const LABELS = {
   Official: [`Official`, `Oficial`, `Ofisyèl`, `官方`, `आधिकारिक`, `رسمي`, `Officiel`, `সরকারি`, `Ufficiale`],
   Research: [`Research`, `Investigación`, `Rechèch`, `研究`, `शोध`, `بحث علمي`, `Recherche`, `গবেষণা`, `Ricerca`],
   'Fact-check': [`Fact-check`, `Verificación`, `Verifikasyon`, `事实核查`, `फ़ैक्ट-चेक`, `تدقيق حقائق`, `Vérification`, `ফ্যাক্ট-চেক`, `Fact-checking`],
+  'State media/government': [`State media/government`, `Medio estatal/gobierno`, `Medya leta/gouvènman`, `官方媒体/政府`, `सरकारी मीडिया/सरकार`, `إعلام رسمي/حكومة`, `Média d'État/gouvernement`, `রাষ্ট্রীয় মিডিয়া/সরকার`, `Media di Stato/governo`],
   'Not rated': [`Not rated`, `Sin calificar`, `Pa evalye`, `未评级`, `रेटिंग नहीं`, `غير مصنّف`, `Non classé`, `রেটিং নেই`, `Non valutato`],
   'Original source': [`Original source`, `Fuente original`, `Sous orijinal`, `原始来源`, `मूल स्रोत`, `المصدر الأصلي`, `Source d'origine`, `মূল সূত্র`, `Fonte originale`],
   'News outlet': [`News outlet`, `Medio de noticias`, `Medya nouvèl`, `新闻媒体`, `समाचार संस्थान`, `وسيلة إخبارية`, `Média d'info`, `সংবাদমাধ্যম`, `Testata giornalistica`],
