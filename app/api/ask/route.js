@@ -8,6 +8,8 @@ import { categorize } from '../check/bias';
 import { loadNotebook, lessonsFor } from '../check/notebook';
 import { dateRule, isBlockedSource, similarQueries } from '../check/safety';
 
+import { blockBots, logError } from '../check/guard';
+
 export const maxDuration = 120;
 
 // The report comes from the user's browser, so we never trust its size:
@@ -34,6 +36,8 @@ function sourceLine(s) {
 }
 
 export async function POST(req) {
+  const blocked = await blockBots();
+  if (blocked) return blocked;
   try {
     const body = await req.json();
     const q = String(body?.question || '').trim().slice(0, 1000);
@@ -144,7 +148,7 @@ ${known.map(sourceLine).join('\n\n') || 'none'}`;
 
     return Response.json({ answer, cited, searchedAgain: extra.length > 0, newSources: extra.map(({ snippet, ...rest }) => ({ ...rest, snippet })) });
   } catch (err) {
-    console.error(err);
-    return Response.json({ error: 'Something went wrong: ' + (err?.message || 'unknown error') }, { status: 500 });
+    logError('Follow-up failed', err);
+    return Response.json({ error: 'Something went wrong. Please try again in a moment.' }, { status: 500 });
   }
 }

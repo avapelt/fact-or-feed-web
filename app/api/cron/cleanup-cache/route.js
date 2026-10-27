@@ -37,7 +37,7 @@ export async function GET(req) {
     const shares = await cleanFolder('shares/', 60 * 60 * 1000);
     return Response.json({ ok: true, cache, shares });
   } catch (err) {
-    console.error('Cleanup failed', err);
+    console.error('Cleanup failed', err?.name, err?.message);
     return Response.json({ ok: false }, { status: 500 });
   }
 }

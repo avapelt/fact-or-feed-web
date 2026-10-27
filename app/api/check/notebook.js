@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { get, put } from '@vercel/blob';
 import { APPROVED_LESSONS } from './approved-lessons';
 import { withTemperature } from './safety';
+import { logError } from './guard';
 
 const PATH = 'notebook/vera-notebook.json';
 const PENDING_PATH = 'notebook/pending-lessons.json';
@@ -207,7 +208,7 @@ ${existing || 'none'}`,
     }
     return { saved: true, lesson: output?.lesson?.text ? scrub(output.lesson.text) : null, agent: output?.lesson?.agent || null, job: output?.lesson?.agent ? AGENT_JOBS[output.lesson.agent] : null };
   } catch (err) {
-    console.error('Bookkeeper failed', err);
+    logError('Bookkeeper failed', err);
     return { saved: false, lesson: null };
   }
 }

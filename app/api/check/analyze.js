@@ -2,6 +2,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
 import { categorize } from './bias';
+import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
 import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
@@ -202,7 +203,7 @@ async function searchPhotos(query, track = null) {
       .filter((img) => img && img.url && !isBlockedSource(img.url));
   } catch (err) {
     if (track) track.failed = (track.failed || 0) + 1;
-    console.error('Photo search failed:', err?.message || err);
+    logError('Photo search failed', err);
     return [];
   }
 }
@@ -403,7 +404,7 @@ async function runImageCheck(image, system, prompt) {
       const result = await imageCheckOnce(image, system, prompt);
       if (result) return result;
     } catch (err) {
-      console.error(`Image check failed (try ${attempt} of 2)`, err);
+      logError(`Image check failed (try ${attempt} of 2)`, err);
     }
   }
   return null;
@@ -496,7 +497,7 @@ export async function analyze(input) {
       });
       return output;
     } catch (err) {
-      console.error('Front desk failed, treating it as a check', err);
+      logError('Front desk failed, treating it as a check', err);
       return null;
     }
   };
@@ -576,7 +577,7 @@ export async function analyze(input) {
     });
     plan = output;
   } catch (err) {
-    console.error('Manager failed, using the full team', err);
+    logError('Manager failed, using the full team', err);
   }
   // If the Manager can't decide, use the full team (safe default)
   plan = plan || {
@@ -716,7 +717,7 @@ export async function analyze(input) {
           return r;
         })
         .catch((err) => {
-          console.error('Photo comparison failed', err);
+          logError('Photo comparison failed', err);
           compareFailed = true;
           return null;
         })
@@ -857,7 +858,7 @@ ${sourceList || 'No sources were found.'}`,
     mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
   } catch (err) {
     // If the double-check fails, still show Vera's answer rather than nothing (but don't save it)
-    console.error('Reviewer failed', err);
+    logError('Reviewer failed', err);
     reviewFailed = true;
   }
 
@@ -985,13 +986,13 @@ export async function checkPhoto(input) {
         mark(`Compared the photo with ${comparison.compared.length} real photos found online`);
         return { describe: d, comparison };
       } catch (err) {
-        console.error('Photo comparison failed', err);
+        logError('Photo comparison failed', err);
         finderFailed = true;
         return { describe: d, comparison: null };
       }
     })
     .catch((err) => {
-      console.error('Photo finder failed', err);
+      logError('Photo finder failed', err);
       finderFailed = true;
       return { describe: null, comparison: null };
     });
@@ -1037,7 +1038,7 @@ Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
     summary = output;
     mark('Wrote up the photo check');
   } catch (err) {
-    console.error('Photo writer failed', err);
+    logError('Photo writer failed', err);
   }
 
   if (summary) {
