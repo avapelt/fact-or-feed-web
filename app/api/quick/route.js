@@ -4,6 +4,8 @@ import { analyze } from '../check/analyze';
 import { cacheKeyFor, readCached, saveCached } from '../check/cache';
 import { checkImageField, signPayload, photoTooBig, sniffImageType, MAX_IMAGE_BYTES } from '../check/safety';
 
+import { overLimit, clientIp, logError } from '../check/guard';
+
 export const maxDuration = 300;
 
 const ICONS = {
@@ -12,6 +14,8 @@ const ICONS = {
   Exaggerated: '🟠',
   Misleading: '🟠',
   False: '❌',
+  Satire: '🎭',
+  'Opinion — not checkable': '💬',
   "Can't confirm yet": '❔',
 };
 
@@ -56,6 +60,10 @@ async function readRequest(req) {
 
 export async function POST(req) {
   try {
+    // A cheap per-IP limit (the iPhone Shortcut can't run BotID, which needs a browser)
+    if (overLimit('quick:' + clientIp(req), { max: 6 })) {
+      return Response.json({ title: 'Fact or Feed?', message: 'Too many checks in a row. Please wait a minute and try again.', verdict: null, link: new URL(req.url).origin }, { status: 200 });
+    }
     const input = await readRequest(req);
     // 💾 The same check in the last few hours: reuse the saved result instead of paying again
     const key = cacheKeyFor('check', { ...input, fast: true });
@@ -75,6 +83,8 @@ export async function POST(req) {
     lines.push(r.real_story, '');
     lines.push(`Consensus: ${r.consensus.level}${total ? ` · checked ${total} sources` : ''}`);
     if (data.review) lines.push(`✅ Double-checked by a second AI (confidence: ${data.review.confidence})`);
+    if (data.review?.confidence === 'Low') lines.push('⚠️ Less certain: the evidence is thin or conflicting.');
+    if (data.reviewStatus === 'failed') lines.push('⚠️ Not double-checked: the second AI was unavailable.');
     if (r.who_posted) {
       lines.push(`✍️ Posted by: ${r.who_posted.name || 'unknown'} (${r.who_posted.type})`);
     }
@@ -103,7 +113,7 @@ export async function POST(req) {
       link: sig && packed.length <= 200 * 1024 ? `${origin}/#r=${packed}.${sig}` : origin,
     });
   } catch (err) {
-    console.error(err);
+    logError('Quick check failed', err);
     return Response.json(
       {
         title: 'Fact or Feed?',

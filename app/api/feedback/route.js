@@ -5,11 +5,15 @@
 import { bookkeep } from '../check/notebook';
 import { FAST_MODEL } from '../check/analyze';
 
+import { blockBots, logError } from '../check/guard';
+
 export const maxDuration = 60;
 
 const clip = (v, n) => String(v ?? '').slice(0, n);
 
 export async function POST(req) {
+  const blocked = await blockBots();
+  if (blocked) return blocked;
   try {
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object') return Response.json({ ok: false, error: 'Bad request.' }, { status: 400 });
@@ -30,7 +34,7 @@ export async function POST(req) {
     });
     return Response.json({ ok: result.saved, lesson: result.lesson, job: result.job, pending: true });
   } catch (err) {
-    console.error(err);
+    logError('Feedback failed', err);
     return Response.json({ ok: false });
   }
 }

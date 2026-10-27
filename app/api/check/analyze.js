@@ -1,10 +1,12 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
+import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE, UNTRUSTED_RULE } from './prompts';
 import { categorize } from './bias';
+import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden, VERDICT_LIST, applyReview, skipsEvidenceRule, groupSyndicated, imageScoreFor, aiLevelFor, weighComparison, metadataHints, finalImageCheck } from './safety';
+import { safeFetch } from './fetchsafe';
 
 
 // 💰 The strong model only writes the verdict or answer (and judges a photo's AI warning signs).
@@ -81,6 +83,8 @@ const CompareSchema = z.object({
   match: z.enum(['Same photo found', 'Similar real photos found', 'No similar real photos']),
   reused_old_photo: z.boolean(),
   effect: z.enum(['More likely real', 'No change', 'More likely fake']),
+  copy_index: z.number().nullable(),
+  copy_looks_older: z.boolean().nullable(),
   comparison: z.string(),
 });
 
@@ -89,7 +93,7 @@ const ReviewSchema = z.object({
   confidence: z.enum(['High', 'Medium', 'Low']),
   issues: z.array(z.string()),
   corrected_verdict: z
-    .enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"])
+    .enum(VERDICT_LIST)
     .nullable(),
   corrected_real_story: z.string().nullable(),
   review_note: z.string(),
@@ -113,7 +117,7 @@ const StorySchema = z.object({
     trust_note: z.string(),
   }),
   bias_note: z.string().nullable(),
-  verdict: z.enum(['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False', "Can't confirm yet"]),
+  verdict: z.enum(VERDICT_LIST),
   real_story: z.string(),
   consensus: z.object({
     level: z.enum(['Strong', 'Mixed', 'Weak', 'None yet']),
@@ -173,9 +177,9 @@ export async function searchWeb(query, extra = {}, track = null) {
     const data = await res.json();
     if (!data || !Array.isArray(data.results)) return failed('no results list');
     return data.results.filter((r) => r && r.url && !isBlockedSource(r.url)).map((r) => ({
-      title: r.title || r.url,
+      title: stripHidden(r.title || r.url).slice(0, 300),
       url: r.url,
-      snippet: (r.content || '').slice(0, 500),
+      snippet: stripHidden(r.content || '').slice(0, 500),
       date: r.published_date || null,
     }));
   } catch (err) {
@@ -204,29 +208,23 @@ async function searchPhotos(query, track = null) {
       .filter((img) => img && img.url && !isBlockedSource(img.url));
   } catch (err) {
     if (track) track.failed = (track.failed || 0) + 1;
-    console.error('Photo search failed:', err?.message || err);
+    logError('Photo search failed', err);
     return [];
   }
 }
 
 // Downloads a found photo so the AI can look at it (skips anything slow, huge, or not an image)
 async function fetchImageAsDataUrl(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FactOrFeed/1.0)' },
-    });
+    // Only public addresses, with a size cap and one timeout (see fetchsafe.js)
+    const res = await safeFetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FactOrFeed/1.0)' }, maxBytes: 2_500_000, timeoutMs: 5000 });
     const type = (res.headers.get('content-type') || '').split(';')[0];
-    if (!res.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 2000 || buf.length > 2_500_000) return null;
+    if (!res.ok || res.truncated || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return null;
+    const buf = res.bytes;
+    if (buf.length < 2000) return null;
     return `data:${type};base64,${buf.toString('base64')}`;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -256,7 +254,9 @@ async function compareWithRealPhotos(image, query, model, lessons = '', track = 
     ],
     output: Output.object({ schema: CompareSchema }),
   });
-  return { ...output, compared: picked.map((p) => ({ url: p.url, description: p.description || '' })), query };
+  const compared = picked.map((p) => ({ url: p.url, description: p.description || '' }));
+  // A found copy only counts toward "real" when it's from a credible publisher (see weighComparison)
+  return { ...weighComparison(output, compared, categorize), compared, query };
 }
 
 function rebuildAbstract(inverted) {
@@ -323,15 +323,6 @@ function readMetaTags(html) {
   return decodeEntities(found.join('\n'));
 }
 
-async function fetchWithTimeout(url, options = {}, ms = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 const BROWSER_HEADERS = {
   'User-Agent':
@@ -352,9 +343,11 @@ async function readArticle(url) {
   // Read the page itself (this also follows short links like vm.tiktok.com to the real post)
   let finalUrl = url;
   try {
-    const res = await fetchWithTimeout(url, { headers: BROWSER_HEADERS });
+    // Only http(s) links to public addresses; redirects re-checked (max 3); about 2MB; 8 seconds in all
+    const res = await safeFetch(url, { headers: BROWSER_HEADERS });
     finalUrl = res.url || url;
-    const html = await res.text();
+    // Hidden text tricks (HTML comments, zero-width characters) are removed first
+    const html = stripHidden(res.bytes.toString('utf8'));
     const meta = readMetaTags(html);
     if (meta) parts.push(`Page preview: ${meta}`);
     const body = html
@@ -368,7 +361,7 @@ async function readArticle(url) {
   // TikTok shares each video's caption and creator publicly
   if (host.endsWith('tiktok.com')) {
     try {
-      const res = await fetchWithTimeout(`https://www.tiktok.com/oembed?url=${encodeURIComponent(finalUrl)}`);
+      const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(finalUrl)}`, { signal: AbortSignal.timeout(8000) });
       const data = await res.json();
       if (data.title) parts.unshift(`TikTok caption: ${data.title}`);
       if (data.author_name) parts.unshift(`TikTok video posted by: ${data.author_name}`);
@@ -384,18 +377,9 @@ async function readArticle(url) {
   return parts.length ? parts.join('\n\n') : 'Could not open this link.';
 }
 
-const PLAUSIBILITY_SCORE = { Plausible: 0, Unusual: 4, 'Very unlikely': 8 };
-
-function imageScore(run) {
-  const visual = Math.max(0, Math.min(10, Number(run.visual_signs_score) || 0));
-  return Math.max(visual, PLAUSIBILITY_SCORE[run.plausibility] ?? 0);
-}
-
-function levelFor(score) {
-  if (score >= 7) return 'High chance of AI';
-  if (score >= 3) return 'Medium chance of AI';
-  return 'Low chance of AI';
-}
+// Scoring lives in safety.js (an unlikely scene alone can't reach "High chance of AI")
+const imageScore = imageScoreFor;
+const levelFor = aiLevelFor;
 
 // One image check (it used to run 3 times; the scoring works the same with one answer).
 // If the AI call fails, it tries once more before giving up.
@@ -405,7 +389,7 @@ async function runImageCheck(image, system, prompt) {
       const result = await imageCheckOnce(image, system, prompt);
       if (result) return result;
     } catch (err) {
-      console.error(`Image check failed (try ${attempt} of 2)`, err);
+      logError(`Image check failed (try ${attempt} of 2)`, err);
     }
   }
   return null;
@@ -498,7 +482,7 @@ export async function analyze(input) {
       });
       return output;
     } catch (err) {
-      console.error('Front desk failed, treating it as a check', err);
+      logError('Front desk failed, treating it as a check', err);
       return null;
     }
   };
@@ -526,15 +510,15 @@ export async function analyze(input) {
   if (intent !== 'check') return deskReply(intent, desk.chat_reply);
 
   const content = [];
-  if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${text}` : `The user was sent this:\n${text}` });
+  if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${stripHidden(text)}` : `The user was sent this:\n${untrusted('post the user was sent', text)}` });
   if (url) {
     const article = await readArticle(url);
-    content.push({ type: 'text', text: `Article from ${url}:\n${article}` });
+    content.push({ type: 'text', text: `Article from ${url}:\n${untrusted('linked article', article)}` });
     // 🛡️ The linked article gets the same safety screening the Manager used to give it (blocked / self_harm only;
     // a link is never small talk). One cheap Haiku call, only when a link was read.
     const linkDesk = await askFrontDesk([
       ...(text ? [{ type: 'text', text: `The user's message:\n${text}` }] : []),
-      { type: 'text', text: `Article from ${url}:\n${article}` },
+      { type: 'text', text: `Article from ${url}:\n${untrusted('linked article', article)}` },
       { type: 'text', text: `A link was sent, so this is never chat.\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` },
     ]);
     if (linkDesk?.intent === 'blocked' || linkDesk?.intent === 'self_harm') return deskReply(linkDesk.intent, linkDesk.chat_reply);
@@ -578,7 +562,7 @@ export async function analyze(input) {
     });
     plan = output;
   } catch (err) {
-    console.error('Manager failed, using the full team', err);
+    logError('Manager failed, using the full team', err);
   }
   // If the Manager can't decide, use the full team (safe default)
   plan = plan || {
@@ -693,7 +677,7 @@ export async function analyze(input) {
     ? generateText({
         model: FAST_MODEL,
         system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion') + today,
-        prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
+        prompt: `${reader.content_summary}\n\nOriginal text:\n${untrusted('post the user was sent', text)}`,
       }).then((r) => {
         mark('Analyzed persuasion tactics');
         return r.text;
@@ -718,7 +702,7 @@ export async function analyze(input) {
           return r;
         })
         .catch((err) => {
-          console.error('Photo comparison failed', err);
+          logError('Photo comparison failed', err);
           compareFailed = true;
           return null;
         })
@@ -732,13 +716,8 @@ export async function analyze(input) {
   ]);
 
   // The comparison nudges the AI-chance score up or down
-  let imageCheck = rawImageCheck;
-  if (imageCheck && photoComparison) {
-    let score = imageCheck.score ?? 0;
-    if (photoComparison.effect === 'More likely fake') score = Math.min(10, score + 2);
-    if (photoComparison.effect === 'More likely real') score = Math.max(0, score - 2);
-    imageCheck = { ...imageCheck, score, level: levelFor(score), comparison: photoComparison };
-  }
+  // ...and hints in the photo's own metadata (C2PA, AI tool names) are a small supporting signal
+  const imageCheck = finalImageCheck(rawImageCheck, { comparison: photoComparison, hints: photoChecks ? metadataHints(image) : null });
 
   // Step 3: Remove duplicates and label each source
   const seen = new Set();
@@ -751,7 +730,8 @@ export async function analyze(input) {
       all.push({ ...s, ...categorize(s), original: !!s.original });
     }
   }
-  const sources = all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 }));
+  // Copies of one wire story (near-identical titles) are marked, so they count as one source
+  const sources = groupSyndicated(all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 })));
 
   const stats = {};
   for (const s of sources) stats[s.category] = (stats[s.category] || 0) + 1;
@@ -759,7 +739,7 @@ export async function analyze(input) {
   const sourceList = sources
     .map(
       (s) =>
-        `[${s.id}] ${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
+        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
     )
     .join('\n\n');
 
@@ -788,7 +768,7 @@ Vera's notebook (unverified hints from past checks; re-verify against today's so
 ${notebookForPrompt(notebook)}
 
 Sources found (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
       output: Output.object({ schema: FactsSchema }),
     });
     story = output;
@@ -818,7 +798,7 @@ ${notebookText}
 Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : image ? 'Not run here (the AI photo check is a separate mode). Judge the claims, not whether the photo is AI-made.' : 'No image was sent'}
 
 Sources found (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
     output: Output.object({ schema: StorySchema }),
   });
   story = output;
@@ -844,29 +824,27 @@ ${JSON.stringify(
 )}
 
 Sources she had (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
       output: Output.object({ schema: ReviewSchema }),
     });
     review = output;
-    if (review && !review.approved) {
-      if (toolName === 'facts') {
-        if (review.corrected_real_story) story.answer = review.corrected_real_story;
-      } else {
-        if (review.corrected_verdict) story.verdict = review.corrected_verdict;
-        if (review.corrected_real_story) story.real_story = review.corrected_real_story;
-      }
-    }
+    // A changed verdict also fixes or clears the parts written for the old one (see applyReview)
+    const fixed = applyReview(story, review, toolName);
+    story = fixed.story;
+    if (review && fixed.adjusted) review = { ...review, adjusted: true };
     mark(review?.approved ? 'A second AI double-checked the verdict and agreed' : 'A second AI double-checked the verdict and fixed it');
   } catch (err) {
     // If the double-check fails, still show Vera's answer rather than nothing (but don't save it)
-    console.error('Reviewer failed', err);
+    logError('Reviewer failed', err);
     reviewFailed = true;
   }
 
   // Step 6: Never guess. If there are too few sources (fewer than 3, or all from one website),
   // the code itself says "Can't confirm yet", whatever the AI wrote. A failed search only
   // matters when it left us short of sources.
-  const problem = evidenceProblem(sources, {
+  // (Satire from a recognized satire site, and opinions, are labeled without the 3-source rule)
+  const exempt = toolName !== 'facts' && skipsEvidenceRule(story);
+  const problem = exempt ? null : evidenceProblem(sources, {
     claims: needsCheck ? Math.max(1, reader.claims.length) : 0,
     searchesFailed: searchTrack.failed,
   });
@@ -893,6 +871,8 @@ ${sourceList || 'No sources were found.'}`,
     outlet,
     result: story,
     review,
+    // 'failed' when the double-check couldn't run, so the page says "not double-checked"
+    reviewStatus: problem ? 'skipped' : reviewFailed ? 'failed' : 'done',
     keySources,
     sources: sources.map(({ snippet, ...rest }) => ({ ...rest, snippet: (snippet || '').slice(0, 300) })),
     stats,
@@ -955,7 +935,7 @@ export async function checkPhoto(input) {
   const imagePromise = runImageCheck(
     image,
     IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
-    `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${context}` : ''}`
+    `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${untrusted('user note', context)}` : ''}`
   ).then((r) => {
     mark('Checked the photo for AI warning signs');
     return r;
@@ -967,13 +947,13 @@ export async function checkPhoto(input) {
   const comparePromise = generateText({
     model: FAST_MODEL,
     system:
-      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.' + today,
+      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.' + UNTRUSTED_RULE + today,
     messages: [
       {
         role: 'user',
         content: [
           { type: 'image', image },
-          { type: 'text', text: context ? `The user said: ${context}` : 'No note from the user.' },
+          { type: 'text', text: context ? `The user said: ${untrusted('user note', context)}` : 'No note from the user.' },
         ],
       },
     ],
@@ -987,13 +967,13 @@ export async function checkPhoto(input) {
         mark(`Compared the photo with ${comparison.compared.length} real photos found online`);
         return { describe: d, comparison };
       } catch (err) {
-        console.error('Photo comparison failed', err);
+        logError('Photo comparison failed', err);
         finderFailed = true;
         return { describe: d, comparison: null };
       }
     })
     .catch((err) => {
-      console.error('Photo finder failed', err);
+      logError('Photo finder failed', err);
       finderFailed = true;
       return { describe: null, comparison: null };
     });
@@ -1001,13 +981,7 @@ export async function checkPhoto(input) {
   const [rawCheck, { describe, comparison }] = await Promise.all([imagePromise, comparePromise]);
   if (!rawCheck) throw new Error("I couldn't check that photo. Try again in a moment?");
 
-  let check = rawCheck;
-  if (comparison) {
-    let score = check.score ?? 0;
-    if (comparison.effect === 'More likely fake') score = Math.min(10, score + 2);
-    if (comparison.effect === 'More likely real') score = Math.max(0, score - 2);
-    check = { ...check, score, level: levelFor(score), comparison };
-  }
+  let check = finalImageCheck(rawCheck, { comparison, hints: metadataHints(image) });
 
   // The Photo Writer explains the result in plain words, in the user's language
   const langCode = LANGUAGE_NAMES[input.language] ? input.language : describe?.language || 'en';
@@ -1023,23 +997,24 @@ You are Vera from "Fact or Feed?", a friendly fact-checking friend. Explain an A
 - signs, plausibility_reason, comparison: rewrite the given text in the requested language, plain words (comparison null if none).
 Never say a photo is definitely AI or definitely real; warning signs are not proof.
 Tone: ${audience === 'simple' ? 'very short and simple words' : audience === 'complex' ? 'more detail and nuance, still clear' : 'friendly and clear for any age'}.
-Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
+Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${UNTRUSTED_RULE}${today}`,
       prompt: JSON.stringify({
         level: check.level,
         plausibility: check.plausibility,
         plausibility_reason: check.plausibility_reason,
         signs: check.signs,
         note: check.note,
+        metadata: check.metadata ? { content_credentials_found: check.metadata.c2pa, ai_tool_names_in_file: check.metadata.ai_tags, caution: 'a supporting hint only: metadata is often removed and can be faked' } : null,
         comparison: comparison ? { match: comparison.match, effect: comparison.effect, text: comparison.comparison } : null,
         what_the_photo_shows: describe?.description || null,
-        user_note: context || null,
+        user_note: context ? untrusted('user note', context) : null,
       }),
       output: Output.object({ schema: PhotoSummarySchema }),
     });
     summary = output;
     mark('Wrote up the photo check');
   } catch (err) {
-    console.error('Photo writer failed', err);
+    logError('Photo writer failed', err);
   }
 
   if (summary) {

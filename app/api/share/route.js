@@ -3,10 +3,15 @@
 // and starts checking it. The photo is deleted again once the check finishes.
 import { put } from '@vercel/blob';
 
+import { overLimit, clientIp, logError } from '../check/guard';
+
 export const maxDuration = 60;
 
 export async function POST(req) {
   const origin = new URL(req.url).origin;
+  if (overLimit('share:' + clientIp(req), { max: 10 })) {
+    return Response.json({ link: origin, error: 'Too many photos in a row. Please wait a minute and try again.' });
+  }
   try {
     const form = await req.formData();
     const file = form.get('image');
@@ -30,7 +35,7 @@ export async function POST(req) {
     const query = params.toString();
     return Response.json({ link: query ? `${origin}/?${query}` : origin });
   } catch (err) {
-    console.error(err);
+    logError('Photo upload failed', err);
     // Always return a usable link so the Shortcut never breaks
     return Response.json({ link: origin, error: 'Could not upload that photo.' });
   }

@@ -54,7 +54,7 @@ export async function saveCached(keys, data) {
     });
     return true;
   } catch (err) {
-    console.error('Saving the result failed', err?.message || err);
+    console.error('Saving the result failed', err?.name, err?.message);
     return false;
   }
 }

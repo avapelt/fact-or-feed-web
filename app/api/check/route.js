@@ -5,9 +5,14 @@ import { analyze, FAST_MODEL } from './analyze';
 import { bookkeep } from './notebook';
 import { cacheKeyFor, readCached, saveCached } from './cache';
 
+import { blockBots, logError } from './guard';
+
 export const maxDuration = 300;
 
 export async function POST(req) {
+  // 🤖 Browser-only route: simple bots are turned away (BotID, free Basic mode)
+  const blocked = await blockBots();
+  if (blocked) return blocked;
   let imageUrl = null;
   try {
     const body = await req.json();
@@ -46,9 +51,9 @@ export async function POST(req) {
 
     return Response.json(data);
   } catch (err) {
-    console.error(err);
+    logError('Check failed', err);
     return Response.json(
-      { error: err?.status === 400 ? err.message : 'Something went wrong: ' + (err?.message || 'unknown error') },
+      { error: err?.status === 400 ? err.message : 'Something went wrong. Please try again in a moment.' },
       { status: err?.status || 500 }
     );
   } finally {
