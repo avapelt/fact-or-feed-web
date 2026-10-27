@@ -6,7 +6,7 @@ import { RULES, FOLLOWUP_PROMPT } from '../check/prompts';
 import { searchWeb, MODEL } from '../check/analyze';
 import { categorize } from '../check/bias';
 import { loadNotebook, lessonsFor } from '../check/notebook';
-import { dateRule, isBlockedSource, similarQueries } from '../check/safety';
+import { dateRule, isBlockedSource, similarQueries, untrusted } from '../check/safety';
 
 import { blockBots, logError } from '../check/guard';
 
@@ -69,7 +69,7 @@ export async function POST(req) {
         if (track.failed) return 'The search is not working right now. Do NOT guess: tell the user you could not search for this right now and they can try again in a few minutes.';
         const labeled = found.map((s) => ({ ...s, ...categorize(s), id: nextId++, snippet: (s.snippet || '').slice(0, 300) }));
         extra.push(...labeled);
-        return labeled.map(sourceLine).join('\n\n') || 'No results.';
+        return labeled.length ? untrusted('search results', labeled.map(sourceLine).join('\n\n')) : 'No results.';
       },
     });
 
@@ -110,10 +110,11 @@ Image check: ${report?.imageCheck ? JSON.stringify({ level: report.imageCheck.le
 Double-check: ${report?.review ? `${report.review.approved ? 'approved' : 'corrected'}, confidence ${report.review.confidence}` : 'none'}
 Remember: an outlet's lean does not make it true or false.`;
     }
-    const context = `${summary}
+    // The report comes back from the browser, so it is wrapped as data like any outside text
+    const context = `${untrusted('earlier report', summary)}
 
 Sources you already have:
-${known.map(sourceLine).join('\n\n') || 'none'}`;
+${untrusted('search results', known.map(sourceLine).join('\n\n') || 'none')}`;
 
     const messages = [
       { role: 'user', content: context },

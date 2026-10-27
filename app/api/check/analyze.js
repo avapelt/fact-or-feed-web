@@ -1,11 +1,12 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
+import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE, UNTRUSTED_RULE } from './prompts';
 import { categorize } from './bias';
 import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
-import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
+import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches, untrusted, stripHidden } from './safety';
+import { safeFetch } from './fetchsafe';
 
 
 // 💰 The strong model only writes the verdict or answer (and judges a photo's AI warning signs).
@@ -172,9 +173,9 @@ export async function searchWeb(query, extra = {}, track = null) {
     const data = await res.json();
     if (!data || !Array.isArray(data.results)) return failed('no results list');
     return data.results.filter((r) => r && r.url && !isBlockedSource(r.url)).map((r) => ({
-      title: r.title || r.url,
+      title: stripHidden(r.title || r.url).slice(0, 300),
       url: r.url,
-      snippet: (r.content || '').slice(0, 500),
+      snippet: stripHidden(r.content || '').slice(0, 500),
       date: r.published_date || null,
     }));
   } catch (err) {
@@ -210,22 +211,16 @@ async function searchPhotos(query, track = null) {
 
 // Downloads a found photo so the AI can look at it (skips anything slow, huge, or not an image)
 async function fetchImageAsDataUrl(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FactOrFeed/1.0)' },
-    });
+    // Only public addresses, with a size cap and one timeout (see fetchsafe.js)
+    const res = await safeFetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FactOrFeed/1.0)' }, maxBytes: 2_500_000, timeoutMs: 5000 });
     const type = (res.headers.get('content-type') || '').split(';')[0];
-    if (!res.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 2000 || buf.length > 2_500_000) return null;
+    if (!res.ok || res.truncated || !/^image\/(jpeg|png|webp|gif)$/.test(type)) return null;
+    const buf = res.bytes;
+    if (buf.length < 2000) return null;
     return `data:${type};base64,${buf.toString('base64')}`;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -322,15 +317,6 @@ function readMetaTags(html) {
   return decodeEntities(found.join('\n'));
 }
 
-async function fetchWithTimeout(url, options = {}, ms = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 const BROWSER_HEADERS = {
   'User-Agent':
@@ -351,9 +337,11 @@ async function readArticle(url) {
   // Read the page itself (this also follows short links like vm.tiktok.com to the real post)
   let finalUrl = url;
   try {
-    const res = await fetchWithTimeout(url, { headers: BROWSER_HEADERS });
+    // Only http(s) links to public addresses; redirects re-checked (max 3); about 2MB; 8 seconds in all
+    const res = await safeFetch(url, { headers: BROWSER_HEADERS });
     finalUrl = res.url || url;
-    const html = await res.text();
+    // Hidden text tricks (HTML comments, zero-width characters) are removed first
+    const html = stripHidden(res.bytes.toString('utf8'));
     const meta = readMetaTags(html);
     if (meta) parts.push(`Page preview: ${meta}`);
     const body = html
@@ -367,7 +355,7 @@ async function readArticle(url) {
   // TikTok shares each video's caption and creator publicly
   if (host.endsWith('tiktok.com')) {
     try {
-      const res = await fetchWithTimeout(`https://www.tiktok.com/oembed?url=${encodeURIComponent(finalUrl)}`);
+      const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(finalUrl)}`, { signal: AbortSignal.timeout(8000) });
       const data = await res.json();
       if (data.title) parts.unshift(`TikTok caption: ${data.title}`);
       if (data.author_name) parts.unshift(`TikTok video posted by: ${data.author_name}`);
@@ -525,15 +513,15 @@ export async function analyze(input) {
   if (intent !== 'check') return deskReply(intent, desk.chat_reply);
 
   const content = [];
-  if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${text}` : `The user was sent this:\n${text}` });
+  if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${stripHidden(text)}` : `The user was sent this:\n${untrusted('post the user was sent', text)}` });
   if (url) {
     const article = await readArticle(url);
-    content.push({ type: 'text', text: `Article from ${url}:\n${article}` });
+    content.push({ type: 'text', text: `Article from ${url}:\n${untrusted('linked article', article)}` });
     // 🛡️ The linked article gets the same safety screening the Manager used to give it (blocked / self_harm only;
     // a link is never small talk). One cheap Haiku call, only when a link was read.
     const linkDesk = await askFrontDesk([
       ...(text ? [{ type: 'text', text: `The user's message:\n${text}` }] : []),
-      { type: 'text', text: `Article from ${url}:\n${article}` },
+      { type: 'text', text: `Article from ${url}:\n${untrusted('linked article', article)}` },
       { type: 'text', text: `A link was sent, so this is never chat.\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` },
     ]);
     if (linkDesk?.intent === 'blocked' || linkDesk?.intent === 'self_harm') return deskReply(linkDesk.intent, linkDesk.chat_reply);
@@ -692,7 +680,7 @@ export async function analyze(input) {
     ? generateText({
         model: FAST_MODEL,
         system: PERSUASION_PROMPT + lessonsFor(notebook, 'persuasion') + today,
-        prompt: `${reader.content_summary}\n\nOriginal text:\n${text}`,
+        prompt: `${reader.content_summary}\n\nOriginal text:\n${untrusted('post the user was sent', text)}`,
       }).then((r) => {
         mark('Analyzed persuasion tactics');
         return r.text;
@@ -787,7 +775,7 @@ Vera's notebook (unverified hints from past checks; re-verify against today's so
 ${notebookForPrompt(notebook)}
 
 Sources found (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
       output: Output.object({ schema: FactsSchema }),
     });
     story = output;
@@ -817,7 +805,7 @@ ${notebookText}
 Image check (including comparison with real photos online): ${imageCheck ? JSON.stringify(imageCheck) : image ? 'Not run here (the AI photo check is a separate mode). Judge the claims, not whether the photo is AI-made.' : 'No image was sent'}
 
 Sources found (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
     output: Output.object({ schema: StorySchema }),
   });
   story = output;
@@ -843,7 +831,7 @@ ${JSON.stringify(
 )}
 
 Sources she had (${sources.length}):
-${sourceList || 'No sources were found.'}`,
+${sourceList ? untrusted('search results', sourceList) : 'No sources were found.'}`,
       output: Output.object({ schema: ReviewSchema }),
     });
     review = output;
@@ -954,7 +942,7 @@ export async function checkPhoto(input) {
   const imagePromise = runImageCheck(
     image,
     IMAGE_PROMPT + lessonsFor(notebook, 'image') + today,
-    `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${context}` : ''}`
+    `Check this image for warning signs of AI generation or editing.${context ? `\nWhat the user said about it: ${untrusted('user note', context)}` : ''}`
   ).then((r) => {
     mark('Checked the photo for AI warning signs');
     return r;
@@ -966,13 +954,13 @@ export async function checkPhoto(input) {
   const comparePromise = generateText({
     model: FAST_MODEL,
     system:
-      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.' + today,
+      'You describe photos for a fact-checking app. Describe what the photo shows in one plain sentence. Then write a short web image search query (3 to 8 words) that would find REAL photos of the same scene, event, place, or subject, or null if a search would not help (for example a selfie or a plain meme). Also give the language of any text in the photo or the user\'s note (default en). Never include names of private people.' + UNTRUSTED_RULE + today,
     messages: [
       {
         role: 'user',
         content: [
           { type: 'image', image },
-          { type: 'text', text: context ? `The user said: ${context}` : 'No note from the user.' },
+          { type: 'text', text: context ? `The user said: ${untrusted('user note', context)}` : 'No note from the user.' },
         ],
       },
     ],
@@ -1022,7 +1010,7 @@ You are Vera from "Fact or Feed?", a friendly fact-checking friend. Explain an A
 - signs, plausibility_reason, comparison: rewrite the given text in the requested language, plain words (comparison null if none).
 Never say a photo is definitely AI or definitely real; warning signs are not proof.
 Tone: ${audience === 'simple' ? 'very short and simple words' : audience === 'complex' ? 'more detail and nuance, still clear' : 'friendly and clear for any age'}.
-Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
+Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${UNTRUSTED_RULE}${today}`,
       prompt: JSON.stringify({
         level: check.level,
         plausibility: check.plausibility,
@@ -1031,7 +1019,7 @@ Write in ${LANGUAGE_NAMES[langCode] || 'English'}.${today}`,
         note: check.note,
         comparison: comparison ? { match: comparison.match, effect: comparison.effect, text: comparison.comparison } : null,
         what_the_photo_shows: describe?.description || null,
-        user_note: context || null,
+        user_note: context ? untrusted('user note', context) : null,
       }),
       output: Output.object({ schema: PhotoSummarySchema }),
     });
