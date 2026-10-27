@@ -720,13 +720,32 @@ function safeHref(url) {
   }
 }
 
+// 📚 Source tiers: 1 = peer-reviewed journals and books ... 5 = social media, blogs, general sites
+// (every chip keeps at least 4.5:1 contrast)
+const TIERS = [1, 2, 3, 4, 5];
+const TIER_COLORS = { 1: ['#4B2E91', '#FFFFFF'], 2: ['#1F6B4A', '#FFFFFF'], 3: ['#245C8F', '#FFFFFF'], 4: ['#F0C26B', '#1D1D1F'], 5: ['#E2E0E6', '#1D1D1F'] };
+const validTier = (t) => TIERS.includes(t);
+
+function TierChip({ tier, full = false }) {
+  const T = useTT();
+  if (!validTier(tier)) return null;
+  const [bg, fg] = TIER_COLORS[tier];
+  return (
+    <span style={{ background: bg, color: fg, fontSize: 12, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap', fontWeight: 700 }}>
+      {T.fill(T.tierN, { n: tier })}{full ? ` · ${T['tier' + tier]}` : ''}
+    </span>
+  );
+}
+
 function SourceItem({ s }) {
+  const T = useTT();
   return (
     <li style={{ marginBottom: 6 }}>
+      {validTier(s.tier) && <><TierChip tier={s.tier} />{' '}</>}
       <Badge category={s.category} />{' '}
       <a href={safeHref(s.url)} target="_blank" rel="noreferrer">{s.title}</a>{' '}
       <span className="muted">
-        ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ', date unknown'})
+        ({s.domain}{s.date ? ', ' + String(s.date).slice(0, 10) : ', date unknown'}{s.preprint ? ` · ${T.preprint}` : ''})
       </span>
     </li>
   );
@@ -948,8 +967,87 @@ function OutletLean({ outlet, note }) {
   );
 }
 
+// How many sources came from each tier
+function TierCounts({ tierStats }) {
+  const used = TIERS.filter((t) => tierStats?.[t]);
+  if (!used.length) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+      {used.map((t) => (
+        <span key={t} style={{ fontSize: 12 }}>
+          <TierChip tier={t} /> {tierStats[t]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// 🧪 CRAAP + RAVEN checks of the key sources, and what's missing from the research
+const CRAAP_KEYS = [['currency', 'currency'], ['relevance', 'relevance'], ['authority', 'authority'], ['accuracy', 'accuracy'], ['purpose', 'purpose']];
+const RAVEN_KEYS = [['reputation', 'reputation'], ['ability_to_observe', 'abilityToObserve'], ['vested_interest', 'vestedInterest'], ['expertise', 'expertise'], ['neutrality', 'neutrality']];
+const RATING_ICON = { pass: '✅', concern: '⚠️', fail: '❌' };
+
+function RatingRow({ name, ratings, keys }) {
+  const T = useTT();
+  // The legend's own words ("passes", "some doubt", "a real problem") are read out instead of the icons
+  const words = T.checksLegend.split(' · ').map((w) => w.replace(/^\S+\s*/, ''));
+  const said = { pass: words[0], concern: words[1], fail: words[2] };
+  return (
+    <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.6 }}>
+      <b>{name}:</b>{' '}
+      {keys.map(([k, label], i) => {
+        const v = RATING_ICON[ratings?.[k]] ? ratings[k] : 'concern';
+        return (
+          <span key={k} style={{ whiteSpace: 'nowrap' }}>
+            <span aria-hidden="true">{RATING_ICON[v]}</span>
+            <span className="sr-only">{said[v]}: </span> {T[label]}
+            {i < keys.length - 1 ? ' · ' : ''}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function SourceChecks({ data }) {
+  const T = useTT();
+  const r = data.result || {};
+  const checks = (Array.isArray(r.source_checks) ? r.source_checks : [])
+    .map((c) => ({ c, s: (data.sources || []).find((x) => x.id === c?.source_id) }))
+    .filter((x) => x.s)
+    .slice(0, 4);
+  const gaps = (Array.isArray(r.research_gaps) ? r.research_gaps : []).filter(Boolean).slice(0, 3);
+  return (
+    <>
+      {checks.length > 0 && (
+        <Block title={T.sourceChecks}>
+          <div className="muted" style={{ fontSize: 12 }}>{T.checksLegend}</div>
+          {checks.map(({ c, s }) => (
+            <div key={s.id} style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 14 }}>
+                {validTier(s.tier) && <><TierChip tier={s.tier} />{' '}</>}
+                <a href={safeHref(s.url)} target="_blank" rel="noreferrer">{s.title}</a>{' '}
+                <span className="muted">({s.domain})</span>
+              </div>
+              <RatingRow name="CRAAP" ratings={c.craap} keys={CRAAP_KEYS} />
+              <RatingRow name="RAVEN" ratings={c.raven} keys={RAVEN_KEYS} />
+              {c.note && <div dir="auto" style={{ marginTop: 4, fontSize: 14 }}>{stripCites(c.note)}</div>}
+            </div>
+          ))}
+        </Block>
+      )}
+      {gaps.length > 0 && (
+        <Block title={T.gaps}>
+          <ul style={{ fontSize: 14 }}>{gaps.map((g, i) => <li key={i} dir="auto">{stripCites(g)}</li>)}</ul>
+        </Block>
+      )}
+    </>
+  );
+}
+
 function SourcesList({ data, total }) {
   const T = useTT();
+  const byTier = data.sources.some((s) => validTier(s.tier));
   return (
     <details className="sub">
       <summary>
@@ -966,8 +1064,23 @@ function SourcesList({ data, total }) {
         </div>
       )}
       <div className="sub-in">
-        <div className="sub-label">{T.everything}</div>
-        {ORDER.filter((c) => data.sources.some((s) => s.category === c)).map((c) => {
+        <div className="sub-label">{byTier ? T.byTier : T.everything}</div>
+        {byTier && TIERS.filter((t) => data.sources.some((s) => s.tier === t)).map((t) => {
+          const group = data.sources.filter((s) => s.tier === t);
+          return (
+            <details key={t} className="group">
+              <summary>
+                <TierChip tier={t} full /> <span className="count">{group.length}</span>
+              </summary>
+              <ul style={{ fontSize: 14, marginTop: 6 }}>
+                {group.map((s) => (
+                  <SourceItem key={s.id} s={s} />
+                ))}
+              </ul>
+            </details>
+          );
+        })}
+        {!byTier && ORDER.filter((c) => data.sources.some((s) => s.category === c)).map((c) => {
           const group = data.sources.filter((s) => s.category === c);
           return (
             <details key={c} className="group">
@@ -1096,6 +1209,7 @@ function FactsBubble({ data, headingId }) {
         <div className="mini">
           <b>⚖️ {T.fill(data.trace?.plan?.go_to_original ? T.wentOriginal : T.checkedN, { n: total })}</b>
           <SpectrumBar stats={data.stats || {}} total={total} />
+          <TierCounts tierStats={data.tierStats} />
         </div>
       )}
 
@@ -1111,6 +1225,7 @@ function FactsBubble({ data, headingId }) {
             <ul style={{ fontSize: 14 }}>{r.unknown.map((u, i) => <li key={i}>{u}</li>)}</ul>
           </Block>
         )}
+        <SourceChecks data={data} />
         {total > 0 && <SourcesList data={data} total={total} />}
       </details>
 
@@ -1189,6 +1304,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
         <div className="mini">
           <b>⚖️ {T.fill(T.checkedN, { n: total })}</b>
           <SpectrumBar stats={data.stats || {}} total={total} />
+          <TierCounts tierStats={data.tierStats} />
         </div>
       )}
 
@@ -1239,6 +1355,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
           </Block>
         )}
 
+        <SourceChecks data={data} />
         {total > 0 && <SourcesList data={data} total={total} />}
       </details>
 

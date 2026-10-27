@@ -1,7 +1,7 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE, POLITICAL_NOTE, UNTRUSTED_RULE } from './prompts';
-import { categorize, RATINGS, FACT_CHECKERS, NONPARTISAN } from './bias';
+import { categorize, tierOf, TIER_NAMES, RATINGS, FACT_CHECKERS, NONPARTISAN } from './bias';
 import { logError } from './guard';
 import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
@@ -132,6 +132,18 @@ const StorySchema = z.object({
   persuasion_tactics: z.array(z.object({ tactic: z.string(), where: z.string(), explanation: z.string() })),
   reply_draft: z.string(),
   key_source_ids: z.array(z.number()),
+  source_checks: z.array(SourceCheckSchema),
+  research_gaps: z.array(z.string()),
+});
+
+// 🧪 CRAAP + RAVEN: the Writer rates the most important sources in the same call (no extra AI call).
+// pass = no problem, concern = some doubt, fail = a real problem. For vested_interest, pass means NO vested interest.
+const Rating = z.enum(['pass', 'concern', 'fail']);
+const SourceCheckSchema = z.object({
+  source_id: z.number(),
+  craap: z.object({ currency: Rating, relevance: Rating, authority: Rating, accuracy: Rating, purpose: Rating }),
+  raven: z.object({ reputation: Rating, ability_to_observe: Rating, vested_interest: Rating, expertise: Rating, neutrality: Rating }),
+  note: z.string(),
 });
 
 // "Find the facts" answers a question instead of judging a post
@@ -149,6 +161,8 @@ const FactsSchema = z.object({
   disputed: z.array(z.string()),
   unknown: z.array(z.string()),
   key_source_ids: z.array(z.number()),
+  source_checks: z.array(SourceCheckSchema),
+  research_gaps: z.array(z.string()),
   clarifying_question: z.string().nullable(),
   notebook_note: z.string().nullable(),
 });
@@ -281,7 +295,9 @@ function rebuildAbstract(inverted) {
   return words.join(' ');
 }
 
-// Searches published research with OpenAlex. Withdrawn (retracted) papers are never used.
+// Searches published research with OpenAlex (free, 250M+ scholarly works: journals, books, and more).
+// Withdrawn (retracted) papers are never used. Journal articles, reviews, books, and book chapters are
+// Tier 1; preprints (not peer-reviewed yet) are kept but marked, so they count as Tier 2.
 // The OPENALEX_API_KEY gives the site its own daily allowance; without it, the free one is shared
 // with everyone on the same server and can run out. Failures are counted in `track`, like news searches.
 async function searchResearch(query, track = null) {
@@ -294,20 +310,24 @@ async function searchResearch(query, track = null) {
   try {
     const key = process.env.OPENALEX_API_KEY ? `&api_key=${encodeURIComponent(process.env.OPENALEX_API_KEY)}` : '';
     const res = await fetch(
-      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&filter=is_retracted:false&per-page=6${key}`,
+      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&filter=is_retracted:false,type:article|review|book|book-chapter|preprint&per-page=6&select=id,doi,display_name,type,publication_year,cited_by_count,abstract_inverted_index,primary_location${key}`,
       { signal: AbortSignal.timeout(15000) }
     );
     if (!res.ok) return failed(`status ${res.status}`);
     const data = await res.json();
     if (!data || !Array.isArray(data.results)) return failed('no results list');
     return data.results
-      .filter((w) => w.type === 'article')
+      .filter((w) => w && w.display_name && (w.doi || w.id))
       .map((w) => ({
         title: w.display_name,
         url: w.doi || w.id,
         snippet: rebuildAbstract(w.abstract_inverted_index).slice(0, 600),
         date: w.publication_year ? String(w.publication_year) : null,
         journal: w.primary_location?.source?.display_name || null,
+        work_type: w.type || null,
+        cited_by: Number.isFinite(w.cited_by_count) ? w.cited_by_count : null,
+        // A preprint, or a paper only posted in a repository, hasn't been peer-reviewed
+        preprint: w.type === 'preprint' || w.primary_location?.source?.type === 'repository',
         research: true,
       }));
   } catch (err) {
@@ -636,7 +656,9 @@ export async function analyze(input) {
   // Political topics always get one nonpartisan search (official records, fact-checkers, Ballotpedia, Vote Smart)
   const politicalOfficial = (reader.official_queries.length ? reader.official_queries : reader.claims.length ? reader.claims : userQuestion ? [userQuestion] : []).slice(0, 1);
   const officialWanted = political && !plan.official_sources && !plan.emergency_mode ? politicalOfficial : plan.official_sources || plan.emergency_mode ? reader.official_queries.slice(0, plan.emergency_mode ? 3 : fast ? 1 : 2) : [];
-  const researchQ = plan.research_papers ? reader.academic_queries.slice(0, fast ? 1 : 3) : [];
+  // 📚 Academic first: one free research search (OpenAlex, not a paid web search) whenever the Planner
+  // wrote a research query, and up to 3 when the Manager asked for research papers
+  const researchQ = reader.academic_queries.slice(0, plan.research_papers && !fast ? 3 : 1);
   // Going straight to the original source when the Manager decided that's the best move
   const originalWanted = plan.go_to_original && !political ? (reader.original_queries || []).slice(0, 2) : [];
   // 💰 At most 6 web searches (3 in the iPhone popup), counting the photo search, with
@@ -686,7 +708,7 @@ export async function analyze(input) {
   const searchesPromise = Promise.all([
     ...originalQ.map((q) => searchWeb(q, { max_results: 5 }, searchTrack).then((list) => list.map((x) => ({ ...x, original: true })))),
     ...newsQ.map((q, i) =>
-      searchWeb(q, { ...(recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }), ...(political ? { include_domains: balancedDomains(i, newsQ.length) } : {}) }, searchTrack)
+      searchWeb(q, { ...(recent && i === 0 ? { topic: 'news', time_range: timeRange } : { topic: 'news' }), ...(political ? { include_domains: balancedDomains(i, newsQ.length) } : {}) }, searchTrack).then((list) => list.map((x) => ({ ...x, news: true })))
     ),
     ...officialQ.map((q, i) => searchWeb(q, political && i === 0 ? { include_domains: NONPARTISAN_DOMAINS } : {}, searchTrack)),
     ...researchQ.map((q) => searchResearch(q, researchTrack)),
@@ -760,7 +782,7 @@ export async function analyze(input) {
   if (political && newsQ[0]) {
     const independent = groupSyndicated(all.map((s, i) => ({ ...s, id: i + 1 }))).filter((s) => !s.dup_of && !s.self_published).length;
     if (independent < 3) {
-      for (const s of await searchWeb(newsQ[0], { topic: 'news' }, searchTrack)) {
+      for (const s of (await searchWeb(newsQ[0], { topic: 'news' }, searchTrack)).map((x) => ({ ...x, news: true }))) {
         const key = (s.url || '').split('?')[0].replace(/\/$/, '');
         if (!key || seen.has(key) || isBlockedSource(s.url)) continue;
         seen.add(key);
@@ -768,16 +790,22 @@ export async function analyze(input) {
       }
     }
   }
+  // 📚 Every source gets a tier (1 = peer-reviewed research ... 5 = social media, blogs, general sites),
+  // and the strongest come first, so they are read first and kept if the list is cut
+  for (const s of all) s.tier = tierOf(s);
+  all.sort((a, b) => a.tier - b.tier);
   // Copies of one wire story (near-identical titles) are marked, so they count as one source
   const sources = groupSyndicated(all.slice(0, 50).map((s, i) => ({ ...s, id: i + 1 })));
 
   const stats = {};
   for (const s of sources) stats[s.category] = (stats[s.category] || 0) + 1;
+  const tierStats = {};
+  for (const s of sources) tierStats[s.tier] = (tierStats[s.tier] || 0) + 1;
 
   const sourceList = sources
     .map(
       (s) =>
-        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.self_published ? 'SELF-PUBLISHED, NOT INDEPENDENT | ' : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
+        `[${s.id}] ${s.dup_of ? `SAME STORY AS [${s.dup_of}] | ` : ''}${s.self_published ? 'SELF-PUBLISHED, NOT INDEPENDENT | ' : ''}${s.original ? 'ORIGINAL SOURCE | ' : ''}TIER ${s.tier} (${TIER_NAMES[s.tier]}${s.preprint ? ', preprint, not peer-reviewed yet' : ''}) | ${s.category} | ${s.domain}${s.journal ? ' | ' + s.journal : ''}${s.work_type ? ' | ' + s.work_type : ''}${s.cited_by != null ? ` | cited ${s.cited_by} times` : ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet}`
     )
     .join('\n\n');
 
@@ -914,6 +942,7 @@ ${sourceList ? untrusted('search results', sourceList) : 'No sources were found.
     keySources,
     sources: sources.map(({ snippet, ...rest }) => ({ ...rest, snippet: (snippet || '').slice(0, 300) })),
     stats,
+    tierStats,
     imageCheck,
     trace: {
       plan,
