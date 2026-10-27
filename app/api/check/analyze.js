@@ -643,7 +643,8 @@ export async function analyze(input) {
   // near-identical queries dropped. Each round the original source goes first, then two news
   // searches, then official sources (official first in an emergency), so the key ones always run.
   const willCompare = photoChecks && plan.photo_comparison && !!reader.photo_search_query;
-  const cap = (fast ? MAX_SEARCHES.fast : MAX_SEARCHES.full) - (willCompare ? 1 : 0);
+  // Political checks keep one slot free for a thin-results fallback search
+  const cap = (fast ? MAX_SEARCHES.fast : MAX_SEARCHES.full) - (willCompare ? 1 : 0) - (political ? 1 : 0);
   const picked = planSearches(
     plan.emergency_mode
       ? [
@@ -753,6 +754,18 @@ export async function analyze(input) {
       if (!key || seen.has(key) || isBlockedSource(s.url)) continue;
       seen.add(key);
       all.push({ ...s, ...categorize(s, { political, names: politicalNames }), original: !!s.original });
+    }
+  }
+  // 🗳️ Too few independent sources from the balanced searches: one unrestricted news search (uses the reserved slot)
+  if (political && newsQ[0]) {
+    const independent = groupSyndicated(all.map((s, i) => ({ ...s, id: i + 1 }))).filter((s) => !s.dup_of && !s.self_published).length;
+    if (independent < 3) {
+      for (const s of await searchWeb(newsQ[0], { topic: 'news' }, searchTrack)) {
+        const key = (s.url || '').split('?')[0].replace(/\/$/, '');
+        if (!key || seen.has(key) || isBlockedSource(s.url)) continue;
+        seen.add(key);
+        all.push({ ...s, ...categorize(s, { political, names: politicalNames }), original: false });
+      }
     }
   }
   // Copies of one wire story (near-identical titles) are marked, so they count as one source

@@ -100,16 +100,14 @@ export const NONPARTISAN = ['ballotpedia.org', 'votesmart.org', 'congress.gov', 
 export function isCampaignDomain(domain, names = []) {
   if (!domain) return false;
   if (matches(domain, PARTY_DOMAINS)) return true;
-  const label = domain.split('.').slice(-2, -1)[0] || '';
-  // "forsmith.com", "votesmith.com", "electsmith.org", "smith2028.com", "teamsmith.com"
-  if (/^(for|vote|elect|reelect|team)[a-z]{3,}$/.test(label) || /^[a-z]{3,}(for[a-z]+|20\d\d)$/.test(label)) return true;
-  // The domain's name matches a candidate or party named in the question
-  const flat = label.replace(/-/g, '');
+  const label = (domain.split('.').slice(-2, -1)[0] || '').replace(/-/g, '');
+  // "forsmith.com", "votesmith.com", "smith2028.com", "janesmith.com": only when it contains a named candidate or party
+  const rest = label.replace(/^(for|vote|elect|reelect|team)/, '').replace(/(20\d\d|forcongress|forsenate|forpresident)$/, '');
   return names.some((n) => {
     const parts = String(n || '').toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean);
     const full = parts.join('');
     const last = parts[parts.length - 1] || '';
-    return (full.length >= 5 && flat.includes(full)) || (last.length >= 4 && (flat === last || flat === 'vote' + last || flat === last + 'forcongress' || flat === last + 'forsenate'));
+    return (full.length >= 5 && label.includes(full)) || (last.length >= 4 && rest === last);
   });
 }
 
