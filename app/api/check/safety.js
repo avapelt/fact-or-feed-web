@@ -271,6 +271,7 @@ export function forceCantConfirm(story, toolName, reason = 'search_down', lang =
       reframed: null,
       disputed: [],
       key_source_ids: [],
+      source_checks: [],
       notebook_note: null,
     };
   }
@@ -283,6 +284,7 @@ export function forceCantConfirm(story, toolName, reason = 'search_down', lang =
     disputed: [],
     origin_timeline: [],
     key_source_ids: [],
+    source_checks: [],
     notebook_note: null,
     reply_draft: null,
     // Keep any scam or safety warning; it doesn't depend on the news search

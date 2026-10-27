@@ -136,3 +136,83 @@ export function categorize(source, { political = false, names = [] } = {}) {
   if (!rated && political && isCampaignDomain(domain, names)) return { domain, category: SELF_PUBLISHED, self_published: true };
   return { domain, category: rated ? RATINGS[rated] : 'Not rated' };
 }
+
+// ── 📚 Source tiers (1 = strongest) ───────────────────────────
+// Every source gets a tier by what KIND of source it is, not by its politics.
+// Tier 1: peer-reviewed academic journals and books
+// Tier 2: specialized publications (medical, scientific, research groups, universities), government sources
+// Tier 3: newspapers, wire services, public broadcasters, fact-checkers, reputable organizations
+// Tier 4: popular magazines and popular media (cable TV, magazines, opinion and aggregator sites)
+// Tier 5: Wikipedia, social media, blogs, and general websites
+// Caveats: the lists are approximate. A preprint is Tier 2 (not peer-reviewed yet), state media is
+// Tier 5 (no free press), and a campaign's own site is Tier 5 (self-published). Edit the lists as needed.
+export const TIER_NAMES = {
+  1: 'Peer-reviewed journals and books',
+  2: 'Specialized publications and government',
+  3: 'Newspapers and reputable organizations',
+  4: 'Popular magazines and media',
+  5: 'Social media, blogs, and general sites',
+};
+
+// Journals, academic publishers, and research databases
+export const ACADEMIC = [
+  'pubmed.ncbi.nlm.nih.gov', 'ncbi.nlm.nih.gov', 'nature.com', 'science.org', 'sciencemag.org', 'thelancet.com',
+  'nejm.org', 'jamanetwork.com', 'bmj.com', 'cell.com', 'sciencedirect.com', 'springer.com', 'wiley.com',
+  'tandfonline.com', 'sagepub.com', 'academic.oup.com', 'cambridge.org', 'jstor.org', 'plos.org', 'frontiersin.org',
+  'pnas.org', 'ieeexplore.ieee.org', 'dl.acm.org', 'aps.org', 'annualreviews.org', 'doi.org', 'psycnet.apa.org',
+  'mdpi.com', 'cochranelibrary.com', 'ebscohost.com', 'proquest.com', 'aeaweb.org', 'acs.org', 'iop.org',
+];
+// Research shared before peer review
+export const PREPRINTS = ['arxiv.org', 'biorxiv.org', 'medrxiv.org', 'ssrn.com', 'researchsquare.com', 'osf.io'];
+// Specialized publications, medical and scientific groups, research organizations, international bodies
+export const SPECIALIZED = [
+  'mayoclinic.org', 'clevelandclinic.org', 'hopkinsmedicine.org', 'statnews.com', 'sciencenews.org',
+  'scientificamerican.com', 'newscientist.com', 'pewresearch.org', 'rand.org', 'kff.org', 'heart.org', 'cancer.org',
+  'ama-assn.org', 'aap.org', 'who.int', 'un.org', 'worldbank.org', 'imf.org', 'oecd.org', 'unicef.org', 'nber.org',
+];
+// Reputable organizations that aren't news outlets
+export const REPUTABLE_ORGS = ['redcross.org', 'consumerreports.org', 'propublica.org', 'ballotpedia.org', 'votesmart.org', 'opensecrets.org', 'govtrack.us', 'vote.org'];
+// Popular media: cable TV channels, magazines, and opinion or aggregator sites (left, center, and right alike)
+export const POPULAR = [
+  'cnn.com', 'msnbc.com', 'foxnews.com', 'foxbusiness.com', 'newsmax.com', 'newsnationnow.com',
+  'time.com', 'newsweek.com', 'forbes.com', 'fortune.com', 'nationalreview.com', 'reason.com', 'motherjones.com',
+  'theatlantic.com', 'newyorker.com', 'rollingstone.com', 'vanityfair.com', 'people.com', 'usmagazine.com',
+  'nationalgeographic.com', 'huffpost.com', 'vox.com', 'buzzfeed.com', 'breitbart.com', 'dailywire.com',
+  'theblaze.com', 'dailycaller.com', 'thefederalist.com', 'freebeacon.com', 'townhall.com', 'justthenews.com',
+  'thefp.com', 'thedispatch.com', 'realclearpolitics.com', 'readtangle.com', 'dailymail.co.uk', 'thesun.co.uk',
+  'tmz.com', 'yahoo.com', 'msn.com', 'aol.com',
+];
+// Social media, video, blogs, forums, and wikis
+export const SOCIAL_BLOGS = [
+  'youtube.com', 'youtu.be', 'tiktok.com', 'x.com', 'twitter.com', 'facebook.com', 'instagram.com', 'threads.net',
+  'reddit.com', 'quora.com', 'pinterest.com', 'linkedin.com', 'medium.com', 'substack.com', 'blogspot.com',
+  'wordpress.com', 'tumblr.com', 'wikipedia.org', 'wikimedia.org', 'fandom.com', 'researchgate.net',
+];
+// An unrated news site whose name looks like a newspaper or local station
+const NEWSPAPER_NAME = /(news|times|post|herald|tribune|journal|gazette|chronicle|observer|courier|register|press|inquirer|globe|telegraph|guardian|star|sun|daily|record|bulletin|dispatch|examiner|ledger|sentinel|standard|reporter|^w[a-z]{3}\.|^k[a-z]{3}\.|tv\.)/;
+
+// The tier of a source (after categorize). news: it came from a news search.
+export function tierOf(source) {
+  const domain = String(source.domain || '').toLowerCase();
+  const host = (() => {
+    try {
+      return new URL(source.url).hostname.toLowerCase().replace(/^www\./, '');
+    } catch {
+      return domain;
+    }
+  })();
+  if (source.research) return source.preprint ? 2 : 1;
+  if (source.self_published || source.category === 'State media/government') return 5;
+  if (matches(host, SOCIAL_BLOGS)) return 5;
+  if (matches(host, PREPRINTS)) return 2;
+  if (matches(host, ACADEMIC)) return 1;
+  if (source.category === 'Official' || matches(host, SPECIALIZED) || host.endsWith('.edu') || /\.ac\.[a-z]{2}$/.test(host)) return 2;
+  if (matches(host, POPULAR)) return 4;
+  if (source.category === 'Fact-check' || matches(host, REPUTABLE_ORGS) || matches(host, NONPARTISAN)) return 3;
+  if (RATINGS[matches(host, Object.keys(RATINGS)) || '']) return 3;
+  // Other foreign government sites (not rated for press freedom)
+  if (source.category === 'Not rated' && /(^|\.)(gov|gob|gouv|govt)\.[a-z]{2,3}$|\.gov\.[a-z]{2}(\.|$)/.test(host)) return 3;
+  // Unrated sites from a news search: newspapers and local stations are Tier 3, the rest popular media
+  if (source.news) return NEWSPAPER_NAME.test(host) ? 3 : 4;
+  return 5;
+}

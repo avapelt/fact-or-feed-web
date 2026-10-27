@@ -32,7 +32,9 @@ function clip(value, key = '', depth = 0) {
 }
 
 function sourceLine(s) {
-  return `[${s.id}] ${s.category || 'Not rated'} | ${s.domain || ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet || ''}`;
+  // The tier comes back from the browser, so only a number from 1 to 5 is used
+  const tier = [1, 2, 3, 4, 5].includes(s.tier) ? `Tier ${s.tier} | ` : '';
+  return `[${s.id}] ${tier}${s.category || 'Not rated'} | ${s.domain || ''} | ${s.date || 'date unknown'} | ${s.title}\n${s.snippet || ''}`;
 }
 
 export async function POST(req) {
