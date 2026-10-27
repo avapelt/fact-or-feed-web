@@ -199,6 +199,18 @@ export const MESSAGES = {
     thin_facts: 'Al momento non ho trovato abbastanza fonti affidabili per rispondere.',
     future: 'Nessuno può ancora sapere chi vincerà o come andrà a finire. Ecco cosa posso verificare in questo momento:',
   },
+  pt: {
+    search_down: 'Não consegui acessar fontes de notícias suficientes agora. Tente de novo daqui a alguns minutos.',
+    thin: 'Ainda não encontrei fontes confiáveis suficientes sobre isso, então não posso confirmar.',
+    thin_facts: 'Não encontrei fontes confiáveis suficientes para responder isso agora.',
+    future: 'Ninguém pode saber ainda quem vai ganhar ou como isso vai terminar. Veja o que posso verificar agora:',
+  },
+  ja: {
+    search_down: '今は十分な数のニュースの情報源にアクセスできませんでした。数分後にもう一度お試しください。',
+    thin: 'これについて信頼できる情報源がまだ十分に見つからないため、確認できません。',
+    thin_facts: '今はこれに答えられるだけの信頼できる情報源が見つかりませんでした。',
+    future: '誰が勝つのか、どういう結果になるのかは、まだ誰にもわかりません。今確認できることはこちらです：',
+  },
 };
 
 // The language the user picked, else the one the Reader detected, else English
@@ -282,10 +294,10 @@ export function forceCantConfirm(story, toolName, reason = 'search_down', lang =
 export const FUTURE_OPENER = MESSAGES.en.future;
 
 // A bare yes/no (in any of our languages) right before punctuation, like "Yes," "No." "Sí," "Oui,"
-// "Nein," "是的，" "نعم،". Longer words come first. A dash only counts with a space after it,
+// "Nein," "是的，" "نعم،" "Sim," "Não," "はい、". Longer words come first. A dash only counts with a space after it,
 // so "No-one knows" is left alone. Hedge words like "likely" or "probably" are never removed.
 const YES_NO_RE =
-  /^(?:yes|no|sí|sì|si|oui|non|wi|nein|ja|हाँ|हां|नहीं|نعم|كلا|لا|হ্যাঁ|না|是的|不是|不会|会的|不|是)\s*(?:[,.:;!，。：；！،।]|[-–—]\s)\s*/iu;
+  /^(?:yes|no|sí|sì|si|sim|não|nao|oui|non|wi|nein|ja|いいえ|はい|हाँ|हां|नहीं|نعم|كلا|لا|হ্যাঁ|না|是的|不是|不会|会的|不|是)\s*(?:[,.:;!，。：；！、،।]|[-–—]\s)\s*/iu;
 
 export function stripPrediction(answer) {
   let a = String(answer || '').normalize('NFC').trim();

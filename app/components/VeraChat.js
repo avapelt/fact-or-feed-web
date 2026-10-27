@@ -34,20 +34,20 @@ export const TOOLS = {
   facts: {
     icon: '🔎',
     href: '/facts',
-    short: { en: 'Find facts', es: 'Hechos', ht: 'Verite', zh: '查事实', hi: 'तथ्य', ar: 'الحقائق', fr: 'Les faits', bn: 'তথ্য', it: 'Fatti' },
-    name: { en: 'Find the facts', es: 'Encuentra los hechos', ht: 'Jwenn verite a', zh: '查找事实', hi: 'तथ्य खोजें', ar: 'ابحث عن الحقائق', fr: 'Trouver les faits', bn: 'তথ্য খুঁজুন', it: 'Trova i fatti' },
+    short: { en: 'Find facts', es: 'Hechos', ht: 'Verite', zh: '查事实', hi: 'तथ्य', ar: 'الحقائق', fr: 'Les faits', bn: 'তথ্য', it: 'Fatti', pt: 'Fatos', ja: '事実' },
+    name: { en: 'Find the facts', es: 'Encuentra los hechos', ht: 'Jwenn verite a', zh: '查找事实', hi: 'तथ्य खोजें', ar: 'ابحث عن الحقائق', fr: 'Trouver les faits', bn: 'তথ্য খুঁজুন', it: 'Trova i fatti', pt: 'Encontre os fatos', ja: '事実を調べる' },
   },
   credible: {
     icon: '📰',
     href: '/credible',
-    short: { en: 'Credible?', es: '¿Creíble?', ht: 'Serye?', zh: '可信吗？', hi: 'भरोसेमंद?', ar: 'موثوق؟', fr: 'Crédible ?', bn: 'বিশ্বাসযোগ্য?', it: 'Credibile?' },
-    name: { en: 'Is this news credible?', es: '¿Es creíble esta noticia?', ht: 'Èske nouvèl sa a serye?', zh: '这条新闻可信吗？', hi: 'क्या यह खबर भरोसेमंद है?', ar: 'هل هذا الخبر موثوق؟', fr: 'Cette info est-elle crédible ?', bn: 'এই খবর কি বিশ্বাসযোগ্য?', it: 'Questa notizia è credibile?' },
+    short: { en: 'Credible?', es: '¿Creíble?', ht: 'Serye?', zh: '可信吗？', hi: 'भरोसेमंद?', ar: 'موثوق؟', fr: 'Crédible ?', bn: 'বিশ্বাসযোগ্য?', it: 'Credibile?', pt: 'Confiável?', ja: '信頼できる？' },
+    name: { en: 'Is this news credible?', es: '¿Es creíble esta noticia?', ht: 'Èske nouvèl sa a serye?', zh: '这条新闻可信吗？', hi: 'क्या यह खबर भरोसेमंद है?', ar: 'هل هذا الخبر موثوق؟', fr: 'Cette info est-elle crédible ?', bn: 'এই খবর কি বিশ্বাসযোগ্য?', it: 'Questa notizia è credibile?', pt: 'Essa notícia é confiável?', ja: 'このニュースは信頼できる？' },
   },
   photo: {
     icon: '🤖',
     href: '/photo',
-    short: { en: 'AI photo?', es: '¿Foto IA?', ht: 'Foto IA?', zh: 'AI照片？', hi: 'AI फ़ोटो?', ar: 'صورة AI؟', fr: 'Photo IA ?', bn: 'AI ছবি?', it: 'Foto IA?' },
-    name: { en: 'Is this photo AI?', es: '¿Esta foto es IA?', ht: 'Èske foto sa a se IA?', zh: '这张照片是AI做的吗？', hi: 'क्या यह फ़ोटो AI है?', ar: 'هل هذه الصورة ذكاء اصطناعي؟', fr: 'Cette photo est-elle IA ?', bn: 'এই ছবি কি AI?', it: 'Questa foto è IA?' },
+    short: { en: 'AI photo?', es: '¿Foto IA?', ht: 'Foto IA?', zh: 'AI照片？', hi: 'AI फ़ोटो?', ar: 'صورة AI؟', fr: 'Photo IA ?', bn: 'AI ছবি?', it: 'Foto IA?', pt: 'Foto de IA?', ja: 'AI写真？' },
+    name: { en: 'Is this photo AI?', es: '¿Esta foto es IA?', ht: 'Èske foto sa a se IA?', zh: '这张照片是AI做的吗？', hi: 'क्या यह फ़ोटो AI है?', ar: 'هل هذه الصورة ذكاء اصطناعي؟', fr: 'Cette photo est-elle IA ?', bn: 'এই ছবি কি AI?', it: 'Questa foto è IA?', pt: 'Esta foto é IA?', ja: 'この写真はAI？' },
   },
 };
 export const TOOL_ORDER = ['facts', 'credible', 'photo'];
@@ -75,6 +75,8 @@ const WELCOME = {
     fr: 'Salut ! 👋 Je suis Vera. Pose-moi n\'importe quelle question, comme « Quand a lieu la prochaine élection à Miami ? ». J\'irai directement à la source d\'origine quand c\'est le mieux, ou je vérifierai des sources d\'info de tout le spectre, et je te montrerai les sources que j\'ai utilisées.',
     bn: 'হ্যালো! 👋 আমি ভেরা। যেকোনো বিষয়ের তথ্য জানতে আমাকে জিজ্ঞেস করো, যেমন "মিয়ামির পরের নির্বাচন কবে?"। দরকার হলে আমি সরাসরি মূল সূত্রে যাব, নয়তো সব মতের খবরের সূত্র দেখব, আর দেখাব আমি কোন কোন সূত্র ব্যবহার করেছি।',
     it: "Ciao! 👋 Sono Vera. Chiedimi qualsiasi cosa di cui vuoi conoscere i fatti, per esempio \"Quando sono le prossime elezioni a Miami?\". Andrò direttamente alla fonte originale quando è la cosa migliore, oppure controllerò fonti di notizie di ogni orientamento, e ti mostrerò le fonti che ho usato.",
+    pt: 'Oi! 👋 Eu sou a Vera. Me pergunte qualquer coisa que você queira checar, como "Quando é a próxima eleição em Miami?". Vou direto à fonte original quando for o melhor, ou verifico fontes de notícias de todos os lados, e te mostro as fontes que usei.',
+    ja: 'こんにちは！👋 Veraです。「マイアミの次の選挙はいつ？」のように、事実を知りたいことを何でも聞いてください。いちばん良い場合は元の情報源に直接あたり、そうでなければさまざまな立場のニュースを確認して、使った情報源をお見せします。',
   },
   credible: {
     en: "Hey! 👋 I'm Vera. Paste a news link or a post, or add a screenshot with 📎, and I'll show you how credible it is: who published it and how they lean, the persuasion tactics it uses, and whether the facts hold up. Remember: leaning left or right doesn't make something false.",
@@ -86,6 +88,8 @@ const WELCOME = {
     fr: 'Salut ! 👋 Je suis Vera. Colle un lien d\'actualité ou une publication, ou ajoute une capture avec 📎, et je te montre à quel point c\'est crédible : qui l\'a publié et de quel côté il penche, les techniques de persuasion utilisées, et si les faits tiennent. Rappel : pencher à gauche ou à droite ne rend pas une info fausse.',
     bn: 'হ্যালো! 👋 আমি ভেরা। একটা খবরের লিংক বা পোস্ট পেস্ট করো, বা 📎 দিয়ে স্ক্রিনশট দাও, আমি দেখাব এটা কতটা বিশ্বাসযোগ্য: কে প্রকাশ করেছে ও তাদের ঝোঁক কোন দিকে, কী কী প্রভাবিত করার কৌশল আছে, আর তথ্যগুলো ঠিক কি না। মনে রেখো: বাম বা ডান দিকে ঝোঁক থাকলেই কিছু মিথ্যা হয়ে যায় না।',
     it: "Ciao! 👋 Sono Vera. Incolla un link a una notizia o un post, oppure aggiungi uno screenshot con 📎, e ti mostrerò quanto è credibile: chi l'ha pubblicato e da che parte pende, le tecniche di persuasione che usa e se i fatti reggono. Ricorda: pendere a sinistra o a destra non rende falsa una notizia.",
+    pt: 'Oi! 👋 Eu sou a Vera. Cole um link de notícia ou um post, ou adicione um print com 📎, e eu te mostro o quanto é confiável: quem publicou e para que lado tende, as táticas de persuasão que usa e se os fatos se sustentam. Lembre-se: tender à esquerda ou à direita não torna algo falso.',
+    ja: 'こんにちは！👋 Veraです。ニュースのリンクや投稿を貼り付けるか、📎 でスクリーンショットを追加してください。どのくらい信頼できるかをお見せします：誰が公開し、どちらに傾いているか、どんな説得のテクニックを使っているか、そして事実が正しいかどうか。覚えておいてください：左寄りや右寄りだからといって、間違いとは限りません。',
   },
   photo: {
     en: "Hey! 👋 I'm Vera. Tap 📎 to add a photo and I'll check the chance it's AI-made: warning signs, how believable the scene is, and how it compares with real photos online.",
@@ -97,6 +101,8 @@ const WELCOME = {
     fr: 'Salut ! 👋 Je suis Vera. Appuie sur 📎 pour ajouter une photo et je vérifie la probabilité qu\'elle soit faite par IA : signes d\'alerte, crédibilité de la scène et comparaison avec de vraies photos en ligne.',
     bn: 'হ্যালো! 👋 আমি ভেরা। 📎 চেপে একটা ছবি দাও, আমি দেখব এটা AI দিয়ে বানানোর সম্ভাবনা কতটা: সতর্কতার চিহ্ন, দৃশ্যটা কতটা বিশ্বাসযোগ্য, আর অনলাইনের আসল ছবির সাথে তুলনা।',
     it: "Ciao! 👋 Sono Vera. Tocca 📎 per aggiungere una foto e controllerò la probabilità che sia fatta con l'IA: segnali d'allarme, quanto è credibile la scena e il confronto con foto reali online.",
+    pt: 'Oi! 👋 Eu sou a Vera. Toque em 📎 para adicionar uma foto e eu verifico a chance de ela ter sido feita com IA: sinais de alerta, o quanto a cena é crível e como ela se compara com fotos reais da internet.',
+    ja: 'こんにちは！👋 Veraです。📎 をタップして写真を追加すると、AIで作られた可能性を確認します：警告サイン、場面の本当らしさ、そしてネット上の本物の写真との比較。',
   },
 };
 
@@ -113,6 +119,8 @@ export const LANGUAGES = [
   ['fr', 'Français'],
   ['bn', 'বাংলা'],
   ['it', 'Italiano'],
+  ['pt', 'Português (BR)'],
+  ['ja', '日本語'],
 ];
 
 // Small bits of the screen in every language (the rest of the site is translated in a later batch)
@@ -334,6 +342,54 @@ export const UI = {
     as1: 'Su qualsiasi post o link, tocca Condividi.',
     as2: 'Scegli Fact or Feed? dall’elenco. Si apre e inizia subito il controllo.',
   },
+  pt: {
+    messageLabel: 'Mensagem para a Vera',
+    getApp: 'Baixe o app',
+    installApp: 'Instalar app',
+    waitNote: 'Isso pode levar de 1 a 3 minutos.',
+    elapsed: '{n} segundos até agora',
+    stillWorking: 'Ainda trabalhando, quase lá…',
+    resultReady: 'Resultado pronto',
+    tryAgain: 'Tentar de novo',
+    errTimeout: 'Demorou demais, então parei de esperar. Tente de novo.',
+    errBusy: 'A verificação ficou sem tempo no nosso servidor. Tente de novo. Um post ou link mais curto pode ajudar.',
+    errServer: 'Algo deu errado do nosso lado. Tente de novo daqui a um minuto.',
+    errNetwork: 'Não consegui me conectar ao servidor. Confira sua conexão e tente de novo.',
+    photoUnreadable: 'Não consegui ler essa foto. Tente outra foto ou um print dela.',
+    copyFailed: 'Não deu para copiar. Toque e segure o texto para copiá-lo.',
+    androidIntro: 'Instale o Fact or Feed? no seu celular Android. Depois você pode compartilhar posts e links direto com ele.',
+    androidStepsTitle: 'Adicione à sua tela inicial',
+    a1: 'Abra este site no Chrome.',
+    a2: 'Toque no menu ⋮ no canto superior.',
+    a3: 'Toque em Instalar app ou Adicionar à tela inicial.',
+    androidShareTitle: 'Verifique posts de qualquer app',
+    as1: 'Em qualquer post ou link, toque em Compartilhar.',
+    as2: 'Escolha Fact or Feed? na lista. Ele abre e começa a verificar.',
+  },
+  ja: {
+    messageLabel: 'Veraへのメッセージ',
+    getApp: 'アプリを入手',
+    installApp: 'アプリをインストール',
+    waitNote: '1〜3分ほどかかることがあります。',
+    elapsed: '{n} 秒経過',
+    stillWorking: 'まだ作業中です。もう少しで終わります…',
+    resultReady: '結果が出ました',
+    tryAgain: 'もう一度試す',
+    errTimeout: '時間がかかりすぎたため、待つのをやめました。もう一度お試しください。',
+    errBusy: 'サーバーで確認の時間切れになりました。もう一度お試しください。短めの投稿やリンクだとうまくいくことがあります。',
+    errServer: 'こちら側で問題が起きました。1分ほどしてから、もう一度お試しください。',
+    errNetwork: 'サーバーにつながりませんでした。接続を確認して、もう一度お試しください。',
+    photoUnreadable: 'その写真を読み込めませんでした。別の写真か、その写真のスクリーンショットでお試しください。',
+    copyFailed: 'コピーできませんでした。テキストを長押ししてコピーしてください。',
+    androidIntro: 'AndroidスマホにFact or Feed? をインストールしましょう。投稿やリンクを直接共有できるようになります。',
+    androidStepsTitle: 'ホーム画面に追加',
+    a1: 'このサイトをChromeで開きます。',
+    a2: '右上の ⋮ メニューをタップ。',
+    a3: '「アプリをインストール」または「ホーム画面に追加」をタップ。',
+    androidShareTitle: 'どのアプリからでも投稿を確認',
+    as1: '投稿やリンクで「共有」をタップ。',
+    as2: 'リストから Fact or Feed? を選びます。開いてすぐに確認を始めます。',
+  },
 };
 export const ui = (lang) => UI[lang] || UI.en;
 
@@ -351,7 +407,7 @@ export function useUiLanguage(language) {
   const uiLang = language && language !== 'auto' ? language : browserLang;
   // <html lang> and dir follow it, so screen readers use the right voice and Arabic reads right to left
   useEffect(() => {
-    document.documentElement.lang = uiLang;
+    document.documentElement.lang = uiLang === 'pt' ? 'pt-BR' : uiLang;
     document.documentElement.dir = RTL.includes(uiLang) ? 'rtl' : 'ltr';
   }, [uiLang]);
   return uiLang;
@@ -967,6 +1023,8 @@ const NO_SOURCES = {
   fr: "Aucune source trouvée. Je n'ai trouvé aucune source à ce sujet, alors ne te fie pas à cette réponse.",
   bn: 'কোনো সূত্র পাওয়া যায়নি। এ বিষয়ে কোনো সূত্র পাইনি, তাই এই উত্তরের ওপর ভরসা কোরো না।',
   it: 'Nessuna fonte trovata. Non ho trovato nessuna fonte su questo, quindi non fidarti di questa risposta.',
+  pt: 'Nenhuma fonte encontrada. Não encontrei nenhuma fonte sobre isso, então não confie nesta resposta.',
+  ja: '情報源が見つかりませんでした。これについての情報源が見つからなかったので、この答えをあてにしないでください。',
 };
 
 // Shown on a saved result: when it was checked ({n} is the number of minutes or hours)
@@ -980,6 +1038,8 @@ const CHECKED_AGO = {
   fr: { now: "Vérifié à l'instant (résultat enregistré)", min: 'Vérifié il y a {n} min (résultat enregistré)', hr: 'Vérifié il y a {n} h (résultat enregistré)' },
   bn: { now: 'এইমাত্র যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)', min: '{n} মিনিট আগে যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)', hr: '{n} ঘণ্টা আগে যাচাই করা হয়েছে (সংরক্ষিত ফলাফল)' },
   it: { now: 'Verificato poco fa (risultato salvato)', min: 'Verificato {n} min fa (risultato salvato)', hr: 'Verificato {n} h fa (risultato salvato)' },
+  pt: { now: 'Verificado agora mesmo (resultado salvo)', min: 'Verificado há {n} min (resultado salvo)', hr: 'Verificado há {n} h (resultado salvo)' },
+  ja: { now: 'たった今確認済み（保存された結果）', min: '{n} 分前に確認済み（保存された結果）', hr: '{n} 時間前に確認済み（保存された結果）' },
 };
 
 function CachedNote({ data }) {

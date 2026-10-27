@@ -120,7 +120,7 @@ ${untrusted('search results', known.map(sourceLine).join('\n\n') || 'none')}`;
       { role: 'user', content: context },
       { role: 'assistant', content: 'Got it. I will answer follow-up questions using this report and these sources.' },
       ...history,
-      { role: 'user', content: `Audience: ${audience}. Language: ${language}.\nQuestion: ${q}` },
+      { role: 'user', content: `Audience: ${audience}. Language: ${language === 'pt' ? 'pt-BR (Brazilian Portuguese)' : language}.\nQuestion: ${q}` },
     ];
 
     // Only one clarifying question per conversation, so it stays easy for the user
