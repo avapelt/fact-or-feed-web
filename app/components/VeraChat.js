@@ -17,11 +17,12 @@ const COLORS = {
   Official: '#237A4B',
   Research: '#5B3FA6',
   'Fact-check': '#D99A2B',
+  'Campaign / party (self-published)': '#C77DB0',
   'State media/government': '#5A4A3A',
   'Not rated': '#E2E0E6',
 };
 const ORDER = Object.keys(COLORS);
-const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Not rated'];
+const DARK = ['Lean Left', 'Center', 'Lean Right', 'Fact-check', 'Campaign / party (self-published)', 'Not rated'];
 
 const VERDICTS = ['Accurate', 'Missing context', 'Exaggerated', 'Misleading', 'False'];
 const VERDICT_COLORS = ['#237A4B', '#7FA83A', '#D99A2B', '#D9702F', '#C2413B'];
