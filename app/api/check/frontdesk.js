@@ -1,5 +1,5 @@
 // 👋 The Front desk: the first stop for every message, before the notebook, link reading, or the Manager.
-// 1. Plain greetings and thanks (in all 9 languages) get an instant reply from code. No AI, free.
+// 1. Plain greetings and thanks (in all 11 languages) get an instant reply from code. No AI, free.
 // 2. Everything else goes to a small, fast AI step that only decides: check, chat, blocked, or self_harm.
 
 // Words that make up a plain greeting or thanks, by language. A message counts as a greeting only if
@@ -14,8 +14,10 @@ const GREETINGS = {
   fr: ['bonjour', 'salut', 'bonsoir', 'coucou', 'ça va', 'ca va', 'comment ça va', 'comment ca va', 'comment vas-tu', 'merci', 'merci beaucoup'],
   bn: ['হ্যালো', 'নমস্কার', 'আসসালামু আলাইকুম', 'কেমন আছো', 'কেমন আছেন', 'ধন্যবাদ', 'অনেক ধন্যবাদ'],
   it: ['ciao', 'salve', 'buongiorno', 'buonasera', 'come stai', 'come va', 'grazie', 'grazie mille'],
+  pt: ['oi', 'oie', 'olá', 'ola', 'e aí', 'e ai', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'tudo bom', 'como vai', 'obrigado', 'obrigada', 'muito obrigado', 'muito obrigada', 'valeu'],
+  ja: ['こんにちは', 'こんばんは', 'おはよう', 'おはようございます', 'やあ', 'はじめまして', '元気', 'お元気ですか', '元気ですか', 'ありがとう', 'ありがとうございます', 'どうも', 'どうもありがとう'],
 };
-const THANKS = /thank|thx|^ty$|gracias|m[eè]si|谢|धन्यवाद|शुक्रिया|شكر|merci|ধন্যবাদ|grazie/i;
+const THANKS = /thank|thx|^ty$|gracias|m[eè]si|谢|धन्यवाद|शुक्रिया|شكر|merci|ধন্যবাদ|grazie|obrigad|valeu|ありがと|どうも/i;
 
 const HELLO_REPLY = {
   en: "Hi! 👋 I'm Vera. Send me a question, a post, a link, or a photo and I'll check the facts with you.",
@@ -27,6 +29,8 @@ const HELLO_REPLY = {
   fr: 'Salut ! 👋 Je suis Vera. Envoie-moi une question, une publication, un lien ou une photo et je vérifierai les faits avec toi.',
   bn: 'হ্যালো! 👋 আমি ভেরা। আমাকে একটা প্রশ্ন, পোস্ট, লিংক বা ছবি পাঠাও, আমি তোমার সাথে তথ্য যাচাই করব।',
   it: 'Ciao! 👋 Sono Vera. Mandami una domanda, un post, un link o una foto e controllerò i fatti con te.',
+  pt: 'Oi! 👋 Eu sou a Vera. Me mande uma pergunta, um post, um link ou uma foto e eu verifico os fatos com você.',
+  ja: 'こんにちは！👋 Veraです。質問、投稿、リンク、写真を送ってくれたら、一緒に事実を確認します。',
 };
 const THANKS_REPLY = {
   en: "You're welcome! 😊 Send me anything else you'd like me to check.",
@@ -38,6 +42,8 @@ const THANKS_REPLY = {
   fr: 'De rien ! 😊 Envoie-moi autre chose à vérifier quand tu veux.',
   bn: 'স্বাগতম! 😊 আর কিছু যাচাই করতে চাইলে আমাকে পাঠাও।',
   it: 'Prego! 😊 Mandami pure qualsiasi altra cosa da controllare.',
+  pt: 'De nada! 😊 Me mande qualquer outra coisa que você queira que eu verifique.',
+  ja: 'どういたしまして！😊 ほかに確認したいものがあれば送ってください。',
 };
 
 const norm = (s) =>
@@ -70,7 +76,7 @@ export function detectGreeting(raw) {
     rest = rest.slice(hit[0].length).trim();
   }
   if (!matched) return null;
-  return { lang, thanks: THANKS.test(norm(original)) && !/hi|hello|hola|bonjou|你好|नमस्ते|مرحب|bonjour|ciao|হ্যালো/.test(norm(original)) };
+  return { lang, thanks: THANKS.test(norm(original)) && !/hi|hello|hola|bonjou|你好|नमस्ते|مرحب|bonjour|ciao|হ্যালো|\boi\b|ol[aá]|こんにちは|こんばんは|おはよう/.test(norm(original)) };
 }
 
 // The instant reply, in the language the user picked (or the language of the greeting)

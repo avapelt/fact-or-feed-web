@@ -94,6 +94,26 @@ const TEXT = {
     photo: "Aggiungi una foto. Vera cerca i segnali di IA, valuta quanto è credibile la scena e la confronta con foto reali online.",
     note: "Pendere a sinistra o a destra non rende falsa una notizia. I fatti li valutiamo a parte.",
   },
+  pt: {
+    slogan: "Não alimente as mentiras. Encontre os fatos.",
+    intro: 'Viu algo na internet e não tem certeza se é verdade? A Vera e sua equipe de agentes de IA verificam para você, mostram as fontes que usaram e nunca dizem o que você deve pensar.',
+    pick: 'Escolha uma ferramenta',
+    open: 'Abrir',
+    facts: 'Faça uma pergunta. A Vera vai direto à fonte original quando é o melhor, ou verifica fontes de notícias de todos os lados, e mostra as fontes que usou.',
+    credible: 'Cole um link, post ou print. Veja quem publicou e para que lado tende, as táticas de persuasão que usa e se os fatos se sustentam.',
+    photo: 'Adicione uma foto. A Vera procura sinais de IA, vê o quanto a cena é crível e compara com fotos reais da internet.',
+    note: 'Tender à esquerda ou à direita não torna algo falso. Avaliamos os fatos separadamente.',
+  },
+  ja: {
+    slogan: "うそにエサをあげないで。事実を見つけよう。",
+    intro: 'ネットで見たものが本当かどうかわからない？ VeraとAIエージェントのチームが代わりに確認し、使った情報源を見せます。どう考えるべきかを押しつけることはありません。',
+    pick: 'ツールを選ぶ',
+    open: '開く',
+    facts: '質問してください。いちばん良い場合は元の情報源に直接あたり、そうでなければさまざまな立場のニュースを確認して、使った情報源を見せます。',
+    credible: 'リンク、投稿、スクリーンショットを貼り付け。誰が公開し、どちらに傾いているか、どんな説得のテクニックを使っているか、事実が正しいかがわかります。',
+    photo: '写真を追加してください。VeraがAIの警告サインや場面の本当らしさを確認し、ネット上の本物の写真と比べます。',
+    note: '左寄りや右寄りだからといって、間違いとは限りません。事実は別に判断しています。',
+  },
 };
 
 const HOME_CSS = `
