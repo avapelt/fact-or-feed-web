@@ -1,34 +1,12 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, createContext, useContext } from 'react';
+import { toolText } from './toolText';
+import { stripCites } from './cites';
 
-const STEPS = {
-  credible: [
-    'The Manager is making a game plan…',
-    'Reading what you sent…',
-    'Checking who published it and how they lean…',
-    'Spotting persuasion tactics…',
-    'Searching news sources across the spectrum…',
-    'Checking official sources and published research…',
-    'Weighing the evidence…',
-    'Having a second AI double-check it…',
-  ],
-  facts: [
-    'The Manager is deciding: go to the original source, or search widely?',
-    'Understanding your question…',
-    'Finding the original source and searching across the spectrum…',
-    'Labeling every source…',
-    'Weighing the evidence…',
-    'Writing your answer…',
-    'Having a second AI double-check it…',
-  ],
-  photo: [
-    'A photo agent is looking for AI warning signs…',
-    'Figuring out what the photo shows…',
-    'Searching for real photos of the same thing…',
-    'Comparing your photo with the real ones…',
-    'Writing up what I found…',
-  ],
-};
+// The screen language, shared with every part of the report
+const LangCtx = createContext('en');
+const useTT = () => toolText(useContext(LangCtx));
+
 
 const COLORS = {
   Left: '#3B5BA9',
@@ -74,11 +52,6 @@ export function toolName(tool, language) {
   return TOOLS[tool].name[language] || TOOLS[tool].name.en;
 }
 
-const PLACEHOLDERS = {
-  facts: 'Ask a question or name a topic…',
-  credible: 'Paste a news link or a post…',
-  photo: 'Tap 📎 to add a photo…',
-};
 
 const AI_LEVELS = ['Low chance of AI', 'Medium chance of AI', 'High chance of AI'];
 const AI_COLORS = ['#237A4B', '#D99A2B', '#C2413B'];
@@ -728,6 +701,7 @@ function SpectrumBar({ stats, total }) {
 
 // Optional rating. A 👎 asks which part was wrong, so the lesson goes to the agent who does that job.
 function Feedback({ claims, verdict, realStory, areas = [] }) {
+  const T = useTT();
   const [state, setState] = useState('ask'); // ask | why | sending | done
   const [area, setArea] = useState('');
   const [note, setNote] = useState('');
@@ -750,57 +724,59 @@ function Feedback({ claims, verdict, realStory, areas = [] }) {
   if (state === 'done') {
     return (
       <div className="feedback muted" style={{ display: 'block' }}>
-        📒 Thanks! I saved that so it can be reviewed, to help me do better next time.
+        {T.fbThanks}
         {lesson && (
           <div style={{ marginTop: 4 }}>
-            Suggested lesson{lesson.job ? ` for ${lesson.job.split(' (')[0]}` : ''} (waiting for review): "{lesson.text.replace(/[.!]+$/, '')}."
+            {T.fbLesson} "{lesson.text.replace(/[.!]+$/, '')}."
           </div>
         )}
       </div>
     );
   }
-  if (state === 'sending') return <div className="feedback muted">Writing it in my notebook…</div>;
+  if (state === 'sending') return <div className="feedback muted">{T.fbSaving}</div>;
   if (state === 'why') {
     return (
       <div className="feedback" style={{ display: 'block' }}>
         {areas.length > 0 && (
           <>
-            <div className="muted" style={{ marginBottom: 6 }}>Which part was wrong?</div>
+            <div className="muted" style={{ marginBottom: 6 }}>{T.fbWhich}</div>
             <div className="chips">
               {areas.map((a) => (
                 <button key={a} className={`chip ${area === a ? 'on' : ''}`} onClick={() => setArea(a)}>
-                  {a}
+                  {T.areas[a] || a}
                 </button>
               ))}
             </div>
           </>
         )}
-        <div className="muted" style={{ margin: '8px 0 6px' }}>Tell me more (optional, no names or personal info):</div>
-        <textarea className="input" rows={2} aria-label="Tell me more (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: this photo is actually AI-made" style={{ width: '100%' }} />
+        <div className="muted" style={{ margin: '8px 0 6px' }}>{T.fbMore}</div>
+        <textarea className="input" rows={2} aria-label={T.fbMoreLabel} value={note} onChange={(e) => setNote(e.target.value)} placeholder={T.fbExample} style={{ width: '100%' }} />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <button className="btn" onClick={() => sendFeedback(false, area, note)}>Send</button>
-          <button className="btn" onClick={() => setState('ask')}>Cancel</button>
+          <button className="btn" onClick={() => sendFeedback(false, area, note)}>{T.send}</button>
+          <button className="btn" onClick={() => setState('ask')}>{T.cancel}</button>
         </div>
       </div>
     );
   }
   return (
     <div className="feedback">
-      <span className="muted">Rate this (optional):</span>
-      <button className="btn" onClick={() => sendFeedback(true)} aria-label="This was right">👍</button>
-      <button className="btn" onClick={() => setState('why')} aria-label="This was wrong">👎</button>
+      <span className="muted">{T.rate}</span>
+      <button className="btn" onClick={() => sendFeedback(true)} aria-label={T.wasRight}>👍</button>
+      <button className="btn" onClick={() => setState('why')} aria-label={T.wasWrong}>👎</button>
     </div>
   );
 }
 
-function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
+function PhotoCheck({ check, title }) {
+  const T = useTT();
+  if (title === undefined) title = T.aiTitle;
   return (
     <div className="mini">
           {title && <b>{title}</b>}
           <Meter labels={AI_LEVELS} colors={AI_COLORS} active={AI_LEVELS.indexOf(check.level)} />
           {check.plausibility && (
             <div style={{ marginTop: 10, fontSize: 14 }}>
-              🎯 <b>How believable is this scene?</b> {check.plausibility}
+              🎯 <b>{T.believable}</b> {check.plausibility}
               {check.plausibility_reason ? `: ${check.plausibility_reason}` : ''}
             </div>
           )}
@@ -814,21 +790,21 @@ function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
           {check.comparison && (
             <div className="compare">
               <div>
-                <b>🔍 Compared with real photos online</b>
+                <b>{T.compared}</b>
               </div>
               <div style={{ marginTop: 4 }}>
                 <span className="pill">{check.comparison.match}</span>
                 <span className="pill">{check.comparison.effect}</span>
               </div>
               {check.comparison.reused_old_photo && (
-                <div className="warn" style={{ marginTop: 6 }}>⚠️ This photo may be an older or unrelated photo being reposted.</div>
+                <div className="warn" style={{ marginTop: 6 }}>{T.reused}</div>
               )}
               <div style={{ marginTop: 6, fontSize: 14 }}>{check.comparison.comparison}</div>
               {check.comparison.compared?.length > 0 && (
                 <div className="thumbs">
                   {check.comparison.compared.map((c, i) => (
-                    <a key={i} href={safeHref(c.url)} target="_blank" rel="noreferrer" title={c.description || 'Photo found online'}>
-                      <img src={safeHref(c.url)} alt={c.description || 'Photo found online'} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
+                    <a key={i} href={safeHref(c.url)} target="_blank" rel="noreferrer" title={c.description || T.photoOnline}>
+                      <img src={safeHref(c.url)} alt={c.description || T.photoOnline} onError={(e) => (e.currentTarget.parentElement.style.display = 'none')} />
                     </a>
                   ))}
                 </div>
@@ -838,16 +814,17 @@ function PhotoCheck({ check, title = '🤖 Could this image be AI-made?' }) {
           <div className="muted" style={{ marginTop: 6 }}>
             {check.checks > 1 && (
               <>
-                {check.agree} of {check.checks} independent checks agreed.{' '}
+                {T.fill(T.agreed, { a: check.agree, n: check.checks })}{' '}
               </>
             )}
-            Warning signs aren't proof. No tool can say for sure if an image is AI-made.
+            {T.notProof}
           </div>
         </div>
   );
 }
 
 function PhotoResultBubble({ data, image, onFactCheck, headingId }) {
+  const T = useTT();
   const p = data.photo;
   const li = AI_LEVELS.indexOf(p.level);
   const color = AI_COLORS[li] || '#6f6858';
@@ -857,12 +834,12 @@ function PhotoResultBubble({ data, image, onFactCheck, headingId }) {
       <span className="vchip" style={{ background: color, color: AI_TEXT[li] || '#FFFFFF' }}>{p.level}</span>
       <h2 id={headingId} tabIndex={-1} className="rh" dir="auto" style={{ margin: '12px 0 6px', fontWeight: 600, fontSize: 16 }}>{p.headline}</h2>
       <p dir="auto" style={{ margin: '0 0 4px' }}>{p.explanation}</p>
-      {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>📷 What I see: {p.description}</p>}
-      <PhotoCheck check={p} title="🔎 The details" />
-      <div className="notebook">💡 <b>Check it yourself:</b> {p.tip}</div>
+      {p.description && <p className="muted" dir="auto" style={{ margin: '6px 0 0' }}>{T.whatISee} {p.description}</p>}
+      <PhotoCheck check={p} title={T.theDetails} />
+      <div className="notebook">💡 <b>{T.checkYourself}</b> {p.tip}</div>
       {image && onFactCheck && (
         <div style={{ marginTop: 10 }}>
-          <button className="btn" onClick={onFactCheck}>📰 Now check if the story is credible</button>
+          <button className="btn" onClick={onFactCheck}>{T.nowCredible}</button>
         </div>
       )}
       <Feedback
@@ -879,10 +856,11 @@ const LEANS = ['Left', 'Lean Left', 'Center', 'Lean Right', 'Right'];
 
 // Where the outlet sits on the left-right spectrum, with a reminder that lean is not accuracy
 function OutletLean({ outlet, note }) {
+  const T = useTT();
   const i = LEANS.indexOf(outlet?.category);
   return (
     <div className="mini">
-      <b>📰 Who published it and how they lean</b>
+      <b>{T.whoPublished}</b>
       <div style={{ marginTop: 6, fontSize: 14 }}>
         <b>{outlet.domain}</b> <Badge category={outlet.category} />
       </div>
@@ -901,22 +879,23 @@ function OutletLean({ outlet, note }) {
         </>
       )}
       <div style={{ marginTop: 8, fontSize: 14 }}>
-        {note || 'Leaning left or right does not make an article true or false. We judge the facts separately.'}
+        {note || T.leanNote}
       </div>
-      <div className="muted" style={{ marginTop: 4 }}>Bias labels are approximate, based on published media bias ratings.</div>
+      <div className="muted" style={{ marginTop: 4 }}>{T.biasApprox}</div>
     </div>
   );
 }
 
 function SourcesList({ data, total }) {
+  const T = useTT();
   return (
     <details className="sub">
       <summary>
-        📚 Sources <span className="count">{total}</span>
+        {T.sources} <span className="count">{total}</span>
       </summary>
       {data.keySources?.length > 0 && (
         <div className="sub-in">
-          <div className="sub-label">Most important</div>
+          <div className="sub-label">{T.mostImportant}</div>
           <ul style={{ fontSize: 14 }}>
             {data.keySources.map((s) => (
               <SourceItem key={s.id} s={s} />
@@ -925,7 +904,7 @@ function SourcesList({ data, total }) {
         </div>
       )}
       <div className="sub-in">
-        <div className="sub-label">Everything I read, by type</div>
+        <div className="sub-label">{T.everything}</div>
         {ORDER.filter((c) => data.sources.some((s) => s.category === c)).map((c) => {
           const group = data.sources.filter((s) => s.category === c);
           return (
@@ -942,7 +921,7 @@ function SourcesList({ data, total }) {
           );
         })}
         <div className="muted" style={{ marginTop: 8 }}>
-          Bias labels are approximate, based on published media bias ratings.
+          {T.biasApprox}
         </div>
       </div>
     </details>
@@ -950,12 +929,13 @@ function SourcesList({ data, total }) {
 }
 
 function ReviewBox({ review }) {
+  const T = useTT();
   if (!review) return null;
   return (
     <div className="review">
       <div>
-        <b>{review.approved ? '✅ Double-checked' : '🔧 Double-checked & corrected'}</b>
-        <span className="pill" style={{ marginLeft: 8 }}>Confidence: {review.confidence}</span>
+        <b>{review.approved ? T.doubleChecked : T.corrected}</b>
+        <span className="pill" style={{ marginLeft: 8 }}>{T.confidence} {review.confidence}</span>
       </div>
       {review.review_note && <div style={{ marginTop: 4 }}>{review.review_note}</div>}
       {!review.approved && review.issues?.length > 0 && (
@@ -966,61 +946,6 @@ function ReviewBox({ review }) {
         </ul>
       )}
     </div>
-  );
-}
-
-function PlanBlock({ data }) {
-  const plan = data.trace?.plan;
-  if (!plan) return null;
-  return (
-    <Block title="🧭 The Manager's game plan">
-      {plan.analysis && <p style={{ margin: '0 0 6px', fontSize: 14 }}>{plan.analysis}</p>}
-      <div className="chips" style={{ marginBottom: 6 }}>
-        {[
-          [`Went to the original source${plan.original_source ? `: ${plan.original_source}` : ''}`, plan.go_to_original],
-          [`News search: ${plan.news_search}`, plan.news_search !== 'none'],
-          ['Official sources', plan.official_sources || plan.emergency_mode],
-          ['Research papers', plan.research_papers],
-          ['Persuasion check', plan.persuasion],
-          ['🚨 Emergency mode', plan.emergency_mode],
-        ]
-          .filter(([, on]) => on)
-          .map(([label]) => (
-            <span key={label} className="chip on" style={{ cursor: 'default' }}>
-              {label}
-            </span>
-          ))}
-      </div>
-      <ul style={{ fontSize: 14 }}>
-        {(plan.reasons || []).map((x, i) => (
-          <li key={i}>{x}</li>
-        ))}
-      </ul>
-    </Block>
-  );
-}
-
-function TraceBlock({ data }) {
-  if (!data.trace?.timings) return null;
-  const q = data.trace.queries || {};
-  return (
-    <Block title="⚙️ What I did behind the scenes">
-      <ol style={{ fontSize: 14 }}>
-        {data.trace.timings.map((t, i) => (
-          <li key={i}>
-            {t.label} <span className="muted">({t.seconds}s)</span>
-          </li>
-        ))}
-      </ol>
-      <details style={{ marginTop: 6, fontSize: 14 }}>
-        <summary style={{ cursor: 'pointer' }}>Searches I ran</summary>
-        <ul>
-          {[...(q.original || []), ...(q.news || []), ...(q.official || []), ...(q.research || [])].map((x, i) => (
-            <li key={i}>{x}</li>
-          ))}
-        </ul>
-      </details>
-    </Block>
   );
 }
 
@@ -1065,6 +990,7 @@ function CachedNote({ data }) {
 
 // 🔎 Find the facts: the answer, the consensus, and the sources it used
 function FactsBubble({ data, headingId }) {
+  const T = useTT();
   const r = data.result;
   const total = data.sources?.length || 0;
   const byId = (id) => data.sources?.find((s) => s.id === id);
@@ -1074,17 +1000,17 @@ function FactsBubble({ data, headingId }) {
     <div className="bub wide">
       <CachedNote data={data} />
       {r.reframed && <div className="muted" dir="auto" style={{ marginBottom: 6 }}>ℹ️ {r.reframed}</div>}
-      <h2 id={headingId} tabIndex={-1} className="answer rh" dir="auto">{r.answer}</h2>
-      {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{r.details}</p>}
+      <h2 id={headingId} tabIndex={-1} className="answer rh" dir="auto">{stripCites(r.answer)}</h2>
+      {r.details && <p dir="auto" style={{ margin: '0 0 8px' }}>{stripCites(r.details)}</p>}
       {total === 0 && <div className="warn" dir="auto">⚠️ {NO_SOURCES[data.lang] || NO_SOURCES.en}</div>}
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
-        <span className="pill">Consensus: {r.consensus.level}</span>
-        {r.consensus.explanation}
+        <span className="pill">{T.consensus} {r.consensus.level}</span>
+        {stripCites(r.consensus.explanation)}
       </p>
 
       {original && (
         <div className="origin">
-          <b>🎯 Straight from the original source: {original.name}</b>
+          <b>{T.straight} {original.name}</b>
           <div style={{ marginTop: 4 }}>{original.what_it_says}</div>
           {originalSrc && (
             <div style={{ marginTop: 4 }}>
@@ -1096,32 +1022,27 @@ function FactsBubble({ data, headingId }) {
       )}
 
       <ReviewBox review={data.review} />
-      {r.notebook_note && <div className="notebook">📒 <b>From my notebook:</b> {r.notebook_note}</div>}
+      {r.notebook_note && <div className="notebook">📒 <b>{T.fromNotebook}</b> {r.notebook_note}</div>}
 
       {total > 0 && (
         <div className="mini">
-          <b>⚖️ {data.trace?.plan?.go_to_original ? `I went to the original source and read ${total} sources` : `I checked ${total} sources`}</b>
+          <b>⚖️ {T.fill(data.trace?.plan?.go_to_original ? T.wentOriginal : T.checkedN, { n: total })}</b>
           <SpectrumBar stats={data.stats || {}} total={total} />
         </div>
       )}
 
       <details className="more">
-        <summary>See the full breakdown ↓</summary>
+        <summary>{T.fullBreakdown}</summary>
         {r.disputed.length > 0 && (
-          <Block title="🤔 Sources disagree on">
+          <Block title={T.disagree}>
             <ul style={{ fontSize: 14 }}>{r.disputed.map((d, i) => <li key={i}>{d}</li>)}</ul>
           </Block>
         )}
         {r.unknown.length > 0 && (
-          <Block title="❓ Still unknown">
+          <Block title={T.stillUnknown}>
             <ul style={{ fontSize: 14 }}>{r.unknown.map((u, i) => <li key={i}>{u}</li>)}</ul>
           </Block>
         )}
-        <Block title="🧠 How I figured this out">
-          <ol style={{ fontSize: 14 }}>{r.how_we_figured_it_out.map((s, i) => <li key={i}>{s}</li>)}</ol>
-        </Block>
-        <PlanBlock data={data} />
-        <TraceBlock data={data} />
         {total > 0 && <SourcesList data={data} total={total} />}
       </details>
 
@@ -1136,6 +1057,7 @@ function FactsBubble({ data, headingId }) {
 }
 
 function ResultBubble({ data, image, onPhotoCheck, headingId }) {
+  const T = useTT();
   const r = data.result;
   const total = data.sources?.length || 0;
   const vIndex = VERDICTS.indexOf(r.verdict);
@@ -1144,32 +1066,32 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
   return (
     <div className="bub wide">
       <CachedNote data={data} />
-      <h2 id={headingId} tabIndex={-1} className="sub-label rh" style={{ marginTop: 0 }}>Are the facts accurate? <span className="sr-only">{r.verdict}</span></h2>
+      <h2 id={headingId} tabIndex={-1} className="sub-label rh" style={{ marginTop: 0 }}>{T.accurateQ} <span className="sr-only">{r.verdict}</span></h2>
       <span className="vchip" style={{ background: vColor, color: vIndex >= 0 ? VERDICT_TEXT[vIndex] : '#FFFFFF' }} aria-hidden="true">{r.verdict}</span>
       {vIndex >= 0 && <Meter labels={VERDICTS} colors={VERDICT_COLORS} active={vIndex} />}
 
       {r.warning && <div className="warn">⚠️ {r.warning}</div>}
 
-      <p dir="auto" style={{ margin: '12px 0 8px' }}>{r.real_story}</p>
+      <p dir="auto" style={{ margin: '12px 0 8px' }}>{stripCites(r.real_story)}</p>
       <p dir="auto" style={{ margin: 0, fontSize: 14 }}>
-        <span className="pill">Consensus: {r.consensus.level}</span>
-        {r.consensus.explanation}
+        <span className="pill">{T.consensus} {r.consensus.level}</span>
+        {stripCites(r.consensus.explanation)}
       </p>
 
       <ReviewBox review={data.review} />
 
       {r.notebook_note && (
-        <div className="notebook">📒 <b>From my notebook:</b> {r.notebook_note}</div>
+        <div className="notebook">📒 <b>{T.fromNotebook}</b> {r.notebook_note}</div>
       )}
 
       {r.who_posted && (
         <div className="mini">
-          <b>✍️ Who posted this?</b>
+          <b>{T.whoPosted}</b>
           <div style={{ marginTop: 6 }}>
             <span className="pill">{r.who_posted.type}</span>
           </div>
           <div style={{ marginTop: 6, fontSize: 14 }}>
-            {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">We couldn't tell who made this.</span>}
+            {r.who_posted.name ? <b>{r.who_posted.name}</b> : <span className="muted">{T.couldntTell}</span>}
           </div>
           {r.who_posted.trust_note && <div style={{ marginTop: 4, fontSize: 14 }}>{r.who_posted.trust_note}</div>}
         </div>
@@ -1180,7 +1102,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
 
       {r.persuasion_tactics?.length > 0 ? (
         <div className="mini">
-          <b>🎣 How it tries to persuade you</b>
+          <b>{T.persuadeTitle}</b>
           <ul style={{ marginTop: 6, fontSize: 14 }}>
             {r.persuasion_tactics.map((t, i) => (
               <li key={i}>
@@ -1190,35 +1112,35 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
           </ul>
         </div>
       ) : (
-        data.trace?.plan?.persuasion && <div className="mini">🎣 <b>Persuasion tactics:</b> I didn't spot any clear ones.</div>
+        data.trace?.plan?.persuasion && <div className="mini">🎣 <b>{T.persuasionLabel}</b> {T.persuasionNone}</div>
       )}
 
       {data.imageCheck && <PhotoCheck check={data.imageCheck} />}
 
       {total > 0 && (
         <div className="mini">
-          <b>⚖️ I checked {total} sources</b>
+          <b>⚖️ {T.fill(T.checkedN, { n: total })}</b>
           <SpectrumBar stats={data.stats || {}} total={total} />
         </div>
       )}
 
       <details className="more">
-        <summary>See the full breakdown ↓</summary>
+        <summary>{T.fullBreakdown}</summary>
 
         {r.right_and_wrong.length > 0 && (
-          <Block title="❌ What the post got wrong">
+          <Block title={T.gotWrong}>
             {r.right_and_wrong.map((x, i) => (
               <p key={i} style={{ margin: '0 0 8px', fontSize: 14 }}>
-                <b>Post says:</b> {x.post_says}
+                <b>{T.postSays}</b> {x.post_says}
                 <br />
-                <b>Actually:</b> {x.actually}
+                <b>{T.actually}</b> {x.actually}
               </p>
             ))}
           </Block>
         )}
 
         {r.origin_timeline.length > 0 && (
-          <Block title="🕒 How this claim spread">
+          <Block title={T.spread}>
             <ol style={{ fontSize: 14 }}>
               {r.origin_timeline.map((t, i) => (
                 <li key={i}>
@@ -1230,7 +1152,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
         )}
 
         {r.disputed.length > 0 && (
-          <Block title="🤔 Sources disagree on">
+          <Block title={T.disagree}>
             <ul style={{ fontSize: 14 }}>
               {r.disputed.map((d, i) => (
                 <li key={i}>{d}</li>
@@ -1240,7 +1162,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
         )}
 
         {r.unknown.length > 0 && (
-          <Block title="❓ Still unknown">
+          <Block title={T.stillUnknown}>
             <ul style={{ fontSize: 14 }}>
               {r.unknown.map((u, i) => (
                 <li key={i}>{u}</li>
@@ -1249,16 +1171,6 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
           </Block>
         )}
 
-        <Block title="🧠 How I figured this out">
-          <ol style={{ fontSize: 14 }}>
-            {r.how_we_figured_it_out.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </Block>
-
-        <PlanBlock data={data} />
-        <TraceBlock data={data} />
         {total > 0 && <SourcesList data={data} total={total} />}
       </details>
 
@@ -1270,7 +1182,7 @@ function ResultBubble({ data, image, onPhotoCheck, headingId }) {
       />
       {image && onPhotoCheck && !data.imageCheck && (
         <div style={{ marginTop: 10 }}>
-          <button className="btn" onClick={onPhotoCheck}>🤖 Also check if this photo is AI</button>
+          <button className="btn" onClick={onPhotoCheck}>{T.alsoPhoto}</button>
         </div>
       )}
     </div>
@@ -1324,6 +1236,7 @@ function decodeResult(packed) {
 // The "Get the app" sheet: a real dialog (focus moves in and stays in, Escape closes, focus goes back)
 export function InstallSheet({ onClose, language = 'en', platform = 'desktop', canInstall = false, onInstall }) {
   const t = ui(language);
+  const T = toolText(language);
   const [tab, setTab] = useState(platform === 'android' ? 'android' : 'ios');
   const sheetRef = useRef(null);
   const closeRef = useRef(onClose);
@@ -1385,26 +1298,26 @@ export function InstallSheet({ onClose, language = 'en', platform = 'desktop', c
         {tab === 'ios' ? (
           <div>
             <p className="muted" style={{ marginTop: 14 }}>
-              See a sketchy post anywhere? Just tap <b>Share → Fact or Feed?</b>
+              {T.iosIntro}
             </p>
             <a className="bigbtn" href={SHORTCUT_URL} target="_blank" rel="noreferrer">
-              Add the Fact or Feed? shortcut
+              {T.addShortcut}
             </a>
             <div className="step-box">
-              <b>How it works</b>
-              <ol>
-                <li>Tap the button above, then <b>Add Shortcut</b>.</li>
-                <li>On any post, link, article, or screenshot, tap <b>Share</b>.</li>
-                <li>Scroll down and tap <b>Fact or Feed?</b> It opens and starts checking right away.</li>
-                <li>You can also open Fact or Feed? and tap <b>📎</b> to add a photo.</li>
+              <b>{T.howItWorks}</b>
+              <ol dir="auto">
+                <li>{T.i1}</li>
+                <li>{T.i2}</li>
+                <li>{T.i3}</li>
+                <li>{T.i4}</li>
               </ol>
             </div>
             <div className="step-box">
-              <b>Add the app to your Home Screen</b>
-              <ol>
-                <li>Open this site in <b>Safari</b>.</li>
-                <li>Tap <b>Share</b> (the square with the arrow).</li>
-                <li>Tap <b>Add to Home Screen</b>.</li>
+              <b>{T.homeTitle}</b>
+              <ol dir="auto">
+                <li>{T.h1}</li>
+                <li>{T.h2}</li>
+                <li>{T.h3}</li>
               </ol>
             </div>
           </div>
@@ -1432,17 +1345,11 @@ export function InstallSheet({ onClose, language = 'en', platform = 'desktop', c
           </div>
         )}
 
-        <button className="bigbtn ghost" onClick={onClose}>Close</button>
+        <button className="bigbtn ghost" onClick={onClose}>{T.close}</button>
       </div>
     </div>
   );
 }
-
-const PHOTO_FOLLOWUP_HINT =
-  'Got questions? Ask me about this photo check, like "Which warning sign matters most?" Or tap 📎 to check another photo.';
-
-const FOLLOWUP_HINT =
-  'Got questions? Ask me anything about this report, like "Why did you say that?" or "Which source is most reliable?" Or tap ＋ New search to check something else.';
 
 let nextId = 1;
 
@@ -1500,11 +1407,12 @@ export default function VeraChat({ tool = 'credible' }) {
   const [loadingKind, setLoadingKind] = useState('check');
   const [live, setLive] = useState(''); // read out by screen readers
   const [focusId, setFocusId] = useState(null); // the new result whose heading gets focus
-  const steps = STEPS[tool] || STEPS.credible;
   const [showInstall, setShowInstall] = useState(false);
   const { platform, canInstall, promptInstall } = useInstall();
   const uiLang = useUiLanguage(language);
   const t = ui(uiLang);
+  const T = toolText(uiLang);
+  const steps = T.steps[tool] || T.steps.credible;
   const loadingRef = useRef(false);
 
   useEffect(() => {
@@ -1525,7 +1433,7 @@ export default function VeraChat({ tool = 'credible' }) {
 
   // The progress steps are timed (one every 8 seconds). After the last one: "Still working, almost there…"
   const step = Math.floor(elapsed / 8);
-  const stepText = loadingKind === 'ask' ? 'Looking into that…' : step < steps.length ? steps[step] : t.stillWorking;
+  const stepText = loadingKind === 'ask' ? T.lookingInto : step < steps.length ? steps[step] : t.stillWorking;
 
   useEffect(() => {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -1568,7 +1476,7 @@ export default function VeraChat({ tool = 'credible' }) {
       const dot = packed.lastIndexOf('.');
       const payload = dot > 0 ? packed.slice(0, dot) : '';
       const sig = dot > 0 ? packed.slice(dot + 1) : '';
-      add({ from: 'me', text: '📲 Shared from my phone' });
+      add({ from: 'me', text: T.sharedFromPhone });
       (async () => {
         let valid = null; // null = we couldn't check right now
         try {
@@ -1582,18 +1490,18 @@ export default function VeraChat({ tool = 'credible' }) {
           if (out && typeof out.valid === 'boolean' && (res.ok || res.status === 400 || res.status === 413)) valid = out.valid;
         } catch {}
         if (valid === null) {
-          showError({ text: "I couldn't check this link right now. Please reload the page to try again." });
+          showError({ text: T.linkCheckFail });
           return;
         }
         clearHash();
         if (!valid) {
-          showError({ text: "⚠️ This link was not made by Fact or Feed?. Don't trust the result it shows." });
+          showError({ text: T.linkFake });
           return;
         }
         try {
           presentReport(decodeResult(payload));
         } catch {
-          showError({ text: "I couldn't open that result. Try sharing it again." });
+          showError({ text: T.linkOpenFail });
         }
       })();
       return;
@@ -1636,7 +1544,7 @@ export default function VeraChat({ tool = 'credible' }) {
     }
     const q = data.result.clarifying_question;
     if (q) add({ from: 'bot', kind: 'text', text: `🤔 Help me dig deeper: ${q} Just type your answer below.` });
-    else add({ from: 'bot', kind: 'text', text: FOLLOWUP_HINT });
+    else add({ from: 'bot', kind: 'text', text: T.hint });
     setReport(data);
     setAskHistory(q ? [{ role: 'assistant', content: `Clarifying question I asked: ${q}` }] : []);
     resultReady(id);
@@ -1712,7 +1620,7 @@ export default function VeraChat({ tool = 'credible' }) {
     if (out.data?.photo) {
       clearSent(rawText, img);
       const id = add({ from: 'bot', kind: 'photo', data: out.data, image: img, note: (rawText || '').trim() });
-      add({ from: 'bot', kind: 'text', text: PHOTO_FOLLOWUP_HINT });
+      add({ from: 'bot', kind: 'text', text: T.hintPhoto });
       setReport({ tool: 'photo', photo: out.data.photo });
       setAskHistory([]);
       resultReady(id);
@@ -1744,7 +1652,7 @@ export default function VeraChat({ tool = 'credible' }) {
     if (data?.answer) {
       clearSent(rawQuestion);
       add({ from: 'bot', kind: 'answer', text: data.answer, cited: data.cited || [], searchedAgain: data.searchedAgain, question });
-      setLive(data.answer);
+      setLive(stripCites(data.answer));
       setAskHistory((h) => [...h, { role: 'user', content: question }, { role: 'assistant', content: data.answer }].slice(-8));
       if (data.newSources?.length) {
         setReport((r) => (r ? { ...r, sources: [...(r.sources || []), ...data.newSources] } : r));
@@ -1803,7 +1711,7 @@ export default function VeraChat({ tool = 'credible' }) {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setCopyFailedId(null);
-      setLive('Copied!');
+      setLive(T.copied.replace('✓ ', ''));
     } catch {
       setCopiedId(null);
       setCopyFailedId(id);
@@ -1815,6 +1723,7 @@ export default function VeraChat({ tool = 'credible' }) {
   const canSend = !loading && (tool === 'photo' ? !!image || (!!report && !!draft.trim()) : draft.trim() || image);
 
   return (
+    <LangCtx.Provider value={uiLang}>
     <div className="ff">
       <style>{CSS}</style>
       <h1 className="sr-only">{toolName(tool, uiLang)} · Fact or Feed?</h1>
@@ -1828,21 +1737,21 @@ export default function VeraChat({ tool = 'credible' }) {
             </a>
             <div className="status">
               <i />
-              {loading ? 'Vera is checking…' : 'your fact-checking friend'}
+              {loading ? T.checking : T.friend}
             </div>
           </div>
           <div className="prefs">
             <button className="getapp" onClick={() => setShowInstall(true)} title={t.getApp} aria-haspopup="dialog">
               <span className="emo" aria-hidden="true">📲</span>
-              <span>Get it</span>
+              <span>{T.getIt}</span>
             </button>
-            <a className="howlink" href="/how-it-works">How we check</a>
-            <select className="age" dir="ltr" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label="How detailed" title="How detailed">
-              <option value="everyone">Level</option>
-              <option value="simple">Simple</option>
-              <option value="complex">Complex</option>
+            <a className="howlink" href="/how-it-works">{T.howWeCheck}</a>
+            <select className="age" dir="ltr" value={audience} onChange={(e) => setAudience(e.target.value)} aria-label={T.howDetailed} title={T.howDetailed}>
+              <option value="everyone">{T.level}</option>
+              <option value="simple">{T.simple}</option>
+              <option value="complex">{T.complex}</option>
             </select>
-            <select className="lang" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Change language" title="Change language">
+            <select className="lang" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={T.changeLanguage} title={T.changeLanguage}>
               {LANGUAGES.map(([code, label]) => (
                 <option key={code} value={code}>{label}</option>
               ))}
@@ -1859,7 +1768,7 @@ export default function VeraChat({ tool = 'credible' }) {
         </div>
       </div>
 
-      <nav className="toolnav" aria-label="Tools">
+      <nav className="toolnav" aria-label={T.tools}>
         <div className="toolnav-in">
           {TOOL_ORDER.map((k) => (
             <a key={k} href={TOOLS[k].href} className={k === tool ? 'on' : ''} aria-current={k === tool ? 'page' : undefined}>
@@ -1882,7 +1791,7 @@ export default function VeraChat({ tool = 'credible' }) {
               return (
                 <div key={m.id} className="msg me">
                   <div className="bub">
-                    {m.image && <img className="shot" src={m.image} alt="What you sent" />}
+                    {m.image && <img className="shot" src={m.image} alt={T.whatYouSent} />}
                     {m.text && <div dir="auto" style={{ marginTop: m.image ? 8 : 0 }}>{m.text}</div>}
                   </div>
                 </div>
@@ -1917,8 +1826,8 @@ export default function VeraChat({ tool = 'credible' }) {
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
                   <div className="bub">
-                    <div dir="auto" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                    {m.searchedAgain && <div className="muted" style={{ marginTop: 6 }}>🔎 I searched again to answer this.</div>}
+                    <div dir="auto" style={{ whiteSpace: 'pre-wrap' }}>{stripCites(m.text)}</div>
+                    {m.searchedAgain && <div className="muted" style={{ marginTop: 6 }}>{T.searchedAgain}</div>}
                     {m.cited?.length > 0 && (
                       <ul style={{ marginTop: 8, fontSize: 14 }}>
                         {m.cited.map((c) => (
@@ -1944,10 +1853,10 @@ export default function VeraChat({ tool = 'credible' }) {
                 <div key={m.id} className="msg bot">
                   <div className="av sm" aria-label="Vera">V</div>
                   <div className="bub">
-                    Want to reply to whoever sent it? You could say:
+                    {T.replyIntro}
                     <div className="replybox" dir="auto">{m.text}</div>
                     <button className="btn" onClick={() => copy(m.id, m.text)}>
-                      {copiedId === m.id ? '✓ Copied!' : 'Copy message'}
+                      {copiedId === m.id ? T.copied : T.copyMessage}
                     </button>
                     {copyFailedId === m.id && <div className="muted" dir="auto" style={{ marginTop: 6 }}>{t.copyFailed}</div>}
                   </div>
@@ -1993,18 +1902,18 @@ export default function VeraChat({ tool = 'credible' }) {
         <div className="comp-in">
           {image && (
             <div className="preview">
-              <img src={image} alt="Photo to send" />
-              <button onClick={() => setImage(null)} aria-label="Remove photo">×</button>
+              <img src={image} alt={T.photoToSend} />
+              <button onClick={() => setImage(null)} aria-label={T.removePhoto}>×</button>
             </div>
           )}
           {report && !loading && (
             <div className="newrow">
-              <span className="muted">Ask about this report, or</span>
-              <button className="newsearch" onClick={newSearch}>＋ New search</button>
+              <span className="muted">{T.askAbout}</span>
+              <button className="newsearch" onClick={newSearch}>{T.newSearch}</button>
             </div>
           )}
           <div className="bar">
-            <button className="circle attach" onClick={() => fileRef.current?.click()} aria-label="Add a photo">
+            <button className="circle attach" onClick={() => fileRef.current?.click()} aria-label={T.addPhoto}>
               📎
             </button>
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
@@ -2012,18 +1921,18 @@ export default function VeraChat({ tool = 'credible' }) {
               className="input"
               rows={1}
               aria-label={t.messageLabel}
-              placeholder={image ? (tool === 'photo' ? 'Add a note (optional)…' : 'Add a note or link (optional)…') : report ? 'Ask Vera about this…' : PLACEHOLDERS[tool]}
+              placeholder={image ? (tool === 'photo' ? T.phNote : T.phNoteLink) : report ? T.phAsk : { facts: T.phFacts, credible: T.phCredible, photo: T.phPhoto }[tool]}
               dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
             />
-            <button className="circle send" onClick={submit} disabled={!canSend} aria-label="Send">
+            <button className="circle send" onClick={submit} disabled={!canSend} aria-label={T.send}>
               ↑
             </button>
           </div>
           <div className="foot" dir="auto">
-            Fact or Feed? uses AI and can make mistakes. Always check the sources.
+            {T.disclaimer}
           </div>
         </div>
       </footer>
@@ -2038,5 +1947,6 @@ export default function VeraChat({ tool = 'credible' }) {
         />
       )}
     </div>
+    </LangCtx.Provider>
   );
 }

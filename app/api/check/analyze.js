@@ -1,7 +1,8 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
+import { FRONT_DESK_PROMPT, MANAGER_PROMPT, RULES, READER_PROMPT, PERSUASION_PROMPT, IMAGE_PROMPT, STORY_PROMPT, REVIEWER_PROMPT, COMPARE_PROMPT, FACTS_PROMPT, EMERGENCY_NOTE } from './prompts';
 import { categorize } from './bias';
+import { detectGreeting, greetingReply } from './frontdesk';
 import { loadNotebook, notebookForPrompt, lessonsFor, approvedLessonCount } from './notebook';
 import { dateRule, todayEastern, evidenceProblem, forceCantConfirm, finalizeFacts, isBlockedSource, EXCLUDED_DOMAINS, pickLang, withTemperature, planSearches } from './safety';
 
@@ -31,9 +32,12 @@ const LANGUAGE_NAMES = {
   it: 'Italian',
 };
 
-const ManagerSchema = z.object({
+const FrontDeskSchema = z.object({
   intent: z.enum(['check', 'chat', 'blocked', 'self_harm']),
   chat_reply: z.string().nullable(),
+});
+
+const ManagerSchema = z.object({
   analysis: z.string(),
   news_search: z.enum(['none', 'light', 'full']),
   official_sources: z.boolean(),
@@ -118,7 +122,6 @@ const StorySchema = z.object({
   unknown: z.array(z.string()),
   origin_timeline: z.array(z.object({ when: z.string(), what: z.string() })),
   persuasion_tactics: z.array(z.object({ tactic: z.string(), where: z.string(), explanation: z.string() })),
-  how_we_figured_it_out: z.array(z.string()),
   reply_draft: z.string(),
   key_source_ids: z.array(z.number()),
 });
@@ -137,7 +140,6 @@ const FactsSchema = z.object({
   reframed: z.string().nullable(),
   disputed: z.array(z.string()),
   unknown: z.array(z.string()),
-  how_we_figured_it_out: z.array(z.string()),
   key_source_ids: z.array(z.number()),
   clarifying_question: z.string().nullable(),
   notebook_note: z.string().nullable(),
@@ -462,6 +464,58 @@ export async function analyze(input) {
   const quickModel = fast ? FAST_MODEL : MODEL;
   const language = LANGUAGE_NAMES[input.language] ? input.language : 'auto';
 
+  const langCode = LANGUAGE_NAMES[input.language] ? input.language : 'en';
+  const chatResult = (intent, reply) => ({ tool: toolName, lang: langCode, chat: { kind: intent, reply }, trace: { intent, complete: false, timings } });
+
+  if (!text && !url && !image) {
+    const e = new Error('Paste some text, a link, or add a screenshot.');
+    e.status = 400;
+    throw e;
+  }
+
+  // 👋 A plain "hi" or "thanks" gets an instant reply from code (no AI at all)
+  const hello = !url && !image ? detectGreeting(text) : null;
+  if (hello) {
+    mark('Vera answered a hello');
+    return chatResult('chat', greetingReply(hello, input.language));
+  }
+
+  // 📒 Vera's notebook starts loading now, while the Front desk sorts the message
+  const notebookPromise = loadNotebook();
+
+  // Step 0: 🛎️ The Front desk (small fast model) decides: check, chat, blocked, or self_harm.
+  // It runs before link reading and the Manager, so small talk never waits for them.
+  let desk = null;
+  try {
+    const deskContent = [];
+    if (text) deskContent.push({ type: 'text', text: `The user's message:\n${text}` });
+    if (url) deskContent.push({ type: 'text', text: `A link was sent: ${url}` });
+    if (image) deskContent.push({ type: 'image', image });
+    deskContent.push({ type: 'text', text: `${image ? 'A photo was sent.' : 'No photo was sent.'}\nTool: ${toolName === 'facts' ? '"Find the facts"' : '"Is this news credible?"'}` });
+    const { output } = await generateText({
+      model: FAST_MODEL,
+      system: FRONT_DESK_PROMPT,
+      ...withTemperature(FAST_MODEL, 0.2),
+      messages: [{ role: 'user', content: deskContent }],
+      output: Output.object({ schema: FrontDeskSchema }),
+    });
+    desk = output;
+  } catch (err) {
+    console.error('Front desk failed, treating it as a check', err);
+  }
+  // 👋 Small talk gets a short reply as Vera, and anything against the safety rules is never searched.
+  // (A photo or link is always checked, never treated as small talk.)
+  const intent = desk?.intent === 'chat' && (image || url) ? 'check' : desk?.intent || 'check';
+  if (intent !== 'check') {
+    let reply = String(desk.chat_reply || '').trim().slice(0, 1200);
+    if (intent === 'blocked' && !reply) reply = "Sorry, I can't help with that. I'm happy to fact-check a post, link, or photo for you instead.";
+    if (intent === 'self_harm') reply = `${reply || "I'm really sorry you're going through this. You matter, and talking to someone can help."}\n\n${CRISIS_LINE}`;
+    if (intent === 'chat' && !reply) reply = "Hi! I'm Vera. Send me a post, link, or question and I'll check the facts with you.";
+    mark(intent === 'chat' ? 'Vera answered a hello' : 'This request is not something Vera can help with');
+    notebookPromise.catch(() => {});
+    return chatResult(intent, reply);
+  }
+
   const content = [];
   if (text) content.push({ type: 'text', text: toolName === 'facts' ? `The user wants to know:\n${text}` : `The user was sent this:\n${text}` });
   if (url) content.push({ type: 'text', text: `Article from ${url}:\n${await readArticle(url)}` });
@@ -473,11 +527,11 @@ export async function analyze(input) {
   }
 
   // 📒 Every agent reads Vera's notebook before doing its job
-  const notebook = await loadNotebook();
+  const notebook = await notebookPromise;
   // 📅 Every agent is told today's date (worked out fresh for each check)
   const today = dateRule();
 
-  // Step 0: 🧭 The Manager analyzes the post and chooses the game plan
+  // Step 0b: 🧭 The Manager analyzes the post and chooses the game plan
   let plan = null;
   try {
     const { output } = await generateText({
@@ -520,19 +574,6 @@ export async function analyze(input) {
     is_recent: false,
     reasons: ['Using the full team to be safe.'],
   };
-  // 👋 Small talk gets a short reply as Vera, and anything against the safety rules is never searched.
-  // These skip every other agent, so a "hi" costs one cheap AI call instead of a whole check.
-  // (A photo or link is always checked, never treated as small talk.)
-  const intent = plan.intent === 'chat' && (image || url) ? 'check' : plan.intent || 'check';
-  if (intent !== 'check') {
-    let reply = String(plan.chat_reply || '').trim().slice(0, 1200);
-    if (intent === 'blocked' && !reply) reply = "Sorry, I can't help with that. I'm happy to fact-check a post, link, or photo for you instead.";
-    if (intent === 'self_harm') reply = `${reply || "I'm really sorry you're going through this. You matter, and talking to someone can help."}\n\n${CRISIS_LINE}`;
-    if (intent === 'chat' && !reply) reply = "Hi! I'm Vera. Send me a post, link, or question and I'll check the facts with you.";
-    mark(intent === 'chat' ? 'Vera answered a hello' : 'This request is not something Vera can help with');
-    return { tool: toolName, lang: LANGUAGE_NAMES[input.language] ? input.language : 'en', chat: { kind: intent, reply }, trace: { intent, complete: false, timings } };
-  }
-
   // Each tool has its own job: credibility always looks at persuasion; Find the facts answers a question
   if (toolName === 'credible') plan.persuasion = true;
   if (toolName === 'facts') {
