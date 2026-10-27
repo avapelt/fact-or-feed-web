@@ -10,7 +10,8 @@ Stack: Next.js (App Router) on Vercel, Anthropic models (Haiku + Sonnet), free-t
 Key files:
 - `app/api/check/analyze.js` - the check pipeline (search, read sources, write the verdict)
 - `app/api/check/prompts.js` - Vera's instructions, including safety and self-harm rules
-- `app/api/check/safety.js` - safety screening of incoming questions
+- `app/api/check/frontdesk.js` - sorts each message first (check, chat, blocked, self-harm)
+- `app/api/check/safety.js` - evidence rules, link/photo safety, result signing
 - `app/components/toolText.js` - every user-facing string, in all 11 languages
 - `app/components/VeraChat.js` - the chat interface people use
 
